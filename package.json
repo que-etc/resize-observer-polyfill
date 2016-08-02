@@ -1,0 +1,38 @@
+{
+    "name": "resize-observer-polyfill",
+    "author": "Denis Rul <que.etc@bgmail.com>",
+    "version": "0.1.0",
+    "description": "A polyfill for IntersectionObserver API",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/que-etc/resize-observer-polyfill.git"
+    },
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/que-etc/resize-observer-polyfill/issues"
+    },
+    "keywords": [
+        "ResizeObserver",
+        "resize",
+        "observer",
+        "util",
+        "client",
+        "browser",
+        "polyfill"
+    ],
+    "homepage": "https://github.com/que-etc/resize-observer-polyfill",
+    "devDependencies": {
+        "resize-observer-polyfill": "git+https://git@github.com/que-etc/resize-observer-polyfill.git",
+        "babel-core": "^6.9.1",
+        "babel-loader": "^6.2.4",
+        "babel-preset-es2015-loose": "^7.0.0",
+        "babel-preset-stage-1": "^6.5.0",
+        "babel-plugin-add-module-exports": "^0.2.1",
+        "babel-plugin-transform-es2015-modules-commonjs": "^6.8.0",
+        "webpack": "^1.13.1",
+        "gulp": "^3.9.1",
+        "gulp-util": "^3.0.7",
+        "randomcolor": "^0.4.4"
+    }
+}
