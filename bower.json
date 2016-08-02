@@ -1,0 +1,24 @@
+{
+    "name": "resize-observer-polyfill",
+    "description": "A polyfill for ResizeObserver API",
+    "authors": [
+        "Denis Rul <que.etc@bgmail.com>"
+    ],
+    "moduleType": [
+        "globals",
+        "amd",
+        "node",
+        "es6"
+    ],
+    "version": "0.1.0",
+    "main": [
+        "index.js"
+    ],
+    "keywords": [
+        "ResizeObserver",
+        "util",
+        "client",
+        "browser",
+        "polyfill"
+    ]
+}

@@ -1,0 +1,56 @@
+{
+    "name": "resize-observer-polyfill",
+    "author": "Denis Rul <que.etc@bgmail.com>",
+    "version": "0.1.0",
+    "description": "A polyfill for IntersectionObserver API",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/que-etc/resize-observer-polyfill.git"
+    },
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/que-etc/resize-observer-polyfill/issues"
+    },
+    "keywords": [
+        "ResizeObserver",
+        "resize",
+        "observer",
+        "util",
+        "client",
+        "browser",
+        "polyfill"
+    ],
+    "homepage": "https://github.com/que-etc/resize-observer-polyfill",
+    "devDependencies": {
+        "babel-core": "^6.9.1",
+        "babel-loader": "^6.2.4",
+        "babel-preset-es2015-loose": "^7.0.0",
+        "babel-preset-stage-1": "^6.5.0",
+        "babel-plugin-add-module-exports": "^0.2.1",
+        "babel-plugin-transform-es2015-modules-commonjs": "^6.8.0",
+
+        "karma": "^0.13.22",
+        "karma-chrome-launcher": "^1.0.1",
+        "karma-firefox-launcher": "^1.0.0",
+        "karma-ie-launcher": "^1.0.0",
+        "karma-jasmine": "^1.0.2",
+        "karma-spec-reporter": "0.0.26",
+        "karma-jasmine-html-reporter": "^0.2.1",
+        "karma-webpack": "^1.7.0",
+        "jasmine-core": "^2.4.1",
+
+        "webpack": "^1.13.1",
+        "lodash": "^4.13.1",
+
+        "gulp": "^3.9.1",
+        "gulp-util": "^3.0.7",
+        "gulp-eslint": "^3.0.1",
+
+        "eslint": "^2.11.1",
+        "babel-eslint": "^6.0.4",
+        "eslint-import-resolver-node": "^0.2.0",
+        "eslint-plugin-babel": "^3.2.0",
+        "eslint-plugin-import": "^1.8.1"
+    }
+}
