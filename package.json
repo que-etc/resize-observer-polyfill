@@ -5,6 +5,7 @@
     "description": "A polyfill for IntersectionObserver API",
     "main": "index.js",
     "scripts": {
+        "test": "node ./node_modules/karma/bin/karma start karma.config.js --browsers Firefox",
         "gulp": "node ./node_modules/gulp/bin/gulp.js"
     },
     "repository": {

@@ -1,6 +1,9 @@
 ResizeObserver Polyfill
 =============
 
+[![Build Status][travis-image]][travis-url]
+
+
 A polyfill for ResizeObserver API.
 
 Implements event based tracking of changes in elements dimensions. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles long running CSS transitions/animations, attributes and nodes mutations along with changes made by :hover pseudo-class (optional).
@@ -140,4 +143,7 @@ If you want to test a specific browser that is not present in karmas' config fil
 to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
 
 And if you want to run tests against native implementation you'll need to remove top imports from a `ResizeObserver.spec.js` suite.
+
+[travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
+[travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill
 
