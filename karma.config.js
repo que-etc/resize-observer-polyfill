@@ -10,13 +10,14 @@ module.exports = function (config) {
         plugins: [
             webpack,
             'karma-jasmine',
+            'karma-sourcemap-loader',
             'karma-chrome-launcher',
             'karma-firefox-launcher',
             'karma-ie-launcher',
             'karma-spec-reporter',
             "karma-jasmine-html-reporter"
         ],
-        reporters: ['spec'],
+        reporters: ['spec', 'kjhtml'],
         browsers: [
             'Chrome',
             'Firefox',
@@ -30,10 +31,10 @@ module.exports = function (config) {
             }
         },
         preprocessors: {
-            'tests/**.spec.js': ['webpack'],
+            'tests/**.spec.js': ['webpack', 'sourcemap'],
             'src/**/*.js': ['webpack']
         },
-        webpack: require('./dev/builds').general,
+        webpack: require('./dev/builds').test,
         webpackMiddleware: { noInfo: true }
     });
 };

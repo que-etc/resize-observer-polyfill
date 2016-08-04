@@ -96,7 +96,7 @@ require('resize-observer-polyfill/dist/ResizeObserver.global');
 
 ### idleTimeot
 
-In the first place this implementation relies on `transitionstart` & `animationstart` events or documents' `getAnimations` method for tracking active animations. If some of the above approaches is not supported it will use a repeatable update cycle whose minimal duration equals to the `idleTimeout` value. This cycle will be used only after mutations of DOM attributes like `class` or `style` and it will repeat itself when it detects changes in elemenets that are observed.
+In the first place this implementation relies on `transitionstart` & `animationstart` events or documents' `getAnimations` method for tracking active animations. If some of the above approaches is not supported it will use a repeatable update cycle whose minimal duration equals to the `idleTimeout` value. This cycle will be used only after mutations of DOM attributes like `class` or `style` and it will repeat itself when it detects changes in elements that are observed.
 
 Default timeout value is `50` milliseconds and you can increase it to match the delay of transitions, e.g. when transition starts with the delay of `500` milliseconds you can set `ResizeObserver.idleTimeout = 500` to the corresponding value.
 Note that even if transitions don't have a delay it's still safer to leave the default value.
@@ -106,3 +106,38 @@ Note that even if transitions don't have a delay it's still safer to leave the d
 By default possible changes in elements size caused by CSS `:hover` class are not tracked. You can set `ResizeObserver.trackHovers = true` if you need them to be supported. Keep in mind that this is going to affect the performance.
 
 **NOTE:** Changes made to these properties will affect all existing and future instances of ResizeObserver.
+
+## Building and testing
+
+First make sure that you have all dependencies installed by running `npm install`. Then you can execute following tasks either with a gulp CLI or with a `npm run gulp` command.
+
+To make a production build:
+
+```sh
+gulp build:production
+```
+
+To make a development build of a polyfill itself
+with a source map that will be located in a `tmp` folder:
+
+```sh
+gulp build:dev
+```
+
+Running a code style test:
+```sh
+gulp test:lint
+```
+
+Functional tests for all available browsers
+defined in a `karma.config.js` file:
+
+```sh
+gulp test:spec
+```
+
+If you want to test a specific browser that is not present in karmas' config file you'll need
+to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
+
+And if you want to run tests against native implementation you'll need to remove top imports from a `ResizeObserver.spec.js` suite.
+

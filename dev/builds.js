@@ -6,6 +6,9 @@ const builds = {
         resolve: {
             extensions: ['', '.js']
         },
+        output: {
+            libraryTarget: 'umd'
+        },
         module: {
             loaders: [{
                 test: /\.js$/,
@@ -19,10 +22,23 @@ const builds = {
     }
 };
 
+builds.test = _.merge({}, builds.general, {
+    devtool: 'inline-source-map'
+});
+
+builds.dev = _.merge({}, builds.general, {
+    entry: './src/ResizeObserver.js',
+    devtool: 'source-map',
+    output: {
+        library: 'ResizeObserver',
+        path: './tmp/',
+        filename: 'ResizeObserver.js'
+    }
+});
+
 builds.production = _.merge({}, builds.general, {
     entry: './index.js',
     output: {
-        libraryTarget: 'umd',
         library: 'ResizeObserver',
         path: './dist/',
         filename: 'ResizeObserver.js'
