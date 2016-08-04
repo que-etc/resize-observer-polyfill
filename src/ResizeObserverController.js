@@ -401,7 +401,7 @@ export default class ResizeObserverController {
         }
 
         this._mutationsObserver = null;
-        this._repeatCycle = false;
+        this._isCycleInfinite = false;
         this._isListening = false;
     }
 
