@@ -1,7 +1,7 @@
 {
     "name": "resize-observer-polyfill",
     "author": "Denis Rul <que.etc@bgmail.com>",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "A polyfill for IntersectionObserver API",
     "main": "index.js",
     "scripts": {
@@ -16,6 +16,12 @@
     "bugs": {
         "url": "https://github.com/que-etc/resize-observer-polyfill/issues"
     },
+    "files": [
+        "src/",
+        "dist/",
+        "index.js",
+        "index.global.js"
+    ],
     "keywords": [
         "ResizeObserver",
         "resize",
