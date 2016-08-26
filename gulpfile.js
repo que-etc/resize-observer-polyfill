@@ -38,4 +38,3 @@ gulp.task('build', callback => {
         }
     }, createWebpackCallback(callback));
 });
-

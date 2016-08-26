@@ -1,5 +1,5 @@
 {
-    "name": "resize-observer-polyfill",
+    "name": "resize-observer-polyfill-demo",
     "author": "Denis Rul <que.etc@bgmail.com>",
     "version": "0.1.0",
     "description": "A polyfill for IntersectionObserver API",
@@ -26,6 +26,7 @@
         "resize-observer-polyfill": "git+https://git@github.com/que-etc/resize-observer-polyfill.git",
         "babel-core": "^6.9.1",
         "babel-loader": "^6.2.4",
+        "babel-preset-es2015": "^6.9.0",
         "babel-preset-es2015-loose": "^7.0.0",
         "babel-preset-stage-1": "^6.5.0",
         "babel-plugin-add-module-exports": "^0.2.1",
