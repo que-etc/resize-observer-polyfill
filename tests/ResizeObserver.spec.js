@@ -1,6 +1,5 @@
 import ResizeObserver from '../src/ResizeObserver';
 import ResizeObserverEntry from '../src/ResizeObserverEntry';
-import ContentRect from '../src/ContentRect';
 
 const emptyFn = () => {};
 const css = `
@@ -55,7 +54,7 @@ const template = `
 const timeout = 300;
 
 let styles,
-    observer = false,
+    observer = null,
     elements = {};
 
 function appendStyles() {
@@ -125,13 +124,13 @@ describe('ResizeObserver', () => {
     });
 
     describe('constructor', () => {
-        it('throws an exception if no arguments were provided', () => {
+        it('throws an error if no arguments were provided', () => {
             expect(() => {
                 new ResizeObserver();
             }).toThrowError(/1 argument required/i);
         });
 
-        it('throws an exception if callback is not a function', () => {
+        it('throws an error if callback is not a function', () => {
             expect(() => {
                 new ResizeObserver(true);
             }).toThrowError(/function/i);
@@ -143,7 +142,7 @@ describe('ResizeObserver', () => {
     });
 
     describe('observe', () => {
-        it('throws an error if no arguments were provided', () => {
+        it('throws an error if no arguments have been provided', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -151,7 +150,7 @@ describe('ResizeObserver', () => {
             }).toThrowError(/1 argument required/i);
         });
 
-        it('throws an error if target is not Element', () => {
+        it('throws an error if target is not an Element', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -189,7 +188,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0] instanceof ResizeObserverEntry).toBe(true);
 
                 expect(entries[0].target).toBe(elements.target1);
-                expect(entries[0].contentRect instanceof ContentRect).toBe(true);
+                expect(typeof entries[0].contentRect).toBe('object');
 
                 expect(instance).toBe(observer);
                 expect(this).toBe(observer);
@@ -199,7 +198,6 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
         });
-
 
         it('handles already observed elements', done => {
             const spy = jasmine.createSpy();
@@ -230,7 +228,7 @@ describe('ResizeObserver', () => {
             }], done);
         });
 
-        it('handles elements not yet in the DOM', done => {
+        it('handles elements that are not yet in the DOM', done => {
             elements.root.removeChild(elements.container);
             elements.container.removeChild(elements.target1);
 
@@ -267,8 +265,6 @@ describe('ResizeObserver', () => {
 
                     expect(entries[0].contentRect.width).toBe(200);
                     expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -310,6 +306,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(0);
                     expect(entries[0].contentRect.height).toBe(0);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
@@ -328,6 +326,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(0);
                     expect(entries[0].contentRect.height).toBe(0);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
@@ -374,12 +374,15 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(200);
                     expect(entries[0].contentRect.height).toBe(200);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
             }, done => {
                 elements.root.style.display = 'none';
+                elements.target1.style.padding = '10px';
 
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
@@ -392,6 +395,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(0);
                     expect(entries[0].contentRect.height).toBe(0);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
@@ -402,9 +407,10 @@ describe('ResizeObserver', () => {
         it('handles paddings', done => {
             const spy = jasmine.createSpy();
 
+            elements.target1.style.padding = '2px 4px 6px 8px';
+
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.root);
             observer.observe(elements.target1);
 
             runSequence([done => {
@@ -413,25 +419,24 @@ describe('ResizeObserver', () => {
 
                     expect(spy).toHaveBeenCalledTimes(1);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[1].target).toBe(elements.target1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(2);
+                    expect(entries[0].contentRect.right).toBe(208);
+                    expect(entries[0].contentRect.bottom).toBe(202);
+                    expect(entries[0].contentRect.left).toBe(8);
 
                     done();
                 }, timeout);
             }, done => {
-                elements.target1.style.padding = '10px';
+                elements.target1.style.padding = '3px 6px';
 
                 setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(2);
-
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[0].contentRect.height).toBe(420);
+                    expect(spy).toHaveBeenCalledTimes(1);
 
                     done();
                 }, timeout);
@@ -441,24 +446,44 @@ describe('ResizeObserver', () => {
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                    expect(spy).toHaveBeenCalledTimes(2);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[0].contentRect.height).toBe(400);
-
-                    expect(entries[1].target).toBe(elements.target1);
-                    expect(entries[1].contentRect.width).toBe(180);
-                    expect(entries[1].contentRect.height).toBe(180);
-                    expect(entries[1].contentRect.top).toBe(10);
-                    expect(entries[1].contentRect.left).toBe(10);
+                    expect(entries[0].target).toBe(elements.target1);
+                    
+                    expect(entries[0].contentRect.width).toBe(188);
+                    expect(entries[0].contentRect.height).toBe(194);
+                    expect(entries[0].contentRect.top).toBe(3);
+                    expect(entries[0].contentRect.right).toBe(194);
+                    expect(entries[0].contentRect.bottom).toBe(197);
+                    expect(entries[0].contentRect.left).toBe(6);
 
                     done();
                 }, timeout);
             }, done => {
-                elements.target1.style.paddingTop = '0px';
-                elements.target1.style.paddingBottom = '0px';
+                elements.target1.style.padding = '0px 6px';
+
+                setTimeout(() => {
+                    const entries = spy.calls.mostRecent().args[0];
+
+                    expect(spy).toHaveBeenCalledTimes(3);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(188);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(194);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(6);
+
+                    done();
+                }, timeout);
+            }, done => {
+                elements.target1.style.padding = '0px';
 
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
@@ -468,28 +493,12 @@ describe('ResizeObserver', () => {
                     expect(entries.length).toBe(1);
 
                     expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[0].contentRect.width).toBe(180);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(10);
 
-                    done();
-                }, timeout);
-            }, done => {
-                elements.target1.style.paddingLeft = '0px';
-                elements.target1.style.paddingRight = '0px';
-
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(5);
-
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.target1);
                     expect(entries[0].contentRect.width).toBe(200);
                     expect(entries[0].contentRect.height).toBe(200);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
@@ -500,9 +509,10 @@ describe('ResizeObserver', () => {
         it('handles borders', done => {
             const spy = jasmine.createSpy();
 
+            elements.target1.style.border = '10px solid black';
+
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.root);
             observer.observe(elements.target1);
 
             runSequence([done => {
@@ -511,25 +521,24 @@ describe('ResizeObserver', () => {
 
                     expect(spy).toHaveBeenCalledTimes(1);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[1].target).toBe(elements.target1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
             }, done => {
-                elements.target1.style.border = '10px solid black';
+                elements.target1.style.border = '5px solid black';
 
                 setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(2);
-
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[0].contentRect.height).toBe(420);
+                    expect(spy).toHaveBeenCalledTimes(1);
 
                     done();
                 }, timeout);
@@ -539,16 +548,18 @@ describe('ResizeObserver', () => {
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                    expect(spy).toHaveBeenCalledTimes(2);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(elements.root);
-                    expect(entries[0].contentRect.height).toBe(400);
+                    expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[1].target).toBe(elements.target1);
-                    expect(entries[1].contentRect.width).toBe(180);
-                    expect(entries[1].contentRect.height).toBe(180);
+                    expect(entries[0].contentRect.width).toBe(190);
+                    expect(entries[0].contentRect.height).toBe(190);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(190);
+                    expect(entries[0].contentRect.bottom).toBe(190);
+                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -559,12 +570,18 @@ describe('ResizeObserver', () => {
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy).toHaveBeenCalledTimes(4);
+                    expect(spy).toHaveBeenCalledTimes(3);
 
                     expect(entries.length).toBe(1);
 
                     expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(190);
                     expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(190);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -575,12 +592,18 @@ describe('ResizeObserver', () => {
                 setTimeout(() => {
                     const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy).toHaveBeenCalledTimes(5);
+                    expect(spy).toHaveBeenCalledTimes(4);
 
                     expect(entries.length).toBe(1);
 
                     expect(entries[0].target).toBe(elements.target1);
+
                     expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -608,9 +631,6 @@ describe('ResizeObserver', () => {
 
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.root);
-
-                    expect(entries[0].contentRect.width).not.toBe(100);
-                    expect(entries[0].contentRect.height).not.toBe(250);
 
                     expect(entries[0].contentRect.width).toBe(elements.root.clientWidth);
                     expect(entries[0].contentRect.height).toBe(elements.root.clientHeight);
@@ -675,6 +695,13 @@ describe('ResizeObserver', () => {
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.target2);
 
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+
                     done();
                 }, timeout);
             }, done => {
@@ -697,12 +724,12 @@ describe('ResizeObserver', () => {
 
                     expect(entries[0].contentRect.width).toBe(200);
                     expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(10);
-                    expect(entries[0].contentRect.left).toBe(10);
 
                     expect(entries[1].contentRect.width).toBe(0);
                     expect(entries[1].contentRect.height).toBe(0);
                     expect(entries[1].contentRect.top).toBe(0);
+                    expect(entries[1].contentRect.right).toBe(0);
+                    expect(entries[1].contentRect.bottom).toBe(0);
                     expect(entries[1].contentRect.left).toBe(0);
 
                     done();
@@ -758,6 +785,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(0);
                     expect(entries[0].contentRect.height).toBe(0);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
                     expect(entries[0].contentRect.left).toBe(0);
 
                     done();
@@ -770,6 +799,7 @@ describe('ResizeObserver', () => {
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"
+                    width="100" height="100"
                     id="svg-root" style="padding: 5px;">
                     <rect
                         id="svg-rect"
@@ -785,7 +815,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(svgRoot);
             observer.observe(svgRect);
 
             runSequence([done => {
@@ -794,20 +823,16 @@ describe('ResizeObserver', () => {
 
                     expect(spy).toHaveBeenCalledTimes(1);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(svgRoot);
-                    expect(entries[1].target).toBe(svgRect);
+                    expect(entries[0].target).toBe(svgRect);
 
                     expect(entries[0].contentRect.width).toBe(200);
                     expect(entries[0].contentRect.height).toBe(150);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(150);
                     expect(entries[0].contentRect.left).toBe(0);
-
-                    expect(entries[1].contentRect.width).toBe(200);
-                    expect(entries[1].contentRect.height).toBe(150);
-                    expect(entries[1].contentRect.top).toBe(0);
-                    expect(entries[1].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -820,20 +845,37 @@ describe('ResizeObserver', () => {
 
                     expect(spy).toHaveBeenCalledTimes(2);
 
-                    expect(entries.length).toBe(2);
+                    expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(svgRoot);
-                    expect(entries[1].target).toBe(svgRect);
+                    expect(entries[0].target).toBe(svgRect);
 
                     expect(entries[0].contentRect.width).toBe(250);
                     expect(entries[0].contentRect.height).toBe(200);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(250);
+                    expect(entries[0].contentRect.bottom).toBe(200);
                     expect(entries[0].contentRect.left).toBe(0);
 
-                    expect(entries[1].contentRect.width).toBe(250);
-                    expect(entries[1].contentRect.height).toBe(200);
-                    expect(entries[1].contentRect.top).toBe(0);
-                    expect(entries[1].contentRect.left).toBe(0);
+                    done();
+                }, timeout);
+            }, done => {
+                observer.observe(svgRoot);
+
+                setTimeout(() => {
+                    const entries = spy.calls.mostRecent().args[0];
+
+                    expect(spy).toHaveBeenCalledTimes(3);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(svgRoot);
+
+                    expect(entries[0].contentRect.width).toBe(250);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(250);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
 
                     done();
                 }, timeout);
@@ -934,7 +976,7 @@ describe('ResizeObserver', () => {
                         expect(entries[0].contentRect.height).toBe(350);
 
                         done();
-                    }, 1020);
+                    }, 1100);
                 }], done);
             });
 
@@ -1025,7 +1067,7 @@ describe('ResizeObserver', () => {
     });
 
     describe('unobserve', () => {
-        it('throws an error if no arguments were provided', () => {
+        it('throws an error if no arguments have been provided', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -1033,7 +1075,7 @@ describe('ResizeObserver', () => {
             }).toThrowError(/1 argument required/i);
         });
 
-        it('throws an error if target is not Element', () => {
+        it('throws an error if target is not an Element', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -1161,7 +1203,7 @@ describe('ResizeObserver', () => {
             }], done);
         });
 
-        it('observations can be resumed', done => {
+        it('can resume observations', done => {
             const spy = jasmine.createSpy();
 
             observer = new ResizeObserver(spy);

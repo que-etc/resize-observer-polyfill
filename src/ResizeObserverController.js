@@ -5,10 +5,9 @@ import * as animations from './animations';
 
 const mutationsSupported = typeof window.MutationObserver === 'function';
 
-
 /**
  * Creates a wrapper function which ensures that
- * provided callback will be invoked only one
+ * provided callback will be invoked only once
  * during the specified delay.
  *
  * @param {Function} callback - Function to be invoked.
@@ -32,9 +31,9 @@ function debounce(callback, delay = 0) {
 }
 
 /**
- * Controller class which is used to handle the updates of registered ResizeObservers instances.
+ * Controller class which is used to handle updates of registered ResizeObservers instances.
  * It controls when and for how long it's necessary to run updates by listening to a combination
- * of DOM events along with a track of DOM mutations (nodes removal, changes of attributes, etc.).
+ * of DOM events along with tracking of DOM mutations (nodes removal, changes of attributes, etc.).
  *
  * Transitions and animations are handled by listening to "transitionstart"/"animationstart"
  * events or by using documents' "getAnimations" method if it's available. If none of the above
@@ -45,12 +44,11 @@ function debounce(callback, delay = 0) {
  * Tracking of changes caused by ":hover" class is optional and can be enabled by invoking
  * the "enableHover" method.
  *
- * Infinite update cycle along with a listener for "click" event will be used in case when
- * MutatioObserver is not supported.
+ * Infinite update cycle will be used in case when MutatioObserver is not supported.
  */
 export default class ResizeObserverController {
     /**
-     * Creates new ResizeObserverController instance.
+     * Creates a new ResizeObserverController instance.
      *
      * @param {Number} [idleTimeout = 0]
      * @pram {Boolean} [trackHovers = false] - Whether to track "mouseover"
@@ -68,17 +66,17 @@ export default class ResizeObserverController {
         // Indicates whether the update of observers is scheduled.
         this._isScheduled = false;
 
-        // Indicates whether infinite cycles are enabled.
+        // Indicates whether infinite cycle is enabled.
         this._isCycleInfinite = false;
 
         // Indicates whether "mouseover" event handler was added.
         this._hoverInitiated = false;
+        
+        // Indicates whether DOM listeners have been initiated.
+        this._isListening = false;
 
         // Keeps reference to the instance of MutationObserver.
         this._mutationsObserver = null;
-
-        // Indicates whether DOM listeners were initiated.
-        this._isListening = false;
 
         // A list of connected observers.
         this._observers = [];
@@ -96,7 +94,7 @@ export default class ResizeObserverController {
         this._scheduleUpdate = debounce(this._scheduleUpdate, 5);
 
         // Function that will be invoked to re-run the
-        // update cycle if infinite cycles are enabled.
+        // update cycle when infinite cycles are enabled.
         this._inifiniteCycleHandler = debounce(this._startAnimationCycle, 300);
 
         // Limit the amount of calls from "mouseover" event.
@@ -199,8 +197,7 @@ export default class ResizeObserverController {
      *
      * Cycle will repeat itself if one of its' iterations
      * has detected changes in observers and if "repeatable" parameter
-     * is set to "true". Repeatable cycles are used to handle
-     * animations and transitions.
+     * is set to "true".
      *
      * @param {Number} [minDuration = 0] - Minimal duration of cycle.
      * @param {Boolean} [repeatable = false] - Whether it is necessary
@@ -226,7 +223,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Checks if it's possible to detect active animations and invokes
+     * Checks whether it's possible to detect active animations and invokes
      * a single update if it's so. Otherwise it will
      * start a repeatable cycle using provided duration.
      *
@@ -244,9 +241,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Schedules the update of observers. Uses
-     * requestAnimationFrame to match the most
-     * appropriate time of invocation.
+     * Schedules the update of observers.
      *
      * @private
      */
@@ -260,23 +255,23 @@ export default class ResizeObserverController {
 
     /**
      * Invokes the update of observers. It will schedule
-     * new update if there are active animations or if
-     * minimal duration of the update cycle wasn't reached yet.
+     * a new update if there are active animations or if
+     * minimal duration of cycle hasn't been reached yet.
      *
      * @private
      */
     _resolveScheduled() {
+        const hasChanges = this._updateObservers();
+
         this._isScheduled = false;
 
-        // Set a flag that changes in
-        // observers were detected.
-        if (this._updateObservers()) {
+        if (hasChanges) {
             this._cycleHadChanges = true;
         }
 
         this._shouldContinueUpdating() ?
             this._scheduleUpdate() :
-            this._endUpdates();
+            this._updatesFinished();
     }
 
     /**
@@ -310,9 +305,9 @@ export default class ResizeObserverController {
      *
      * @private
      */
-    _endUpdates() {
+    _updatesFinished() {
         // We don't need to repeat the cycle if it's
-        // previous iteration detected no changes.
+        // previous iteration hasn't detected changes.
         if (!this._cycleHadChanges) {
             this._isCycleRepeatable = false;
         }
@@ -333,7 +328,7 @@ export default class ResizeObserverController {
      * @private
      */
     _initListeners() {
-        // Do nothing if listeners are already initiated.
+        // Do nothing if listeners have been already initiated.
         if (this._isListening) {
             return;
         }
@@ -354,13 +349,9 @@ export default class ResizeObserverController {
             this._addHoverListener();
         }
 
-        // Fall back to an infinite cycle with additional tracking of
-        // "click" event if MutationObserver is not supported.
+        // Fall back to an infinite cycle.
         if (!mutationsSupported) {
             this._isCycleInfinite = true;
-
-            // Listen to clicks as they may cause changes in elements position.
-            document.addEventListener('click', this._startAnimationCycle, true);
 
             // Manually start cycle.
             this.runUpdates();
@@ -383,14 +374,13 @@ export default class ResizeObserverController {
      * @private
      */
     _removeListeners() {
-        // Do nothing if listeners were already removed.
+        // Do nothing if listeners have been already removed.
         if (!this._isListening) {
             return;
         }
 
         window.removeEventListener('resize', this._startAnimationCycle, true);
 
-        document.removeEventListener('click', this._startAnimationCycle, true);
         document.removeEventListener('animationstart', this._onAnimationStart, true);
         document.removeEventListener('transitionstart', this._onTransitionStart, true);
 
@@ -406,20 +396,20 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Enables hover listener.
+     * Enables "hover" listener.
      */
     enableHover() {
         this._trackHovers = true;
 
         // Immediately add listener if the rest
-        // of listeners were already initiated.
+        // of listeners have been already initiated.
         if (this._isListening) {
             this._addHoverListener();
         }
     }
 
     /**
-     * Disables hover listener.
+     * Disables "hover" listener.
      */
     disableHover() {
         this._trackHovers = false;
@@ -428,7 +418,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Tells whether hover listener is enabled.
+     * Tells whether "hover" listener is enabled.
      *
      * @returns {Boolean}
      */
@@ -437,8 +427,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Adds "mouseover" listener tho the document
-     * if it hasn't been already added.
+     * Adds "mouseover" listener to the document.
      *
      * @private
      */
@@ -451,8 +440,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Removes "mouseover" listener from document
-     * if it was added previously.
+     * Removes "mouseover" listener from document.
      *
      * @private
      */
@@ -466,7 +454,7 @@ export default class ResizeObserverController {
 
     /**
      * Tells whether it's possible to detect active animations
-     * either by using 'getAnimations' method or by listening
+     * either by using "getAnimations" method or by listening
      * to "transitionstart" event.
      *
      * @private
@@ -480,7 +468,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * "Transitionstart" event handler. Will start a single update cycle
+     * "Transitionstart" event handler. Starts a single update cycle
      * with a timeout value that is equal to transitions' duration.
      *
      * @private

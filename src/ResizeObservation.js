@@ -1,15 +1,12 @@
-import ResizeObserverEntry from './ResizeObserverEntry';
-
-// A placeholder object that is used when clientWidth
-// and clientHeight properties of an element are empty.
-const emptyPaddings = {
-    left: 0,
+// Placeholder of the content rectangle.
+const emptyRect = {
+    width: 0,
+    height: 0,
     top: 0,
     right: 0,
-    bottom: 0
+    bottom: 0,
+    left: 0
 };
-
-const paddingKeys = Object.keys(emptyPaddings);
 
 /**
  * Extracts paddings data from provided element.
@@ -20,9 +17,11 @@ const paddingKeys = Object.keys(emptyPaddings);
  */
 function getPaddings(target) {
     const styles = window.getComputedStyle(target);
+    const keys = ['top', 'right', 'bottom', 'left'];
+    
     const paddings = {};
 
-    for (const key of paddingKeys) {
+    for (const key of keys) {
         const value = styles['padding-' + key].replace('px', '');
 
         paddings[key] = parseFloat(value);
@@ -47,15 +46,20 @@ function isSVGElement(target) {
  *
  * @param {SVGElement} target - Element whose content
  *      rectangle needs to be calculated.
- * @returns {ContentRect}
+ * @returns {ClientRect}
  */
 function getSVGContentRect(target) {
-    const bcr = target.getBBox();
+    const bbox = target.getBBox();
+    const width = bbox.width;
+    const height = bbox.height;
 
     return {
-        width: bcr.width,
-        height: bcr.height,
-        top: 0, left: 0
+        width,
+        height,
+        top: 0,
+        right: width,
+        bottom: height,
+        left: 0
     };
 }
 
@@ -64,44 +68,43 @@ function getSVGContentRect(target) {
  *
  * @param {HTMLElement} target - Element whose content
  *      rectangle needs to be calculated.
- * @returns {ContentRect}
+ * @returns {ClientRect}
  */
-function getHTMLElementsContentRect(target) {
-    let width    = target.clientWidth,
-        height   = target.clientHeight,
-        paddings = emptyPaddings;
+function getHTMLElementContentRect(target) {
+    const clientWidth = target.clientWidth;
+    const clientHeight = target.clientHeight;
 
-    // It's necessary to calculate paddings
-    // only when client rectangle is not empty.
-    if (width || height) {
-        paddings = getPaddings(target);
+    // It's not necessary to proceed with calculations
+    // because we already know that rectangle is empty.
+    if (!clientWidth && !clientHeight) {
+        return emptyRect;
     }
 
-    width -= paddings.left + paddings.right;
-    height -= paddings.top + paddings.bottom;
+    const paddings = getPaddings(target);
 
     return {
-        width, height,
+        width: clientWidth - (paddings.left + paddings.right),
+        height: clientHeight - (paddings.top + paddings.bottom),
         top: paddings.top,
+        right: clientWidth - paddings.right,
+        bottom: clientHeight - paddings.bottom,
         left: paddings.left
     };
 }
 
 /**
- * Defines what type of an element is provided
- * (SVGElement or HTMLElement) and calculates an
- * appropriate content rectangle for it.
+ * Calculates an appropriate content rectangle
+ * for provided html or svg element.
  *
  * @param {Element} target - Element whose content rectangle
  *      needs to be calculated.
- * @returns {ContentRect}
+ * @returns {ClientRect}
  */
 function calculateContentRect(target) {
     return isSVGElement(target) ?
         getSVGContentRect(target) :
-        getHTMLElementsContentRect(target);
+        getHTMLElementContentRect(target);
 }
-
 
 /**
  * Class that is responsible for computations of a
@@ -118,63 +121,52 @@ export default class ResizeObservation {
     constructor(target) {
         this.target = target;
 
-        // Keeps state of content rectangle.
-        this._contentRect = null;
+        // Keeps reference to the last observed content rectangle.
+        this._contentRect = emptyRect;
 
-        // Last broadcasted width of content rectangle.
+        // Broadcasted width of content rectangle.
         this.broadcastWidth = 0;
 
-        // Last broadcasted height of content rectangle.
+        // Broadcasted height of content rectangle.
         this.broadcastHeight = 0;
     }
 
     /**
-     * Tells whether content rectangle has changed its'
-     * width or height properties since the last broadcast.
+     * Returns last observed content rectangle.
      *
-     * @returns {Boolean}
+     * @returns {ClientRect}
      */
-    isActive() {
-        const contentRect = this._updateContentRect();
-
-        return (
-            contentRect.width !== this.broadcastWidth ||
-            contentRect.height !== this.broadcastHeight
-        );
+    getLastObservedRect() {
+        return this._contentRect;
     }
-
+    
     /**
-     * Returns a new instance of ResizeObsreverEntry passing to
-     * it data of the last updated content rectangle and updates
-     * corresponding 'broadcastWidth' and 'broadcastHeight' properties.
-     *
-     * @returns {ResizeObsreverEntry}
+     * Updates 'broadcastWidth' and 'broadcastHeight'
+     * properties with data from the corresponding
+     * properties of the last observed content rectangle.
      */
-    broadcastEntry() {
+    broadcastRect() {
         const rect = this._contentRect;
 
         this.broadcastWidth = rect.width;
         this.broadcastHeight = rect.height;
-
-        return new ResizeObserverEntry(
-            this.target,
-            rect.width,
-            rect.height,
-            rect.top,
-            rect.left
-        );
     }
 
     /**
-     * Updates dimensions of content rectangle
-     * and returns its' instance.
+     * Updates content rectangle and tells whether its'
+     * width or height properties have changed since
+     * the last broadcast.
      *
-     * @private
-     * @returns {ContentRect}
+     * @returns {Boolean}
      */
-    _updateContentRect() {
-        this._contentRect = calculateContentRect(this.target);
+    isActive() {
+        const rect = calculateContentRect(this.target);
 
-        return this._contentRect;
+        this._contentRect = rect;
+
+        return (
+            rect.width !== this.broadcastWidth ||
+            rect.height !== this.broadcastHeight
+        );
     }
 }

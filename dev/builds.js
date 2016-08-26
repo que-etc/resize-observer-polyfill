@@ -44,7 +44,11 @@ builds.production = _.merge({}, builds.general, {
         filename: 'ResizeObserver.js'
     },
     plugins: [
-        new webpack.optimize.UglifyJsPlugin()
+        new webpack.optimize.UglifyJsPlugin({
+            mangle: {
+                except: ['ResizeObserver', 'ResizeObserverEntry']
+            }
+        })
     ]
 });
 

@@ -2,7 +2,7 @@
  * A shim for requestAnimationFrame which falls back
  * to setTimeout if the first one is not supported.
  *
- * @returns {Number} Request identifier.
+ * @returns {Number} Requests' identifier.
  */
 export default (() => {
     if (

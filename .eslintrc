@@ -77,6 +77,8 @@
         "valid-typeof": "error",
         "vars-on-top": "error",
 
+        "no-multiple-empty-lines": ["error", {"max": 1}],
+
         arrow-spacing: ["error", {"before": true, "after": true}],
         "constructor-super": "error",
         "no-class-assign": "error",

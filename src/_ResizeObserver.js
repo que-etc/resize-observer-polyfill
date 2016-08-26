@@ -1,5 +1,6 @@
 import {Map} from './shims/es6-collections';
 import ResizeObservation from './ResizeObservation';
+import ResizeObserverEntry from './ResizeObserverEntry';
 
 export default class ResizeObserver {
     /**
@@ -8,7 +9,7 @@ export default class ResizeObserver {
      * @param {Function} callback - Callback function which will be invoked
      *      when one of the observed elements changes its' content rectangle.
      * @param {ResizeObsreverController} controller - Controller instance
-     *      which will be responsible for the updates of observer.
+     *      which is responsible for the updates of observer.
      * @param {ResizeObserver} [publicObserver = this] - Reference
      *      to a public ResizeObserver instance which will be passed
      *      to callback function.
@@ -37,7 +38,7 @@ export default class ResizeObserver {
     }
 
     /**
-     * Starts observation of provided element.
+     * Starts observing provided element.
      *
      * @param {Element} target - Element to be observed.
      */
@@ -52,7 +53,7 @@ export default class ResizeObserver {
 
         const targets = this._targets;
 
-        // Do nothing if element is already observed.
+        // Do nothing if element is already being observed.
         if (targets.has(target)) {
             return;
         }
@@ -60,7 +61,7 @@ export default class ResizeObserver {
         targets.set(target, new ResizeObservation(target));
 
         // Connect observer to controller
-        // if it wasn't connected yet.
+        // if it hasn't been connected yet.
         if (!this._controller.isConnected(this)) {
             this._controller.connect(this);
         }
@@ -70,7 +71,7 @@ export default class ResizeObserver {
     }
 
     /**
-     * Stops observing changes of provided element.
+     * Stops observing provided element.
      *
      * @param {Element} target - Element to stop observing.
      */
@@ -85,7 +86,7 @@ export default class ResizeObserver {
 
         const targets = this._targets;
 
-        // Do nothing if element is not observed.
+        // Do nothing if element is not being observed.
         if (!targets.has(target)) {
             return;
         }
@@ -121,8 +122,14 @@ export default class ResizeObserver {
         }
 
         const publicObserver = this._publicObserver;
+        
         const entries = this._activeTargets.map(observation => {
-            return observation.broadcastEntry();
+            observation.broadcastRect();
+
+            return new ResizeObserverEntry(
+                observation.target,
+                observation.getLastObservedRect()
+            );
         });
 
         this.clearActive();
@@ -153,9 +160,9 @@ export default class ResizeObserver {
      * has changes in its' content rectangle.
      */
     gatherActive() {
-        const activeTargets = this._activeTargets;
-
         this.clearActive();
+
+        const activeTargets = this._activeTargets;
 
         this._targets.forEach(observation => {
             if (observation.isActive()) {

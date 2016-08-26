@@ -15,13 +15,13 @@ const reflowKeys = [
 // a string whose value is in a form of "{Number}(ms|s)".
 const durationRegExp = /^(-?\d*\.?\d+)(ms|s)$/;
 
-// Flag which marks the support of "getAnimations" method.
+// Flag which indicates the support of "getAnimations" method.
 let hasGetAnimations = false;
 
-// Flag which marks the support of "transitionstart" event.
+// Flag which indicates the support of "transitionstart" event.
 let hasTransitionStart = false;
 
-// Test for "transitionstart" event support.
+// Test whether "transitionstart" event is supported.
 (testStartEvent => {
     document.readyState === 'loading' ?
         document.addEventListener('readystatechange', testStartEvent, false) :
@@ -30,7 +30,7 @@ let hasTransitionStart = false;
     // Unfortunately there is no other way to perform this test but to
     // try to trigger the 'transitionstart' event. It can't
     // be detected neither by checking for an existence of the corresponding
-    // property in document nor by the assignment of inline
+    // property in document nor by the assignment of an inline
     // event handler with 'ontransitionstart' attribute.
     let span = document.createElement('span');
 
@@ -52,7 +52,7 @@ let hasTransitionStart = false;
             document.body.removeChild(span);
             span = null;
         }, 10);
-    }, 0);
+    }, 1);
 });
 
 /**
@@ -138,7 +138,7 @@ export function computeDuration(target, computeAnimation = false) {
 
 /**
  * Returns an array of existing animations if native
- * 'getAnimations' method is supported.
+ * "getAnimations" method is supported.
  *
  * @returns {Array<Animation>}
  */
@@ -162,7 +162,7 @@ export const getAnimations = (function () {
 
 /**
  * Returns a collection of existing animations
- * that may lead to DOM reflow.
+ * that may lead to a DOM reflow.
  *
  * @returns {Array<Animation>}
  */
@@ -180,7 +180,7 @@ export function hasReflowAnimations() {
 }
 
 /**
- * Tells whether 'getAnimations' method exists
+ * Tells whether "getAnimations" method exists
  * in document or document.timeline.
  *
  * @returns {Boolean}
@@ -190,7 +190,7 @@ export function isGetAnimationsSupported() {
 }
 
 /**
- * Tells whether 'transitionstart' event is supported.
+ * Tells whether "transitionstart" event is supported.
  *
  * @returns {Boolean}
  */

@@ -99,14 +99,14 @@ require('resize-observer-polyfill/dist/ResizeObserver.global');
 
 ### idleTimeot
 
-In the first place this implementation relies on `transitionstart` & `animationstart` events or documents' `getAnimations` method for tracking active animations. If some of the above approaches is not supported it will use a repeatable update cycle whose minimal duration equals to the `idleTimeout` value. This cycle will be used only after mutations of DOM attributes like `class` or `style` and it will repeat itself when it detects changes in elements that are observed.
+In the first place this implementation relies on `transitionstart` & `animationstart` events or documents' `getAnimations` method to track active animations. If some of the above approaches is not available it will use a repeatable update cycle whose minimal duration equals to the `idleTimeout` value. This cycle will be used after DOM attributes like `class` or `style` have been mutated and it will repeat itself when it detects changes in observed elements.
 
 Default timeout value is `50` milliseconds and you can increase it to match the delay of transitions, e.g. when transition starts with the delay of `500` milliseconds you can set `ResizeObserver.idleTimeout = 500` to the corresponding value.
 Note that even if transitions don't have a delay it's still safer to leave the default value.
 
 ### trackHovers
 
-By default possible changes in elements size caused by CSS `:hover` class are not tracked. You can set `ResizeObserver.trackHovers = true` if you need them to be supported. Keep in mind that this is going to affect the performance.
+By default possible changes in dimensions of elements caused by CSS `:hover` class are not tracked. You can set `ResizeObserver.trackHovers = true` if you need them to be supported. Keep in mind that this is going to affect the performance.
 
 **NOTE:** Changes made to these properties will affect all existing and future instances of ResizeObserver.
 
@@ -120,8 +120,8 @@ To make a production build:
 gulp build:production
 ```
 
-To make a development build of a polyfill itself
-with a source map that will be located in a `tmp` folder:
+To make a development build of a polyfill itself (including sourcemap).
+Files will be located in a `tmp` folder:
 
 ```sh
 gulp build:dev

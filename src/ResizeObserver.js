@@ -2,10 +2,10 @@ import {WeakMap} from './shims/es6-collections';
 import ResizeObserverController from './ResizeObserverController';
 import _ResizeObserver from './_ResizeObserver';
 
-// Controller which will be assigned to all instances of ResizeObserver.
+// Controller which will be passed to all instances of ResizeObserver.
 const controller = new ResizeObserverController();
 
-// Registry of internal observers.
+// Registry of an internal observers.
 const observers = new WeakMap();
 
 /**
@@ -14,7 +14,7 @@ const observers = new WeakMap();
  *
  * Additionally it implements "idleTimeout" and "trackHovers" static property
  * accessors to give a control over the behavior of ResizeObserverController
- * instance. Changes made to these properties will affect all future and
+ * instance. Changes made to these properties will be applied to all future and
  * existing observers.
  */
 class ResizeObserver {
@@ -23,7 +23,7 @@ class ResizeObserver {
      *
      * @param {Function} callback - Callback which will
      *      be invoked when dimensions of one of the
-     *      observed elements are changed.
+     *      observed elements have been changed.
      */
     constructor(callback) {
         if (!arguments.length) {
