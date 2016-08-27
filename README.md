@@ -17,7 +17,7 @@ Written in ES6 and compliant with the [spec](http://rawgit.com/WICG/ResizeObserv
 From NPM:
 
 ```sh
-npm install --save git+https://git@github.com/que-etc/resize-observer-polyfill.git
+npm install --save que-etc/resize-observer-polyfill
 ```
 
 Or just grab one of the pre-built versions from [`dist`](https://github.com/que-etc/resize-observer-polyfill/tree/master/dist).
