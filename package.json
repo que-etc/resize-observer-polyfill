@@ -1,12 +1,15 @@
 {
     "name": "resize-observer-polyfill",
     "author": "Denis Rul <que.etc@bgmail.com>",
-    "version": "0.1.1",
+    "version": "1.0.0",
     "description": "A polyfill for IntersectionObserver API",
     "main": "index.js",
+    "engines": {
+        "node": ">=6.0.0"
+    },
     "scripts": {
-        "test": "node ./node_modules/karma/bin/karma start karma.config.js --browsers Firefox",
-        "gulp": "node ./node_modules/gulp/bin/gulp.js"
+        "test": "gulp test:lint && karma start karma.config.js --browsers Firefox",
+        "gulp": "gulp"
     },
     "repository": {
         "type": "git",
@@ -41,8 +44,8 @@
         "babel-plugin-add-module-exports": "^0.2.1",
         "babel-plugin-transform-es2015-modules-commonjs": "^6.8.0",
 
-        "karma": "^0.13.22",
-        "karma-chrome-launcher": "^1.0.1",
+        "karma": "^1.2.0",
+        "karma-chrome-launcher": "^2.0.0",
         "karma-firefox-launcher": "^1.0.0",
         "karma-ie-launcher": "^1.0.0",
         "karma-jasmine": "^1.0.2",
@@ -59,10 +62,6 @@
         "gulp-util": "^3.0.7",
         "gulp-eslint": "^3.0.1",
 
-        "eslint": "^2.11.1",
-        "babel-eslint": "^6.0.4",
-        "eslint-import-resolver-node": "^0.2.0",
-        "eslint-plugin-babel": "^3.2.0",
-        "eslint-plugin-import": "^1.8.1"
+        "eslint": "^3.4.0"
     }
 }

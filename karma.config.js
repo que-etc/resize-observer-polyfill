@@ -15,7 +15,7 @@ module.exports = function (config) {
             'karma-firefox-launcher',
             'karma-ie-launcher',
             'karma-spec-reporter',
-            "karma-jasmine-html-reporter"
+            'karma-jasmine-html-reporter'
         ],
         reporters: ['spec', 'kjhtml'],
         browsers: [
@@ -35,6 +35,6 @@ module.exports = function (config) {
             'src/**/*.js': ['webpack']
         },
         webpack: require('./dev/builds').test,
-        webpackMiddleware: { noInfo: true }
+        webpackMiddleware: {noInfo: true}
     });
 };

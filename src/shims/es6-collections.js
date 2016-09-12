@@ -2,11 +2,12 @@
  * A collection of shims that provided minimal
  * support of WeakMap and Map classes.
  *
- * This implementation is not meant to be used outside of
- * ResizeObserver modules as it covers only limited range
+ * These implementations are not meant to be used outside of
+ * ResizeObserver modules as they cover only a limited range
  * of use cases.
  */
 
+/* eslint-disable require-jsdoc */
 const hasNativeCollections =
     typeof window.WeakMap === 'function' &&
     typeof window.Map === 'function';
@@ -16,12 +17,6 @@ const WeakMap = (() => {
         return window.WeakMap;
     }
 
-    /**
-     *
-     * @param {Array<Array>} arr
-     * @param {Object} key
-     * @returns {Number}
-     */
     function getIndex(arr, key) {
         let result = -1;
 
@@ -67,7 +62,7 @@ const WeakMap = (() => {
                 entries.splice(index, 1);
             }
         }
-        
+
         has(key) {
             return !!~getIndex(this.__entries__, key);
         }
@@ -99,7 +94,7 @@ const Map = (() => {
         values() {
             return this.__entries__.map(entry => entry[1]);
         }
-        
+
         forEach(callback, ctx = null) {
             for (const entry of this.__entries__) {
                 callback.call(ctx, entry[1], entry[0]);

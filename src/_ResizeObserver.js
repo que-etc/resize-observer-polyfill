@@ -10,8 +10,8 @@ export default class ResizeObserver {
      *      when one of the observed elements changes its' content rectangle.
      * @param {ResizeObsreverController} controller - Controller instance
      *      which is responsible for the updates of observer.
-     * @param {ResizeObserver} [publicObserver = this] - Reference
-     *      to a public ResizeObserver instance which will be passed
+     * @param {ResizeObserver} publicObserver - Reference
+     *      to the public ResizeObserver instance which will be passed
      *      to callback function.
      */
     constructor(callback, controller, publicObserver) {
@@ -32,9 +32,9 @@ export default class ResizeObserver {
         // Reference to associated ResizeObserverController.
         this._controller = controller;
 
-        // Public ResizeObserver instance that will be passed
+        // Public ResizeObserver instance which will be passed
         // to callback function.
-        this._publicObserver = publicObserver || this;
+        this._publicObserver = publicObserver;
     }
 
     /**
@@ -60,7 +60,7 @@ export default class ResizeObserver {
 
         targets.set(target, new ResizeObservation(target));
 
-        // Connect observer to controller
+        // Add observer to controller
         // if it hasn't been connected yet.
         if (!this._controller.isConnected(this)) {
             this._controller.connect(this);
@@ -91,7 +91,7 @@ export default class ResizeObserver {
             return;
         }
 
-        // Remove element and associated with
+        // Remove element and an associated with
         // it ResizeObsrvation instance from registry.
         targets.delete(target);
 
@@ -102,7 +102,7 @@ export default class ResizeObserver {
 
     /**
      * Stops observing all elements and
-     * clears observations list.
+     * clears the observations list.
      */
     disconnect() {
         this.clearActive();
@@ -112,7 +112,7 @@ export default class ResizeObserver {
     }
 
     /**
-     * Invokes initial callback function passing to it a list
+     * Invokes initial callback function with a list
      * of ResizeObserverEntry instances collected from
      * active resize observations.
      */
@@ -122,13 +122,11 @@ export default class ResizeObserver {
         }
 
         const publicObserver = this._publicObserver;
-        
-        const entries = this._activeTargets.map(observation => {
-            observation.broadcastRect();
 
+        const entries = this._activeTargets.map(observation => {
             return new ResizeObserverEntry(
                 observation.target,
-                observation.getLastObservedRect()
+                observation.broadcastRect()
             );
         });
 
@@ -138,7 +136,7 @@ export default class ResizeObserver {
     }
 
     /**
-     * Clears the collection of a pending/active observations.
+     * Clears the collection of pending/active observations.
      */
     clearActive() {
         this._activeTargets.splice(0);

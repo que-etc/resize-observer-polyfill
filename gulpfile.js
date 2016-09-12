@@ -5,13 +5,14 @@ const eslint = require('gulp-eslint');
 const builds = require('./dev/builds');
 const Server = require('karma').Server;
 
+/* eslint-disable require-jsdoc */
 function createWebpackCallback(callback) {
     return (err, stats) => {
         if (err) {
-            throw new gutil.PluginError("webpack", err);
+            throw new gutil.PluginError('webpack', err);
         }
 
-        gutil.log("[webpack]", stats.toString());
+        gutil.log('[webpack]', stats.toString());
 
         callback();
     };
@@ -32,7 +33,7 @@ gulp.task('build:production:global', callback => {
 gulp.task('build', ['build:dev', 'build:production']);
 
 gulp.task('test:lint', () => {
-    return gulp.src(['src/**/*.js'])
+    return gulp.src(['**/*.js', '!dist/*', '!tmp/*'])
         .pipe(eslint())
         .pipe(eslint.format())
         .pipe(eslint.failAfterError());

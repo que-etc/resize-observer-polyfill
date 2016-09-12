@@ -1,4 +1,4 @@
-// Placeholder of the content rectangle.
+// Placeholder of a content rectangle.
 const emptyRect = {
     width: 0,
     height: 0,
@@ -9,7 +9,7 @@ const emptyRect = {
 };
 
 /**
- * Extracts paddings data from provided element.
+ * Extracts paddings data from the provided element.
  *
  * @param {Element} target - Element whose paddings to be extracted.
  * @returns {Object} Object that contains
@@ -18,7 +18,7 @@ const emptyRect = {
 function getPaddings(target) {
     const styles = window.getComputedStyle(target);
     const keys = ['top', 'right', 'bottom', 'left'];
-    
+
     const paddings = {};
 
     for (const key of keys) {
@@ -28,6 +28,65 @@ function getPaddings(target) {
     }
 
     return paddings;
+}
+
+/**
+* Subtracts paddings from provided
+* dimensions and creates a content rectangle.
+*
+* @param {Number} clientWidth - Width including paddings.
+* @param {Number} clientHeight - Height including paddings.
+* @param {Object} paddings - Paddings data.
+* @returns {ClientRect}
+*/
+function createContentRect(clientWidth, clientHeight, paddings) {
+    const top = paddings.top;
+    const left = paddings.left;
+
+    const width = clientWidth - (left + paddings.right);
+    const height = clientHeight - (top + paddings.bottom);
+
+    return {
+        width,
+        height,
+        top,
+        right: width + left,
+        bottom: height + top,
+        left
+    };
+}
+
+/**
+ * Calculates content rectangle of provided SVG element.
+ *
+ * @param {SVGElement} target - Element whose content
+ *      rectangle needs to be calculated.
+ * @returns {ClientRect}
+ */
+function getSVGContentRect(target) {
+    const bbox = target.getBBox();
+
+    return createContentRect(bbox.width, bbox.height, emptyRect);
+}
+
+/**
+ * Calculates content rectangle of provided HTMLElement.
+ *
+ * @param {HTMLElement} target - Element whose content
+ *      rectangle needs to be calculated.
+ * @returns {ClientRect}
+ */
+function getHTMLElementContentRect(target) {
+    const width = target.clientWidth;
+    const height = target.clientHeight;
+
+    // It's not necessary to proceed with calculations
+    // as it's already known that the rectangle is empty.
+    if (!width && !height) {
+        return emptyRect;
+    }
+
+    return createContentRect(width, height, getPaddings(target));
 }
 
 /**
@@ -42,57 +101,6 @@ function isSVGElement(target) {
 }
 
 /**
- * Calculates content rectangle of provided SVG element.
- *
- * @param {SVGElement} target - Element whose content
- *      rectangle needs to be calculated.
- * @returns {ClientRect}
- */
-function getSVGContentRect(target) {
-    const bbox = target.getBBox();
-    const width = bbox.width;
-    const height = bbox.height;
-
-    return {
-        width,
-        height,
-        top: 0,
-        right: width,
-        bottom: height,
-        left: 0
-    };
-}
-
-/**
- * Calculates content rectangle of provided HTMLElement.
- *
- * @param {HTMLElement} target - Element whose content
- *      rectangle needs to be calculated.
- * @returns {ClientRect}
- */
-function getHTMLElementContentRect(target) {
-    const clientWidth = target.clientWidth;
-    const clientHeight = target.clientHeight;
-
-    // It's not necessary to proceed with calculations
-    // because we already know that rectangle is empty.
-    if (!clientWidth && !clientHeight) {
-        return emptyRect;
-    }
-
-    const paddings = getPaddings(target);
-
-    return {
-        width: clientWidth - (paddings.left + paddings.right),
-        height: clientHeight - (paddings.top + paddings.bottom),
-        top: paddings.top,
-        right: clientWidth - paddings.right,
-        bottom: clientHeight - paddings.bottom,
-        left: paddings.left
-    };
-}
-
-/**
  * Calculates an appropriate content rectangle
  * for provided html or svg element.
  *
@@ -100,15 +108,15 @@ function getHTMLElementContentRect(target) {
  *      needs to be calculated.
  * @returns {ClientRect}
  */
-function calculateContentRect(target) {
+function getContentRect(target) {
     return isSVGElement(target) ?
         getSVGContentRect(target) :
         getHTMLElementContentRect(target);
 }
 
 /**
- * Class that is responsible for computations of a
- * content rectangle of observed DOM element and
+ * Class that is responsible for computations of the
+ * content rectangle of provided DOM element and
  * for keeping track of its' changes.
  */
 export default class ResizeObservation {
@@ -132,24 +140,19 @@ export default class ResizeObservation {
     }
 
     /**
-     * Returns last observed content rectangle.
-     *
-     * @returns {ClientRect}
-     */
-    getLastObservedRect() {
-        return this._contentRect;
-    }
-    
-    /**
      * Updates 'broadcastWidth' and 'broadcastHeight'
-     * properties with data from the corresponding
+     * properties with a data from the corresponding
      * properties of the last observed content rectangle.
+     *
+     * @returns {ClientRect} Last observed content rectangle.
      */
     broadcastRect() {
         const rect = this._contentRect;
 
         this.broadcastWidth = rect.width;
         this.broadcastHeight = rect.height;
+
+        return rect;
     }
 
     /**
@@ -160,7 +163,7 @@ export default class ResizeObservation {
      * @returns {Boolean}
      */
     isActive() {
-        const rect = calculateContentRect(this.target);
+        const rect = getContentRect(this.target);
 
         this._contentRect = rect;
 

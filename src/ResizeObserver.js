@@ -2,19 +2,19 @@ import {WeakMap} from './shims/es6-collections';
 import ResizeObserverController from './ResizeObserverController';
 import _ResizeObserver from './_ResizeObserver';
 
-// Controller which will be passed to all instances of ResizeObserver.
+// Controller which will be assigned to all instances of ResizeObserver.
 const controller = new ResizeObserverController();
 
-// Registry of an internal observers.
+// Registry of internal observers.
 const observers = new WeakMap();
 
 /**
  * ResizeObservers' "Proxy" class which is meant to hide private
  * properties and methods from public instances.
  *
- * Additionally it implements "idleTimeout" and "trackHovers" static property
+ * Additionally it implements "idleTimeout" and "continuousUpdates" static property
  * accessors to give a control over the behavior of ResizeObserverController
- * instance. Changes made to these properties will be applied to all future and
+ * instance. Changes made to these properties will affect all future and
  * existing observers.
  */
 class ResizeObserver {
@@ -27,12 +27,12 @@ class ResizeObserver {
      */
     constructor(callback) {
         if (!arguments.length) {
-            throw new TypeError("1 argument required, but only 0 present.");
+            throw new TypeError('1 argument required, but only 0 present.');
         }
 
         const observer = new _ResizeObserver(callback, controller, this);
 
-        // Register internal observer.
+        // Register an internal observer.
         observers.set(this, observer);
     }
 
@@ -63,27 +63,26 @@ class ResizeObserver {
     }
 
     /**
-     * Tells whether controller tracks "hover" event.
+     * Tells whether continuous updates are enabled.
      *
      * @returns {Boolean}
      */
-    static get trackHovers() {
-        return controller.isHoverEnabled();
+    static get continuousUpdates() {
+        return controller.continuousUpdates;
     }
 
     /**
-     * Enables or disables tracking of "hover" event.
+     * Enables or disables continuous updates.
      *
-     * @param {Boolean} value - Whether to disable or enable tracking.
+     * @param {Boolean} value - Whether to enable or disable
+     *      continuous updates.
      */
-    static set trackHovers(enable) {
-        if (typeof enable !== 'boolean') {
-            throw new TypeError('type of "trackHovers" value must be a boolean.');
+    static set continuousUpdates(value) {
+        if (typeof value !== 'boolean') {
+            throw new TypeError('type of "continuousUpdates" value must be a boolean.');
         }
 
-        enable ?
-            controller.enableHover() :
-            controller.disableHover();
+        controller.continuousUpdates = value;
     }
 }
 

@@ -1,6 +1,8 @@
 import ResizeObserver from '../src/ResizeObserver';
 import ResizeObserverEntry from '../src/ResizeObserverEntry';
 
+/* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
+
 const emptyFn = () => {};
 const css = `
     #root {
@@ -22,7 +24,7 @@ const css = `
     }
 
     #target1.animate {
-        animation-duration: 1s;
+        animation-duration: 0.5s;
         animation-name: animateWidth;
         animation-iteration-count: infinite;
         animation-direction: alternate;
@@ -51,7 +53,8 @@ const template = `
     </div>
 `;
 
-const timeout = 300;
+const timeout = 250;
+const defaultIdleTimeout = ResizeObserver.idleTimeout;
 
 let styles,
     observer = null,
@@ -97,15 +100,13 @@ function runSequence(callbacks, done) {
 
     if (next) {
         next(() => runSequence(callbacks, done));
-    } else {
-        done && done();
+    } else if (done) {
+        done();
     }
 }
 
 describe('ResizeObserver', () => {
     beforeEach(() => {
-        ResizeObserver.idleTimeout = 50;
-
         appendStyles();
         appendElements();
     });
@@ -115,7 +116,7 @@ describe('ResizeObserver', () => {
             observer.disconnect();
         }
 
-        ResizeObserver.idleTimeout = 50;
+        ResizeObserver.idleTimeout = defaultIdleTimeout;
 
         observer = null;
 
@@ -191,7 +192,11 @@ describe('ResizeObserver', () => {
                 expect(typeof entries[0].contentRect).toBe('object');
 
                 expect(instance).toBe(observer);
+
+                /* eslint-disable no-invalid-this */
                 expect(this).toBe(observer);
+
+                /* eslint-enable no-invalid-this */
 
                 done();
             });
@@ -244,7 +249,7 @@ describe('ResizeObserver', () => {
 
                     done();
                 }, timeout);
-            }, done=> {
+            }, done => {
                 elements.container.appendChild(elements.target1);
 
                 setTimeout(() => {
@@ -451,7 +456,7 @@ describe('ResizeObserver', () => {
                     expect(entries.length).toBe(1);
 
                     expect(entries[0].target).toBe(elements.target1);
-                    
+
                     expect(entries[0].contentRect.width).toBe(188);
                     expect(entries[0].contentRect.height).toBe(194);
                     expect(entries[0].contentRect.top).toBe(3);
@@ -980,14 +985,14 @@ describe('ResizeObserver', () => {
                 }], done);
             });
 
-            it('handles changes caused by transitions in nearby or descendant elements', done => {
+            it('handles changes caused by delayed transitions in nearby or descendant elements', done => {
                 const spy = jasmine.createSpy();
 
                 elements.container.style.minHeight = '600px';
                 elements.target1.style.transition = 'width 0.5s, height 0.5s';
                 elements.target2.style.transition = 'width 0.5s, height 0.5s';
 
-                ResizeObserver.idleTimeout = 520;
+                ResizeObserver.idleTimeout = 500;
 
                 observer = new ResizeObserver(spy);
 
@@ -1034,6 +1039,8 @@ describe('ResizeObserver', () => {
                 observer = new ResizeObserver(spy);
 
                 observer.observe(elements.container);
+
+                ResizeObserver.idleTimeout = 550;
 
                 runSequence([done => {
                     setTimeout(() => {

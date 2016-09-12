@@ -1,8 +1,6 @@
 import now from './shims/performance.now';
 import requestAnimFrame from './shims/requestAnimationFrame';
 
-import * as animations from './animations';
-
 const mutationsSupported = typeof window.MutationObserver === 'function';
 
 /**
@@ -25,55 +23,46 @@ function debounce(callback, delay = 0) {
         timeoutID = setTimeout(() => {
             timeoutID = false;
 
+            /* eslint-disable no-invalid-this */
             callback.apply(this, args);
+
+            /* eslint-enable no-invalid-this */
         }, delay);
     };
 }
 
 /**
- * Controller class which is used to handle updates of registered ResizeObservers instances.
- * It controls when and for how long it's necessary to run updates by listening to a combination
- * of DOM events along with tracking of DOM mutations (nodes removal, changes of attributes, etc.).
+ * Controller class which handles updates of ResizeObserver instances.
+ * It's meant to decide when and for how long it's necessary to run updates by listening to the windows
+ * "resize" event along with a tracking of DOM mutations (nodes removal, changes of attributes, etc.).
  *
- * Transitions and animations are handled by listening to "transitionstart"/"animationstart"
- * events or by using documents' "getAnimations" method if it's available. If none of the above
- * is supported then a repeatable update cycle will be used. It will run until the dimensions
- * of observed elements are changing or until the timeout is reached (default timeout is 50 milliseconds).
+ * Transitions and animations are handled by running a repeatable update cycle either until the dimensions
+ * of observed elements are changing or the timeout is reached (default timeout is 50 milliseconds).
  * Timeout value can be manually increased if transitions have a delay.
  *
- * Tracking of changes caused by ":hover" class is optional and can be enabled by invoking
- * the "enableHover" method.
- *
- * Infinite update cycle will be used in case when MutatioObserver is not supported.
+ * Continuous update cycle will be used automatically in case if MutationObserver is not supported.
  */
 export default class ResizeObserverController {
     /**
-     * Creates a new ResizeObserverController instance.
+     * Creates a new instance of ResizeObserverController.
      *
-     * @param {Number} [idleTimeout = 0]
-     * @pram {Boolean} [trackHovers = false] - Whether to track "mouseover"
-     *      events or not. Disabled be default.
+     * @param {Number} [idleTimeout = 0] - Idle timeout value.
+     * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous update cycle.
      */
-    constructor(idleTimeout = 50, trackHovers = false) {
+    constructor(idleTimeout = 50, continuousUpdates = false) {
         this._idleTimeout = idleTimeout;
-        this._trackHovers = trackHovers;
-        this._cycleStartTime = 0;
-        this._cycleDuration = 0;
-        this._cycleHadChanges = false;
+        this._isCycleContinuous = continuousUpdates;
 
-        this._isCycleRepeatable = false;
+        this._cycleStartTime = 0;
+
+        // Indicates whether the update cycle is currently running.
+        this._isCycleActive = false;
 
         // Indicates whether the update of observers is scheduled.
-        this._isScheduled = false;
+        this._isUpdateScheduled = false;
 
-        // Indicates whether infinite cycle is enabled.
-        this._isCycleInfinite = false;
-
-        // Indicates whether "mouseover" event handler was added.
-        this._hoverInitiated = false;
-        
-        // Indicates whether DOM listeners have been initiated.
-        this._isListening = false;
+        // Indicates whether DOM listeners have been added.
+        this._listenersEnabled = false;
 
         // Keeps reference to the instance of MutationObserver.
         this._mutationsObserver = null;
@@ -83,22 +72,12 @@ export default class ResizeObserverController {
 
         // Fix value of "this" binding for the following methods.
         this.runUpdates = this.runUpdates.bind(this);
-        this._startAnimationCycle = this._startAnimationCycle.bind(this);
         this._resolveScheduled = this._resolveScheduled.bind(this);
         this._onMutation = this._onMutation.bind(this);
-        this._onAnimationStart = this._onAnimationStart.bind(this);
-        this._onTransitionStart = this._onTransitionStart.bind(this);
-
-        // Make sure that the update won't start immediately.
-        // Required to handle animations with 'getAnimations' method.
-        this._scheduleUpdate = debounce(this._scheduleUpdate, 5);
 
         // Function that will be invoked to re-run the
-        // update cycle when infinite cycles are enabled.
-        this._inifiniteCycleHandler = debounce(this._startAnimationCycle, 300);
-
-        // Limit the amount of calls from "mouseover" event.
-        this._onHover = debounce(this._startAnimationCycle, 200);
+        // update cycle if continuous cycles are enabled.
+        this._continuousCycleHandler = debounce(this.runUpdates, 200);
     }
 
     /**
@@ -120,6 +99,28 @@ export default class ResizeObserverController {
     }
 
     /**
+     * Tells whether continuous updates are enabled.
+     *
+     * @returns {Boolean}
+     */
+    get continuousUpdates() {
+        return this._isCycleContinuous;
+    }
+
+    /**
+     * Enables or disables continuous updates.
+     *
+     * @param {Boolean} value - Whether to enable or disable
+     *      continuous updates. Note that the value won't be applied
+     *      if MutationObserver is not supported.
+     */
+    set continuousUpdates(value) {
+        if (mutationsSupported) {
+            this._isCycleContinuous = value;
+        }
+    }
+
+    /**
      * Adds observer to observers list.
      *
      * @param {ResizeObserver} observer - Observer to be added.
@@ -129,10 +130,9 @@ export default class ResizeObserverController {
             this._observers.push(observer);
         }
 
-        // Add listeners if they
-        // haven't been instantiated yet.
-        if (!this._isListening) {
-            this._initListeners();
+        // Add listeners if they haven't been added yet.
+        if (!this._listenersEnabled) {
+            this._addListeners();
         }
     }
 
@@ -151,7 +151,7 @@ export default class ResizeObserverController {
 
         // Remove listeners if controller
         // has no connected observers.
-        if (!observers.length && this._isListening) {
+        if (!observers.length && this._listenersEnabled) {
             this._removeListeners();
         }
     }
@@ -171,7 +171,7 @@ export default class ResizeObserverController {
      * notifies them of queued entries.
      *
      * @private
-     * @returns {Boolean} Returns "true" if some observer
+     * @returns {Boolean} Returns "true" if any observer
      *      has detected changes in dimensions of its' elements.
      */
     _updateObservers() {
@@ -191,53 +191,15 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Starts the update cycle which will run either until there
-     * are active animations or until specified minimal
-     * duration is reached.
-     *
-     * Cycle will repeat itself if one of its' iterations
-     * has detected changes in observers and if "repeatable" parameter
-     * is set to "true".
-     *
-     * @param {Number} [minDuration = 0] - Minimal duration of cycle.
-     * @param {Boolean} [repeatable = false] - Whether it is necessary
-     *      to repeat cycle when it detects changes.
+     * Starts the update cycle which will run either
+     * until it detects changes in the dimensions of
+     * elements or the idle timeout is reached.
      */
-    runUpdates(minDuration = 0, repeatable = false) {
-        if (typeof minDuration !== 'number') {
-            minDuration = 0;
-        }
+    runUpdates() {
+        this._cycleStartTime = now();
+        this._isCycleActive = true;
 
-        if (!this._isCycleRepeatable) {
-            this._isCycleRepeatable = repeatable;
-        }
-
-        // Update cycles' start time and duration if its'
-        // remaining time is lesser than provided duration.
-        if (minDuration >= this._getRemainingTime()) {
-            this._cycleStartTime = now();
-            this._cycleDuration = minDuration;
-        }
-
-        this._scheduleUpdate();
-    }
-
-    /**
-     * Checks whether it's possible to detect active animations and invokes
-     * a single update if it's so. Otherwise it will
-     * start a repeatable cycle using provided duration.
-     *
-     * @private
-     * @param {Number} [duration = this._idleTimeout] - Duration of cycle.
-     */
-    _startAnimationCycle(duration) {
-        if (typeof duration !== 'number') {
-            duration = this._idleTimeout;
-        }
-
-        !this._canDetectAnimations() ?
-            this.runUpdates(duration, true) :
-            this.runUpdates();
+        this.scheduleUpdate();
     }
 
     /**
@@ -245,80 +207,64 @@ export default class ResizeObserverController {
      *
      * @private
      */
-    _scheduleUpdate() {
-        if (!this._isScheduled) {
-            this._isScheduled = true;
+    scheduleUpdate() {
+        if (!this._isUpdateScheduled) {
+            this._isUpdateScheduled = true;
 
             requestAnimFrame(this._resolveScheduled);
         }
     }
 
     /**
-     * Invokes the update of observers. It will schedule
-     * a new update if there are active animations or if
-     * minimal duration of cycle hasn't been reached yet.
+     * Invokes the update of observers. It may re-run the
+     * cycle if changes in observers have been detected.
      *
      * @private
      */
     _resolveScheduled() {
         const hasChanges = this._updateObservers();
 
-        this._isScheduled = false;
+        this._isUpdateScheduled = false;
 
-        if (hasChanges) {
-            this._cycleHadChanges = true;
+        // Do nothing if cycle wasn't started.
+        if (!this._isCycleActive) {
+            return;
         }
 
-        this._shouldContinueUpdating() ?
-            this._scheduleUpdate() :
-            this._updatesFinished();
+        // Re-start cycle if changes have been detected.
+        if (hasChanges) {
+            this.runUpdates();
+        } else if (this._hasRemainingTime()) {
+            this.scheduleUpdate();
+        } else {
+            this._endUpdates();
+        }
     }
 
     /**
-     * Tells whether it's necessary to continue
-     * running updates or that the update cycle can be finished.
+     * Tells whether the update cycle has time remaining.
      *
+     * @private
      * @returns {Boolean}
      */
-    _shouldContinueUpdating() {
-        return (
-            animations.hasReflowAnimations() ||
-            this._getRemainingTime() > 0
-        );
-    }
-
-    /**
-     * Computes remaining time of the update cycle.
-     *
-     * @private
-     * @returns {Number} Remaining time in milliseconds.
-     */
-    _getRemainingTime() {
+    _hasRemainingTime() {
         const timePassed = now() - this._cycleStartTime;
 
-        return Math.max(this._cycleDuration - timePassed, 0);
+        return this._idleTimeout - timePassed > 0;
     }
 
     /**
-     * Callback that will be invoked after
-     * the update cycle is finished.
+     * Callback which is invoked when update cycle
+     * is finished. It may start a new cycle if continuous
+     * updates are enabled.
      *
      * @private
      */
-    _updatesFinished() {
-        // We don't need to repeat the cycle if it's
-        // previous iteration hasn't detected changes.
-        if (!this._cycleHadChanges) {
-            this._isCycleRepeatable = false;
-        }
+    _endUpdates() {
+        this._isCycleActive = false;
 
-        this._cycleHadChanges = false;
-
-        // Repeat cycle if it's necessary.
-        if (this._isCycleRepeatable) {
-            this.runUpdates(this._cycleDuration);
-        } else if (this._isCycleInfinite) {
-            this._inifiniteCycleHandler();
+        if (this._isCycleContinuous && this._listenersEnabled) {
+            this._continuousCycleHandler();
         }
     }
 
@@ -327,36 +273,27 @@ export default class ResizeObserverController {
      *
      * @private
      */
-    _initListeners() {
-        // Do nothing if listeners have been already initiated.
-        if (this._isListening) {
+    _addListeners() {
+        // Do nothing if listeners have been already added.
+        if (this._listenersEnabled) {
             return;
         }
 
-        this._isListening = true;
+        this._listenersEnabled = true;
 
         // Repeatable cycle is used here because the resize event may
-        // lead to continuous changes, e.g. when width or height of elements
+        // lead to continuous changes, e.g. when width or height of an element
         // are controlled by CSS transitions.
-        window.addEventListener('resize', this._startAnimationCycle, true);
-
-        if (!animations.isGetAnimationsSupported()) {
-            document.addEventListener('transitionstart', this._onTransitionStart, true);
-            document.addEventListener('animationstart', this._onAnimationStart, true);
-        }
-
-        if (this.isHoverEnabled()) {
-            this._addHoverListener();
-        }
+        window.addEventListener('resize', this.runUpdates);
 
         // Fall back to an infinite cycle.
         if (!mutationsSupported) {
-            this._isCycleInfinite = true;
+            this._isCycleContinuous = true;
 
-            // Manually start cycle.
             this.runUpdates();
         } else {
-            // Subscribe to DOM mutations as they may lead to changes in dimensions of elements.
+            // Subscribe to DOM mutations as they may lead to
+            // changes in dimensions of elements.
             this._mutationsObserver = new MutationObserver(this._onMutation);
 
             this._mutationsObserver.observe(document, {
@@ -369,136 +306,31 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Removes all DOM listeners.
+     * Removes DOM listeners.
      *
      * @private
      */
     _removeListeners() {
         // Do nothing if listeners have been already removed.
-        if (!this._isListening) {
+        if (!this._listenersEnabled) {
             return;
         }
 
-        window.removeEventListener('resize', this._startAnimationCycle, true);
-
-        document.removeEventListener('animationstart', this._onAnimationStart, true);
-        document.removeEventListener('transitionstart', this._onTransitionStart, true);
-
-        this._removeHoverListener();
+        window.removeEventListener('resize', this.runUpdates);
 
         if (this._mutationsObserver) {
             this._mutationsObserver.disconnect();
         }
 
         this._mutationsObserver = null;
-        this._isCycleInfinite = false;
-        this._isListening = false;
-    }
-
-    /**
-     * Enables "hover" listener.
-     */
-    enableHover() {
-        this._trackHovers = true;
-
-        // Immediately add listener if the rest
-        // of listeners have been already initiated.
-        if (this._isListening) {
-            this._addHoverListener();
-        }
-    }
-
-    /**
-     * Disables "hover" listener.
-     */
-    disableHover() {
-        this._trackHovers = false;
-
-        this._removeHoverListener();
-    }
-
-    /**
-     * Tells whether "hover" listener is enabled.
-     *
-     * @returns {Boolean}
-     */
-    isHoverEnabled() {
-        return this._trackHovers;
-    }
-
-    /**
-     * Adds "mouseover" listener to the document.
-     *
-     * @private
-     */
-    _addHoverListener() {
-        if (!this._hoverInitiated) {
-            this._hoverInitiated = true;
-
-            document.addEventListener('mouseover', this._onHover, true);
-        }
-    }
-
-    /**
-     * Removes "mouseover" listener from document.
-     *
-     * @private
-     */
-    _removeHoverListener() {
-        if (this._hoverInitiated) {
-            this._hoverInitiated = false;
-
-            document.removeEventListener('mouseover', this._onHover, true);
-        }
-    }
-
-    /**
-     * Tells whether it's possible to detect active animations
-     * either by using "getAnimations" method or by listening
-     * to "transitionstart" event.
-     *
-     * @private
-     * @returns {Boolean}
-     */
-    _canDetectAnimations() {
-        return (
-            animations.isGetAnimationsSupported() ||
-            animations.isTransitionStartSupported()
-        );
-    }
-
-    /**
-     * "Transitionstart" event handler. Starts a single update cycle
-     * with a timeout value that is equal to transitions' duration.
-     *
-     * @private
-     * @param {TransitionEvent} event
-     */
-    _onTransitionStart(event) {
-        const duration = animations.computeDuration(event.target);
-
-        this.runUpdates(duration);
-    }
-
-    /**
-     * "Animationstart" event handler. It starts a repeatable
-     * update cycle with a timeout value that is equal to the
-     * duration of animation.
-     *
-     * @private
-     * @param {AnimationEvent} event
-     */
-    _onAnimationStart(event) {
-        const duration = animations.computeDuration(event.target, true);
-
-        this.runUpdates(duration, true);
+        this._listenersEnabled = false;
     }
 
     /**
      * DOM mutations handler.
      *
      * @private
-     * @param {Array<MutationRecord>} entries
+     * @param {Array<MutationRecord>} entries - An array of mutation records.
      */
     _onMutation(entries) {
         // Check if at least one entry
@@ -507,10 +339,10 @@ export default class ResizeObserverController {
             return entry.type === 'attributes';
         });
 
-        // It's expected that animations will start
-        // only after some attribute changes its' value.
+        // It's expected that animations may start only
+        // after some attribute changes its' value.
         attrsChanged ?
-            this._startAnimationCycle() :
-            this.runUpdates();
+            this.runUpdates() :
+            this.scheduleUpdate();
     }
 }

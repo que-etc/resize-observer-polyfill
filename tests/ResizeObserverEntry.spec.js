@@ -22,7 +22,7 @@ describe('ResizeObserverEntry', () => {
             const entry = new ResizeObserverEntry(target, rectData);
 
             expect(entry.target).toBe(target);
-            
+
             for (const key of keys) {
                 const descriptor = Object.getOwnPropertyDescriptor(entry.contentRect, key);
 
