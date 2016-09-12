@@ -60,7 +60,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _ResizeObserver2 = _interopRequireDefault(_ResizeObserver);
 	
-	var _randomcolor = __webpack_require__(10);
+	var _randomcolor = __webpack_require__(9);
 	
 	var _randomcolor2 = _interopRequireDefault(_randomcolor);
 	
@@ -96,6 +96,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        entry.target.firstElementChild.textContent = dimensionsStr;
 	    }
 	});
+	
+	var index = 0;
+	var queue = [];
 	
 	function getRandomInt(min, max) {
 	    return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -141,67 +144,63 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}
 	
-	function resizeElements() {
-	    var blocks = document.querySelectorAll('.block');
-	    var index = 0;
-	
-	    for (var _iterator2 = toArray(blocks), _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
-	        var _ref2;
-	
-	        if (_isArray2) {
-	            if (_i2 >= _iterator2.length) break;
-	            _ref2 = _iterator2[_i2++];
-	        } else {
-	            _i2 = _iterator2.next();
-	            if (_i2.done) break;
-	            _ref2 = _i2.value;
-	        }
-	
-	        var block = _ref2;
-	
-	        if (!index || index === 2) {
-	            block.style.maxWidth = getRandomInt(30, 50) + '%';
-	
-	            if (index === 2) {
-	                block.style.minHeight = getRandomInt(0, 80) + '%';
-	            }
-	        }
-	
-	        if (~block.className.indexOf('leaf')) {
-	            block.style.backgroundColor = generateColor();
-	        }
-	
-	        if (++index === 4) {
-	            index = 0;
-	        }
-	    }
-	
-	    document.body.style.backgroundColor = generateColor();
-	
-	    setTimeout(resizeElements, 2500);
-	}
-	
 	generateElements(document.getElementById('container'), 3);
 	
-	for (var _iterator3 = toArray(document.querySelectorAll('.leaf')), _isArray3 = Array.isArray(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : _iterator3[Symbol.iterator]();;) {
-	    var _ref3;
+	function populateQueue() {
+	    index = 0;
+	    queue = toArray(document.querySelectorAll('.block'));
 	
-	    if (_isArray3) {
-	        if (_i3 >= _iterator3.length) break;
-	        _ref3 = _iterator3[_i3++];
-	    } else {
-	        _i3 = _iterator3.next();
-	        if (_i3.done) break;
-	        _ref3 = _i3.value;
+	    updateColorData();
+	
+	    requestAnimationFrame(resolveNextItem);
+	}
+	
+	function resolveNextItem() {
+	    var block = queue.shift();
+	
+	    if (!block) {
+	        setTimeout(populateQueue, 2500);
+	
+	        return;
 	    }
 	
-	    var leaf = _ref3;
+	    if (!index || index === 2) {
+	        block.style.maxWidth = getRandomInt(30, 50) + '%';
+	
+	        if (index === 2) {
+	            block.style.minHeight = getRandomInt(0, 80) + '%';
+	        }
+	    }
+	
+	    if (~block.className.indexOf('leaf')) {
+	        block.style.backgroundColor = generateColor();
+	    }
+	
+	    if (++index === 4) {
+	        index = 0;
+	    }
+	
+	    requestAnimationFrame(resolveNextItem);
+	}
+	
+	for (var _iterator2 = toArray(document.querySelectorAll('.leaf')), _isArray2 = Array.isArray(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : _iterator2[Symbol.iterator]();;) {
+	    var _ref2;
+	
+	    if (_isArray2) {
+	        if (_i2 >= _iterator2.length) break;
+	        _ref2 = _iterator2[_i2++];
+	    } else {
+	        _i2 = _iterator2.next();
+	        if (_i2.done) break;
+	        _ref2 = _i2.value;
+	    }
+	
+	    var leaf = _ref2;
 	
 	    observer.observe(leaf);
 	}
 	
-	setTimeout(resizeElements, 2000);
-	setInterval(updateColorData, 10000);
+	setTimeout(populateQueue, 2000);
 
 /***/ },
 /* 1 */
@@ -223,7 +222,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _ResizeObserverController2 = _interopRequireDefault(_ResizeObserverController);
 	
-	var _ResizeObserver2 = __webpack_require__(7);
+	var _ResizeObserver2 = __webpack_require__(6);
 	
 	var _ResizeObserver3 = _interopRequireDefault(_ResizeObserver2);
 	
@@ -231,19 +230,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	// Controller which will be passed to all instances of ResizeObserver.
+	// Controller which will be assigned to all instances of ResizeObserver.
 	var controller = new _ResizeObserverController2.default();
 	
-	// Registry of an internal observers.
+	// Registry of internal observers.
 	var observers = new _es6Collections.WeakMap();
 	
 	/**
 	 * ResizeObservers' "Proxy" class which is meant to hide private
 	 * properties and methods from public instances.
 	 *
-	 * Additionally it implements "idleTimeout" and "trackHovers" static property
+	 * Additionally it implements "idleTimeout" and "continuousUpdates" static property
 	 * accessors to give a control over the behavior of ResizeObserverController
-	 * instance. Changes made to these properties will be applied to all future and
+	 * instance. Changes made to these properties will affect all future and
 	 * existing observers.
 	 */
 	
@@ -259,12 +258,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _classCallCheck(this, ResizeObserver);
 	
 	        if (!arguments.length) {
-	            throw new TypeError("1 argument required, but only 0 present.");
+	            throw new TypeError('1 argument required, but only 0 present.');
 	        }
 	
 	        var observer = new _ResizeObserver3.default(callback, controller, this);
 	
-	        // Register internal observer.
+	        // Register an internal observer.
 	        observers.set(this, observer);
 	    }
 	
@@ -300,29 +299,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	
 	        /**
-	         * Tells whether controller tracks "hover" event.
+	         * Tells whether continuous updates are enabled.
 	         *
 	         * @returns {Boolean}
 	         */
 	
 	    }, {
-	        key: 'trackHovers',
+	        key: 'continuousUpdates',
 	        get: function get() {
-	            return controller.isHoverEnabled();
+	            return controller.continuousUpdates;
 	        }
 	
 	        /**
-	         * Enables or disables tracking of "hover" event.
+	         * Enables or disables continuous updates.
 	         *
-	         * @param {Boolean} value - Whether to disable or enable tracking.
+	         * @param {Boolean} value - Whether to enable or disable
+	         *      continuous updates.
 	         */
 	        ,
-	        set: function set(enable) {
-	            if (typeof enable !== 'boolean') {
-	                throw new TypeError('type of "trackHovers" value must be a boolean.');
+	        set: function set(value) {
+	            if (typeof value !== 'boolean') {
+	                throw new TypeError('type of "continuousUpdates" value must be a boolean.');
 	            }
 	
-	            enable ? controller.enableHover() : controller.disableHover();
+	            controller.continuousUpdates = value;
 	        }
 	    }]);
 	
@@ -365,11 +365,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * A collection of shims that provided minimal
 	 * support of WeakMap and Map classes.
 	 *
-	 * This implementation is not meant to be used outside of
-	 * ResizeObserver modules as it covers only limited range
+	 * These implementations are not meant to be used outside of
+	 * ResizeObserver modules as they cover only a limited range
 	 * of use cases.
 	 */
 	
+	/* eslint-disable require-jsdoc */
 	var hasNativeCollections = typeof window.WeakMap === 'function' && typeof window.Map === 'function';
 	
 	var WeakMap = function () {
@@ -377,12 +378,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return window.WeakMap;
 	    }
 	
-	    /**
-	     *
-	     * @param {Array<Array>} arr
-	     * @param {Object} key
-	     * @returns {Number}
-	     */
 	    function getIndex(arr, key) {
 	        var result = -1;
 	
@@ -528,12 +523,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _requestAnimationFrame2 = _interopRequireDefault(_requestAnimationFrame);
 	
-	var _animations = __webpack_require__(6);
-	
-	var animations = _interopRequireWildcard(_animations);
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -568,61 +557,52 @@ return /******/ (function(modules) { // webpackBootstrap
 	        timeoutID = setTimeout(function () {
 	            timeoutID = false;
 	
+	            /* eslint-disable no-invalid-this */
 	            callback.apply(_this, args);
+	
+	            /* eslint-enable no-invalid-this */
 	        }, delay);
 	    };
 	}
 	
 	/**
-	 * Controller class which is used to handle updates of registered ResizeObservers instances.
-	 * It controls when and for how long it's necessary to run updates by listening to a combination
-	 * of DOM events along with tracking of DOM mutations (nodes removal, changes of attributes, etc.).
+	 * Controller class which handles updates of ResizeObserver instances.
+	 * It's meant to decide when and for how long it's necessary to run updates by listening to the windows
+	 * "resize" event along with a tracking of DOM mutations (nodes removal, changes of attributes, etc.).
 	 *
-	 * Transitions and animations are handled by listening to "transitionstart"/"animationstart"
-	 * events or by using documents' "getAnimations" method if it's available. If none of the above
-	 * is supported then a repeatable update cycle will be used. It will run until the dimensions
-	 * of observed elements are changing or until the timeout is reached (default timeout is 50 milliseconds).
+	 * Transitions and animations are handled by running a repeatable update cycle either until the dimensions
+	 * of observed elements are changing or the timeout is reached (default timeout is 50 milliseconds).
 	 * Timeout value can be manually increased if transitions have a delay.
 	 *
-	 * Tracking of changes caused by ":hover" class is optional and can be enabled by invoking
-	 * the "enableHover" method.
-	 *
-	 * Infinite update cycle will be used in case when MutatioObserver is not supported.
+	 * Continuous update cycle will be used automatically in case if MutationObserver is not supported.
 	 */
 	
 	var ResizeObserverController = function () {
 	    /**
-	     * Creates a new ResizeObserverController instance.
+	     * Creates a new instance of ResizeObserverController.
 	     *
-	     * @param {Number} [idleTimeout = 0]
-	     * @pram {Boolean} [trackHovers = false] - Whether to track "mouseover"
-	     *      events or not. Disabled be default.
+	     * @param {Number} [idleTimeout = 0] - Idle timeout value.
+	     * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous update cycle.
 	     */
 	    function ResizeObserverController() {
 	        var idleTimeout = arguments.length <= 0 || arguments[0] === undefined ? 50 : arguments[0];
-	        var trackHovers = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+	        var continuousUpdates = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 	
 	        _classCallCheck(this, ResizeObserverController);
 	
 	        this._idleTimeout = idleTimeout;
-	        this._trackHovers = trackHovers;
-	        this._cycleStartTime = 0;
-	        this._cycleDuration = 0;
-	        this._cycleHadChanges = false;
+	        this._isCycleContinuous = continuousUpdates;
 	
-	        this._isCycleRepeatable = false;
+	        this._cycleStartTime = 0;
+	
+	        // Indicates whether the update cycle is currently running.
+	        this._isCycleActive = false;
 	
 	        // Indicates whether the update of observers is scheduled.
-	        this._isScheduled = false;
+	        this._isUpdateScheduled = false;
 	
-	        // Indicates whether infinite cycle is enabled.
-	        this._isCycleInfinite = false;
-	
-	        // Indicates whether "mouseover" event handler was added.
-	        this._hoverInitiated = false;
-	
-	        // Indicates whether DOM listeners have been initiated.
-	        this._isListening = false;
+	        // Indicates whether DOM listeners have been added.
+	        this._listenersEnabled = false;
 	
 	        // Keeps reference to the instance of MutationObserver.
 	        this._mutationsObserver = null;
@@ -632,22 +612,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        // Fix value of "this" binding for the following methods.
 	        this.runUpdates = this.runUpdates.bind(this);
-	        this._startAnimationCycle = this._startAnimationCycle.bind(this);
 	        this._resolveScheduled = this._resolveScheduled.bind(this);
 	        this._onMutation = this._onMutation.bind(this);
-	        this._onAnimationStart = this._onAnimationStart.bind(this);
-	        this._onTransitionStart = this._onTransitionStart.bind(this);
-	
-	        // Make sure that the update won't start immediately.
-	        // Required to handle animations with 'getAnimations' method.
-	        this._scheduleUpdate = debounce(this._scheduleUpdate, 5);
 	
 	        // Function that will be invoked to re-run the
-	        // update cycle when infinite cycles are enabled.
-	        this._inifiniteCycleHandler = debounce(this._startAnimationCycle, 300);
-	
-	        // Limit the amount of calls from "mouseover" event.
-	        this._onHover = debounce(this._startAnimationCycle, 200);
+	        // update cycle if continuous cycles are enabled.
+	        this._continuousCycleHandler = debounce(this.runUpdates, 200);
 	    }
 	
 	    /**
@@ -667,10 +637,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this._observers.push(observer);
 	        }
 	
-	        // Add listeners if they
-	        // haven't been instantiated yet.
-	        if (!this._isListening) {
-	            this._initListeners();
+	        // Add listeners if they haven't been added yet.
+	        if (!this._listenersEnabled) {
+	            this._addListeners();
 	        }
 	    };
 	
@@ -691,7 +660,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        // Remove listeners if controller
 	        // has no connected observers.
-	        if (!observers.length && this._isListening) {
+	        if (!observers.length && this._listenersEnabled) {
 	            this._removeListeners();
 	        }
 	    };
@@ -713,7 +682,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * notifies them of queued entries.
 	     *
 	     * @private
-	     * @returns {Boolean} Returns "true" if some observer
+	     * @returns {Boolean} Returns "true" if any observer
 	     *      has detected changes in dimensions of its' elements.
 	     */
 	
@@ -748,58 +717,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    /**
-	     * Starts the update cycle which will run either until there
-	     * are active animations or until specified minimal
-	     * duration is reached.
-	     *
-	     * Cycle will repeat itself if one of its' iterations
-	     * has detected changes in observers and if "repeatable" parameter
-	     * is set to "true".
-	     *
-	     * @param {Number} [minDuration = 0] - Minimal duration of cycle.
-	     * @param {Boolean} [repeatable = false] - Whether it is necessary
-	     *      to repeat cycle when it detects changes.
+	     * Starts the update cycle which will run either
+	     * until it detects changes in the dimensions of
+	     * elements or the idle timeout is reached.
 	     */
 	
 	
 	    ResizeObserverController.prototype.runUpdates = function runUpdates() {
-	        var minDuration = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
-	        var repeatable = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+	        this._cycleStartTime = (0, _performance2.default)();
+	        this._isCycleActive = true;
 	
-	        if (typeof minDuration !== 'number') {
-	            minDuration = 0;
-	        }
-	
-	        if (!this._isCycleRepeatable) {
-	            this._isCycleRepeatable = repeatable;
-	        }
-	
-	        // Update cycles' start time and duration if its'
-	        // remaining time is lesser than provided duration.
-	        if (minDuration >= this._getRemainingTime()) {
-	            this._cycleStartTime = (0, _performance2.default)();
-	            this._cycleDuration = minDuration;
-	        }
-	
-	        this._scheduleUpdate();
-	    };
-	
-	    /**
-	     * Checks whether it's possible to detect active animations and invokes
-	     * a single update if it's so. Otherwise it will
-	     * start a repeatable cycle using provided duration.
-	     *
-	     * @private
-	     * @param {Number} [duration = this._idleTimeout] - Duration of cycle.
-	     */
-	
-	
-	    ResizeObserverController.prototype._startAnimationCycle = function _startAnimationCycle(duration) {
-	        if (typeof duration !== 'number') {
-	            duration = this._idleTimeout;
-	        }
-	
-	        !this._canDetectAnimations() ? this.runUpdates(duration, true) : this.runUpdates();
+	        this.scheduleUpdate();
 	    };
 	
 	    /**
@@ -809,18 +737,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	
 	
-	    ResizeObserverController.prototype._scheduleUpdate = function _scheduleUpdate() {
-	        if (!this._isScheduled) {
-	            this._isScheduled = true;
+	    ResizeObserverController.prototype.scheduleUpdate = function scheduleUpdate() {
+	        if (!this._isUpdateScheduled) {
+	            this._isUpdateScheduled = true;
 	
 	            (0, _requestAnimationFrame2.default)(this._resolveScheduled);
 	        }
 	    };
 	
 	    /**
-	     * Invokes the update of observers. It will schedule
-	     * a new update if there are active animations or if
-	     * minimal duration of cycle hasn't been reached yet.
+	     * Invokes the update of observers. It may re-run the
+	     * cycle if changes in observers have been detected.
 	     *
 	     * @private
 	     */
@@ -829,63 +756,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ResizeObserverController.prototype._resolveScheduled = function _resolveScheduled() {
 	        var hasChanges = this._updateObservers();
 	
-	        this._isScheduled = false;
+	        this._isUpdateScheduled = false;
 	
-	        if (hasChanges) {
-	            this._cycleHadChanges = true;
+	        // Do nothing if cycle wasn't started.
+	        if (!this._isCycleActive) {
+	            return;
 	        }
 	
-	        this._shouldContinueUpdating() ? this._scheduleUpdate() : this._updatesFinished();
+	        // Re-start cycle if changes have been detected.
+	        if (hasChanges) {
+	            this.runUpdates();
+	        } else if (this._hasRemainingTime()) {
+	            this.scheduleUpdate();
+	        } else {
+	            this._endUpdates();
+	        }
 	    };
 	
 	    /**
-	     * Tells whether it's necessary to continue
-	     * running updates or that the update cycle can be finished.
+	     * Tells whether the update cycle has time remaining.
 	     *
+	     * @private
 	     * @returns {Boolean}
 	     */
 	
 	
-	    ResizeObserverController.prototype._shouldContinueUpdating = function _shouldContinueUpdating() {
-	        return animations.hasReflowAnimations() || this._getRemainingTime() > 0;
-	    };
-	
-	    /**
-	     * Computes remaining time of the update cycle.
-	     *
-	     * @private
-	     * @returns {Number} Remaining time in milliseconds.
-	     */
-	
-	
-	    ResizeObserverController.prototype._getRemainingTime = function _getRemainingTime() {
+	    ResizeObserverController.prototype._hasRemainingTime = function _hasRemainingTime() {
 	        var timePassed = (0, _performance2.default)() - this._cycleStartTime;
 	
-	        return Math.max(this._cycleDuration - timePassed, 0);
+	        return this._idleTimeout - timePassed > 0;
 	    };
 	
 	    /**
-	     * Callback that will be invoked after
-	     * the update cycle is finished.
+	     * Callback which is invoked when update cycle
+	     * is finished. It may start a new cycle if continuous
+	     * updates are enabled.
 	     *
 	     * @private
 	     */
 	
 	
-	    ResizeObserverController.prototype._updatesFinished = function _updatesFinished() {
-	        // We don't need to repeat the cycle if it's
-	        // previous iteration hasn't detected changes.
-	        if (!this._cycleHadChanges) {
-	            this._isCycleRepeatable = false;
-	        }
+	    ResizeObserverController.prototype._endUpdates = function _endUpdates() {
+	        this._isCycleActive = false;
 	
-	        this._cycleHadChanges = false;
-	
-	        // Repeat cycle if it's necessary.
-	        if (this._isCycleRepeatable) {
-	            this.runUpdates(this._cycleDuration);
-	        } else if (this._isCycleInfinite) {
-	            this._inifiniteCycleHandler();
+	        if (this._isCycleContinuous && this._listenersEnabled) {
+	            this._continuousCycleHandler();
 	        }
 	    };
 	
@@ -896,36 +811,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	
 	
-	    ResizeObserverController.prototype._initListeners = function _initListeners() {
-	        // Do nothing if listeners have been already initiated.
-	        if (this._isListening) {
+	    ResizeObserverController.prototype._addListeners = function _addListeners() {
+	        // Do nothing if listeners have been already added.
+	        if (this._listenersEnabled) {
 	            return;
 	        }
 	
-	        this._isListening = true;
+	        this._listenersEnabled = true;
 	
 	        // Repeatable cycle is used here because the resize event may
-	        // lead to continuous changes, e.g. when width or height of elements
+	        // lead to continuous changes, e.g. when width or height of an element
 	        // are controlled by CSS transitions.
-	        window.addEventListener('resize', this._startAnimationCycle, true);
-	
-	        if (!animations.isGetAnimationsSupported()) {
-	            document.addEventListener('transitionstart', this._onTransitionStart, true);
-	            document.addEventListener('animationstart', this._onAnimationStart, true);
-	        }
-	
-	        if (this.isHoverEnabled()) {
-	            this._addHoverListener();
-	        }
+	        window.addEventListener('resize', this.runUpdates);
 	
 	        // Fall back to an infinite cycle.
 	        if (!mutationsSupported) {
-	            this._isCycleInfinite = true;
+	            this._isCycleContinuous = true;
 	
-	            // Manually start cycle.
 	            this.runUpdates();
 	        } else {
-	            // Subscribe to DOM mutations as they may lead to changes in dimensions of elements.
+	            // Subscribe to DOM mutations as they may lead to
+	            // changes in dimensions of elements.
 	            this._mutationsObserver = new MutationObserver(this._onMutation);
 	
 	            this._mutationsObserver.observe(document, {
@@ -938,7 +844,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    /**
-	     * Removes all DOM listeners.
+	     * Removes DOM listeners.
 	     *
 	     * @private
 	     */
@@ -946,143 +852,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    ResizeObserverController.prototype._removeListeners = function _removeListeners() {
 	        // Do nothing if listeners have been already removed.
-	        if (!this._isListening) {
+	        if (!this._listenersEnabled) {
 	            return;
 	        }
 	
-	        window.removeEventListener('resize', this._startAnimationCycle, true);
-	
-	        document.removeEventListener('animationstart', this._onAnimationStart, true);
-	        document.removeEventListener('transitionstart', this._onTransitionStart, true);
-	
-	        this._removeHoverListener();
+	        window.removeEventListener('resize', this.runUpdates);
 	
 	        if (this._mutationsObserver) {
 	            this._mutationsObserver.disconnect();
 	        }
 	
 	        this._mutationsObserver = null;
-	        this._isCycleInfinite = false;
-	        this._isListening = false;
-	    };
-	
-	    /**
-	     * Enables "hover" listener.
-	     */
-	
-	
-	    ResizeObserverController.prototype.enableHover = function enableHover() {
-	        this._trackHovers = true;
-	
-	        // Immediately add listener if the rest
-	        // of listeners have been already initiated.
-	        if (this._isListening) {
-	            this._addHoverListener();
-	        }
-	    };
-	
-	    /**
-	     * Disables "hover" listener.
-	     */
-	
-	
-	    ResizeObserverController.prototype.disableHover = function disableHover() {
-	        this._trackHovers = false;
-	
-	        this._removeHoverListener();
-	    };
-	
-	    /**
-	     * Tells whether "hover" listener is enabled.
-	     *
-	     * @returns {Boolean}
-	     */
-	
-	
-	    ResizeObserverController.prototype.isHoverEnabled = function isHoverEnabled() {
-	        return this._trackHovers;
-	    };
-	
-	    /**
-	     * Adds "mouseover" listener to the document.
-	     *
-	     * @private
-	     */
-	
-	
-	    ResizeObserverController.prototype._addHoverListener = function _addHoverListener() {
-	        if (!this._hoverInitiated) {
-	            this._hoverInitiated = true;
-	
-	            document.addEventListener('mouseover', this._onHover, true);
-	        }
-	    };
-	
-	    /**
-	     * Removes "mouseover" listener from document.
-	     *
-	     * @private
-	     */
-	
-	
-	    ResizeObserverController.prototype._removeHoverListener = function _removeHoverListener() {
-	        if (this._hoverInitiated) {
-	            this._hoverInitiated = false;
-	
-	            document.removeEventListener('mouseover', this._onHover, true);
-	        }
-	    };
-	
-	    /**
-	     * Tells whether it's possible to detect active animations
-	     * either by using "getAnimations" method or by listening
-	     * to "transitionstart" event.
-	     *
-	     * @private
-	     * @returns {Boolean}
-	     */
-	
-	
-	    ResizeObserverController.prototype._canDetectAnimations = function _canDetectAnimations() {
-	        return animations.isGetAnimationsSupported() || animations.isTransitionStartSupported();
-	    };
-	
-	    /**
-	     * "Transitionstart" event handler. Starts a single update cycle
-	     * with a timeout value that is equal to transitions' duration.
-	     *
-	     * @private
-	     * @param {TransitionEvent} event
-	     */
-	
-	
-	    ResizeObserverController.prototype._onTransitionStart = function _onTransitionStart(event) {
-	        var duration = animations.computeDuration(event.target);
-	
-	        this.runUpdates(duration);
-	    };
-	
-	    /**
-	     * "Animationstart" event handler. It starts a repeatable
-	     * update cycle with a timeout value that is equal to the
-	     * duration of animation.
-	     *
-	     * @private
-	     * @param {AnimationEvent} event
-	     */
-	
-	
-	    ResizeObserverController.prototype._onAnimationStart = function _onAnimationStart(event) {
-	        var duration = animations.computeDuration(event.target, true);
-	
-	        this.runUpdates(duration, true);
+	        this._listenersEnabled = false;
 	    };
 	
 	    /**
 	     * DOM mutations handler.
 	     *
 	     * @private
-	     * @param {Array<MutationRecord>} entries
+	     * @param {Array<MutationRecord>} entries - An array of mutation records.
 	     */
 	
 	
@@ -1093,9 +881,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return entry.type === 'attributes';
 	        });
 	
-	        // It's expected that animations will start
-	        // only after some attribute changes its' value.
-	        attrsChanged ? this._startAnimationCycle() : this.runUpdates();
+	        // It's expected that animations may start only
+	        // after some attribute changes its' value.
+	        attrsChanged ? this.runUpdates() : this.scheduleUpdate();
 	    };
 	
 	    _createClass(ResizeObserverController, [{
@@ -1112,6 +900,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	        ,
 	        set: function set(value) {
 	            this._idleTimeout = value;
+	        }
+	
+	        /**
+	         * Tells whether continuous updates are enabled.
+	         *
+	         * @returns {Boolean}
+	         */
+	
+	    }, {
+	        key: 'continuousUpdates',
+	        get: function get() {
+	            return this._isCycleContinuous;
+	        }
+	
+	        /**
+	         * Enables or disables continuous updates.
+	         *
+	         * @param {Boolean} value - Whether to enable or disable
+	         *      continuous updates. Note that the value won't be applied
+	         *      if MutationObserver is not supported.
+	         */
+	        ,
+	        set: function set(value) {
+	            if (mutationsSupported) {
+	                this._isCycleContinuous = value;
+	            }
 	        }
 	    }]);
 	
@@ -1183,220 +997,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 6 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-	
-	exports.computeDuration = computeDuration;
-	exports.getReflowAnimations = getReflowAnimations;
-	exports.hasReflowAnimations = hasReflowAnimations;
-	exports.isGetAnimationsSupported = isGetAnimationsSupported;
-	exports.isTransitionStartSupported = isTransitionStartSupported;
-	// A list of substrings of CSS properties
-	// whose alteration will lead to a DOM reflow.
-	var reflowKeys = ['top', 'left', 'right', 'bottom', 'width', 'height', 'weight', 'size'];
-	
-	// A regular expression which is used to extract data from
-	// a string whose value is in a form of "{Number}(ms|s)".
-	var durationRegExp = /^(-?\d*\.?\d+)(ms|s)$/;
-	
-	// Flag which indicates the support of "getAnimations" method.
-	var hasGetAnimations = false;
-	
-	// Flag which indicates the support of "transitionstart" event.
-	var hasTransitionStart = false;
-	
-	// Test whether "transitionstart" event is supported.
-	(function (testStartEvent) {
-	    document.readyState === 'loading' ? document.addEventListener('readystatechange', testStartEvent, false) : testStartEvent();
-	})(function () {
-	    // Unfortunately there is no other way to perform this test but to
-	    // try to trigger the 'transitionstart' event. It can't
-	    // be detected neither by checking for an existence of the corresponding
-	    // property in document nor by the assignment of an inline
-	    // event handler with 'ontransitionstart' attribute.
-	    var span = document.createElement('span');
-	
-	    span.style.opacity = '0';
-	    span.style.transition = 'opacity 1s';
-	
-	    span.addEventListener('transitionstart', function () {
-	        hasTransitionStart = true;
-	    }, false);
-	
-	    document.body.appendChild(span);
-	
-	    setTimeout(function () {
-	        span.style.opacity = '1';
-	
-	        // Timeout is needed because event
-	        // will be triggered asynchronously.
-	        setTimeout(function () {
-	            document.body.removeChild(span);
-	            span = null;
-	        }, 10);
-	    }, 1);
-	});
-	
-	/**
-	 * Checks whether provided property exists in
-	 * "source" object and that it's a function.
-	 *
-	 * @param {String} target - Name of the property.
-	 * @param {Object} source - Object that contains property.
-	 * @returns {Boolean}
-	 */
-	function isFunction(target, source) {
-	    return source && (typeof source === 'undefined' ? 'undefined' : _typeof(source)) === 'object' && target in source && typeof source[target] === 'function';
-	}
-	
-	/**
-	 * Checks whether provided animation instance
-	 * may lead to a DOM reflow.
-	 *
-	 * @param {Animation} animation - Animation to be checked.
-	 * @return {Boolean}
-	 */
-	function isReflowAnimation(animation) {
-	    var property = animation.transitionProperty;
-	
-	    // Always return "true" if it's not possible
-	    // to define the type of animation.
-	    if (!property) {
-	        return true;
-	    }
-	
-	    // Check if transition property corresponds
-	    // to some of the reflow properties.
-	    return reflowKeys.some(function (key) {
-	        return !~property.indexOf(key);
-	    });
-	}
-	
-	/**
-	 * Converts provided string to a number
-	 * which represents value in milliseconds.
-	 *
-	 * @param {String} duration - String in a form of "{Number}(ms|s)".
-	 * @returns {Number}
-	 */
-	function toMilliseconds(duration) {
-	    var _durationRegExp$exec = durationRegExp.exec(duration);
-	
-	    var value = _durationRegExp$exec[1];
-	    var unit = _durationRegExp$exec[2];
-	
-	
-	    return parseFloat(value) * (unit === 'ms' ? 1 : 1000);
-	}
-	
-	/**
-	 * For provided element computes the sum of longest transition duration
-	 * with longest transition delay. Can also be used to compute
-	 * the duration of elements' animation.
-	 *
-	 * @param {Element} target - Element whose "duration"
-	 *      needs to be computed.
-	 * @param {Boolean} [computeAnimation = false] - Flag which specifies what
-	 *      kind of duration to compute: animation or transition.
-	 * @returns {Number} Duration in milliseconds.
-	 */
-	function computeDuration(target) {
-	    var computeAnimation = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-	
-	    var type = computeAnimation ? 'animation' : 'transition';
-	
-	    var style = window.getComputedStyle(target);
-	    var delays = style[type + 'Delay'];
-	    var durations = style[type + 'Duration'];
-	
-	    if (durations === '0s') {
-	        return 0;
-	    }
-	
-	    var getMax = function getMax(a, b) {
-	        return Math.max(a, toMilliseconds(b));
-	    };
-	
-	    return durations.split(', ').reduce(getMax, 0) + delays.split(', ').reduce(getMax, 0);
-	}
-	
-	/**
-	 * Returns an array of existing animations if native
-	 * "getAnimations" method is supported.
-	 *
-	 * @returns {Array<Animation>}
-	 */
-	var getAnimations = exports.getAnimations = function () {
-	    if (isFunction('getAnimations', document)) {
-	        hasGetAnimations = true;
-	
-	        return function () {
-	            return document.getAnimations();
-	        };
-	    }
-	
-	    // Chrome (as for v51) implements 'getAnimations' method
-	    // in a default timeline object.
-	    if (isFunction('getAnimations', document.timeline)) {
-	        hasGetAnimations = true;
-	
-	        return function () {
-	            return document.timeline.getAnimations();
-	        };
-	    }
-	
-	    return function () {
-	        return [];
-	    };
-	}();
-	
-	/**
-	 * Returns a collection of existing animations
-	 * that may lead to a DOM reflow.
-	 *
-	 * @returns {Array<Animation>}
-	 */
-	function getReflowAnimations() {
-	    return getAnimations().filter(isReflowAnimation);
-	}
-	
-	/**
-	 * Tells whether there are any "reflow" animations.
-	 *
-	 * @returns {Boolean}
-	 */
-	function hasReflowAnimations() {
-	    return !!getReflowAnimations().length;
-	}
-	
-	/**
-	 * Tells whether "getAnimations" method exists
-	 * in document or document.timeline.
-	 *
-	 * @returns {Boolean}
-	 */
-	function isGetAnimationsSupported() {
-	    return hasGetAnimations;
-	}
-	
-	/**
-	 * Tells whether "transitionstart" event is supported.
-	 *
-	 * @returns {Boolean}
-	 */
-	function isTransitionStartSupported() {
-	    return hasTransitionStart;
-	}
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1407,11 +1007,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _es6Collections = __webpack_require__(2);
 	
-	var _ResizeObservation = __webpack_require__(8);
+	var _ResizeObservation = __webpack_require__(7);
 	
 	var _ResizeObservation2 = _interopRequireDefault(_ResizeObservation);
 	
-	var _ResizeObserverEntry = __webpack_require__(9);
+	var _ResizeObserverEntry = __webpack_require__(8);
 	
 	var _ResizeObserverEntry2 = _interopRequireDefault(_ResizeObserverEntry);
 	
@@ -1427,8 +1027,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *      when one of the observed elements changes its' content rectangle.
 	     * @param {ResizeObsreverController} controller - Controller instance
 	     *      which is responsible for the updates of observer.
-	     * @param {ResizeObserver} [publicObserver = this] - Reference
-	     *      to a public ResizeObserver instance which will be passed
+	     * @param {ResizeObserver} publicObserver - Reference
+	     *      to the public ResizeObserver instance which will be passed
 	     *      to callback function.
 	     */
 	    function ResizeObserver(callback, controller, publicObserver) {
@@ -1451,9 +1051,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // Reference to associated ResizeObserverController.
 	        this._controller = controller;
 	
-	        // Public ResizeObserver instance that will be passed
+	        // Public ResizeObserver instance which will be passed
 	        // to callback function.
-	        this._publicObserver = publicObserver || this;
+	        this._publicObserver = publicObserver;
 	    }
 	
 	    /**
@@ -1481,7 +1081,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        targets.set(target, new _ResizeObservation2.default(target));
 	
-	        // Connect observer to controller
+	        // Add observer to controller
 	        // if it hasn't been connected yet.
 	        if (!this._controller.isConnected(this)) {
 	            this._controller.connect(this);
@@ -1514,7 +1114,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return;
 	        }
 	
-	        // Remove element and associated with
+	        // Remove element and an associated with
 	        // it ResizeObsrvation instance from registry.
 	        targets.delete(target);
 	
@@ -1525,7 +1125,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    /**
 	     * Stops observing all elements and
-	     * clears observations list.
+	     * clears the observations list.
 	     */
 	
 	
@@ -1537,7 +1137,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    /**
-	     * Invokes initial callback function passing to it a list
+	     * Invokes initial callback function with a list
 	     * of ResizeObserverEntry instances collected from
 	     * active resize observations.
 	     */
@@ -1551,9 +1151,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var publicObserver = this._publicObserver;
 	
 	        var entries = this._activeTargets.map(function (observation) {
-	            observation.broadcastRect();
-	
-	            return new _ResizeObserverEntry2.default(observation.target, observation.getLastObservedRect());
+	            return new _ResizeObserverEntry2.default(observation.target, observation.broadcastRect());
 	        });
 	
 	        this.clearActive();
@@ -1562,7 +1160,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    /**
-	     * Clears the collection of a pending/active observations.
+	     * Clears the collection of pending/active observations.
 	     */
 	
 	
@@ -1608,7 +1206,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 8 */
+/* 7 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1619,7 +1217,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	// Placeholder of the content rectangle.
+	// Placeholder of a content rectangle.
 	var emptyRect = {
 	    width: 0,
 	    height: 0,
@@ -1630,7 +1228,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	/**
-	 * Extracts paddings data from provided element.
+	 * Extracts paddings data from the provided element.
 	 *
 	 * @param {Element} target - Element whose paddings to be extracted.
 	 * @returns {Object} Object that contains
@@ -1665,14 +1263,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	/**
-	 * Checks whether provided element
-	 * is an instance of SVGElement.
-	 *
-	 * @param {Element} target - Element to be checked.
-	 * @returns {Boolean}
-	 */
-	function isSVGElement(target) {
-	    return target instanceof window.SVGElement;
+	* Subtracts paddings from provided
+	* dimensions and creates a content rectangle.
+	*
+	* @param {Number} clientWidth - Width including paddings.
+	* @param {Number} clientHeight - Height including paddings.
+	* @param {Object} paddings - Paddings data.
+	* @returns {ClientRect}
+	*/
+	function createContentRect(clientWidth, clientHeight, paddings) {
+	    var top = paddings.top;
+	    var left = paddings.left;
+	
+	    var width = clientWidth - (left + paddings.right);
+	    var height = clientHeight - (top + paddings.bottom);
+	
+	    return {
+	        width: width,
+	        height: height,
+	        top: top,
+	        right: width + left,
+	        bottom: height + top,
+	        left: left
+	    };
 	}
 	
 	/**
@@ -1684,17 +1297,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function getSVGContentRect(target) {
 	    var bbox = target.getBBox();
-	    var width = bbox.width;
-	    var height = bbox.height;
 	
-	    return {
-	        width: width,
-	        height: height,
-	        top: 0,
-	        right: width,
-	        bottom: height,
-	        left: 0
-	    };
+	    return createContentRect(bbox.width, bbox.height, emptyRect);
 	}
 	
 	/**
@@ -1705,25 +1309,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @returns {ClientRect}
 	 */
 	function getHTMLElementContentRect(target) {
-	    var clientWidth = target.clientWidth;
-	    var clientHeight = target.clientHeight;
+	    var width = target.clientWidth;
+	    var height = target.clientHeight;
 	
 	    // It's not necessary to proceed with calculations
-	    // because we already know that rectangle is empty.
-	    if (!clientWidth && !clientHeight) {
+	    // as it's already known that the rectangle is empty.
+	    if (!width && !height) {
 	        return emptyRect;
 	    }
 	
-	    var paddings = getPaddings(target);
+	    return createContentRect(width, height, getPaddings(target));
+	}
 	
-	    return {
-	        width: clientWidth - (paddings.left + paddings.right),
-	        height: clientHeight - (paddings.top + paddings.bottom),
-	        top: paddings.top,
-	        right: clientWidth - paddings.right,
-	        bottom: clientHeight - paddings.bottom,
-	        left: paddings.left
-	    };
+	/**
+	 * Checks whether provided element
+	 * is an instance of SVGElement.
+	 *
+	 * @param {Element} target - Element to be checked.
+	 * @returns {Boolean}
+	 */
+	function isSVGElement(target) {
+	    return target instanceof window.SVGElement;
 	}
 	
 	/**
@@ -1734,13 +1340,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *      needs to be calculated.
 	 * @returns {ClientRect}
 	 */
-	function calculateContentRect(target) {
+	function getContentRect(target) {
 	    return isSVGElement(target) ? getSVGContentRect(target) : getHTMLElementContentRect(target);
 	}
 	
 	/**
-	 * Class that is responsible for computations of a
-	 * content rectangle of observed DOM element and
+	 * Class that is responsible for computations of the
+	 * content rectangle of provided DOM element and
 	 * for keeping track of its' changes.
 	 */
 	
@@ -1767,20 +1373,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	
 	    /**
-	     * Returns last observed content rectangle.
-	     *
-	     * @returns {ClientRect}
-	     */
-	
-	
-	    ResizeObservation.prototype.getLastObservedRect = function getLastObservedRect() {
-	        return this._contentRect;
-	    };
-	
-	    /**
 	     * Updates 'broadcastWidth' and 'broadcastHeight'
-	     * properties with data from the corresponding
+	     * properties with a data from the corresponding
 	     * properties of the last observed content rectangle.
+	     *
+	     * @returns {ClientRect} Last observed content rectangle.
 	     */
 	
 	
@@ -1789,6 +1386,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        this.broadcastWidth = rect.width;
 	        this.broadcastHeight = rect.height;
+	
+	        return rect;
 	    };
 	
 	    /**
@@ -1801,7 +1400,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	
 	    ResizeObservation.prototype.isActive = function isActive() {
-	        var rect = calculateContentRect(this.target);
+	        var rect = getContentRect(this.target);
 	
 	        this._contentRect = rect;
 	
@@ -1815,7 +1414,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 9 */
+/* 8 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1830,7 +1429,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 * Creates an instance of ResizeObserverEntry.
 	 *
-	 * @param {Element} target - Element which is being observed.
+	 * @param {Element} target - Element that is being observed.
 	 * @param {ClientRect} rectData - Data of the elements' content rectangle.
 	 */
 	function ResizeObserverEntry(target, rectData) {
@@ -1860,7 +1459,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports["default"];
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;'use strict';

@@ -27,6 +27,9 @@ const observer = new ResizeObserver(entries => {
     }
 });
 
+let index = 0;
+let queue = [];
+
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -69,38 +72,48 @@ function generateElements(container, levels, items = 4) {
     }
 }
 
-function resizeElements() {
-    let blocks = document.querySelectorAll('.block');
-    let index = 0;
+generateElements(document.getElementById('container'), 3);
 
-    for (const block of toArray(blocks)) {
-        if (!index || index === 2) {
-            block.style.maxWidth = getRandomInt(30, 50) + '%';
+function populateQueue() {
+    index = 0;
+    queue = toArray(document.querySelectorAll('.block'));
 
-            if (index === 2) {
-                block.style.minHeight = getRandomInt(0, 80) + '%';
-            }
-        }
+    updateColorData();
 
-        if (~block.className.indexOf('leaf')) {
-            block.style.backgroundColor = generateColor();
-        }
+    requestAnimationFrame(resolveNextItem);
+}
 
-        if (++index === 4) {
-            index = 0;
+function resolveNextItem() {
+    const block = queue.shift();
+
+    if (!block) {
+        setTimeout(populateQueue, 2500)
+
+        return;
+    }
+
+    if (!index || index === 2) {
+        block.style.maxWidth = getRandomInt(30, 50) + '%';
+
+        if (index === 2) {
+            block.style.minHeight = getRandomInt(0, 80) + '%';
         }
     }
 
-    document.body.style.backgroundColor = generateColor();
+    if (~block.className.indexOf('leaf')) {
+        block.style.backgroundColor = generateColor();
+    }
 
-    setTimeout(resizeElements, 2500);
+    if (++index === 4) {
+        index = 0;
+    }
+
+    requestAnimationFrame(resolveNextItem);
 }
 
-generateElements(document.getElementById('container'), 3);
 
 for (const leaf of toArray(document.querySelectorAll('.leaf'))) {
     observer.observe(leaf);
 }
 
-setTimeout(resizeElements, 2000);
-setInterval(updateColorData, 10000);
+setTimeout(populateQueue, 2000);
