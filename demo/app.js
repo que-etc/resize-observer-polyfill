@@ -21,7 +21,7 @@ let colorData = {
 const observer = new ResizeObserver(entries => {
     for (const entry of entries) {
         const rect = entry.contentRect;
-        const dimensionsStr = `${rect.width} x ${rect.height}`;
+        const dimensionsStr = `${rect.width.toFixed(2)} x ${rect.height.toFixed(2)}`;
 
         entry.target.firstElementChild.textContent = dimensionsStr;
     }
@@ -72,7 +72,7 @@ function generateElements(container, levels, items = 4) {
     }
 }
 
-generateElements(document.getElementById('container'), 3);
+generateElements(document.getElementById('container'), 2);
 
 function populateQueue() {
     index = 0;
