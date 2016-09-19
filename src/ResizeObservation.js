@@ -1,55 +1,99 @@
 // Placeholder of a content rectangle.
-const emptyRect = {
-    width: 0,
-    height: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0
-};
+const emptyRect = createContentRect(0, 0, 0, 0);
+
+const boxKeys = ['top', 'right', 'bottom', 'left'];
 
 /**
- * Extracts paddings data from the provided element.
+ * Extracts computed styles of provided element.
  *
- * @param {Element} target - Element whose paddings to be extracted.
- * @returns {Object} Object that contains
- *      left, top, right and bottom padding values.
+ * @param {Element} target
+ * @returns {CSSStyleDeclaration}
  */
-function getPaddings(target) {
-    const styles = window.getComputedStyle(target);
-    const keys = ['top', 'right', 'bottom', 'left'];
+function getStyles(target) {
+    return window.getComputedStyle(target);
+}
 
+/**
+ * Converts provided string defined
+ * in q form of '{{value}}px' to number.
+ *
+ * @param {String} value
+ * @returns {Number}
+ */
+function pixelsToNumber(value) {
+    let result = value.replace('px', '');
+
+    result = parseFloat(result);
+
+    return isNaN(result) ? 0 : result;
+}
+
+/**
+ * Extracts computed width from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @returns {Number}
+ */
+function getWidth(styles) {
+    return pixelsToNumber(styles.width);
+}
+
+/**
+ * Extracts computed height from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @returns {Number}
+ */
+function getHeight(styles) {
+    return pixelsToNumber(styles.height);
+}
+
+/**
+ * Extracts borders size from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @param {...String} [positions = boxKeys] - Borders positions (top, right, ...)
+ * @returns {Number}
+ */
+function getBordersSize(styles, ...positions) {
+    return positions.reduce((size, pos) => {
+        const value = styles['border-' + pos + '-width'];
+
+        return size + pixelsToNumber(value);
+    }, 0);
+}
+
+/**
+ *  Extracts paddings sizes from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @returns {Object} Paddings box.
+ */
+function getPaddings(styles) {
     const paddings = {};
 
-    for (const key of keys) {
-        const value = styles['padding-' + key].replace('px', '');
+    for (const key of boxKeys) {
+        const value = styles['padding-' + key];
 
-        paddings[key] = parseFloat(value);
+        paddings[key] = pixelsToNumber(value);
     }
 
     return paddings;
 }
 
 /**
-* Subtracts paddings from provided
-* dimensions and creates a content rectangle.
-*
-* @param {Number} clientWidth - Width including paddings.
-* @param {Number} clientHeight - Height including paddings.
-* @param {Object} paddings - Paddings data.
-* @returns {ClientRect}
-*/
-function createContentRect(clientWidth, clientHeight, paddings) {
-    const top = paddings.top;
-    const left = paddings.left;
-
-    const width = clientWidth - (left + paddings.right);
-    const height = clientHeight - (top + paddings.bottom);
-
+ * Creates content rectangle based on the provided dimensions
+ * and the top/left positions.
+ *
+ * @param {Number} width - Width of rectangle.
+ * @param {Number} height - Height of rectangle.
+ * @param {Number} top - Top position.
+ * @param {Number} left - Left position.
+ * @returns {ClientRect}
+ */
+function createContentRect(width, height, top, left) {
     return {
-        width,
-        height,
-        top,
+        width, height, top,
         right: width + left,
         bottom: height + top,
         left
@@ -66,7 +110,7 @@ function createContentRect(clientWidth, clientHeight, paddings) {
 function getSVGContentRect(target) {
     const bbox = target.getBBox();
 
-    return createContentRect(bbox.width, bbox.height, emptyRect);
+    return createContentRect(bbox.width, bbox.height, 0, 0);
 }
 
 /**
@@ -77,16 +121,62 @@ function getSVGContentRect(target) {
  * @returns {ClientRect}
  */
 function getHTMLElementContentRect(target) {
-    const width = target.clientWidth;
-    const height = target.clientHeight;
+    // Client width & height properties can't be
+    // used exclusively as they provide rounded values.
+    const clientWidth = target.clientWidth;
+    const clientHeight = target.clientHeight;
 
-    // It's not necessary to proceed with calculations
-    // as it's already known that the rectangle is empty.
-    if (!width && !height) {
+    // By this condition we can catch all non-replaced inline, hidden and detached
+    // elements. Though elements whose width & height are less than 0.5 will
+    // be discarded as well.
+    //
+    // Without it we would need to implement separate methods for each of
+    // those cases and it's not possible to perform a precise and performance
+    // effective test for hidden elements. E.g. even jQuerys' ':visible' filter
+    // gives wrong results for elements whose width & height are less
+    // than 0.5.
+    if (!clientWidth && !clientHeight) {
         return emptyRect;
     }
 
-    return createContentRect(width, height, getPaddings(target));
+    const styles = getStyles(target);
+    const paddings = getPaddings(styles);
+    const horizPad = paddings.left + paddings.right;
+    const vertPad = paddings.top + paddings.bottom;
+
+    // Computed styles of width & height are being used because they
+    // are the only dimensions available to JS that contain non-rounded values. It could
+    // have been possible to utilize getBoundingClientRect if only its' data wasn't
+    // affected by CSS transformations let alone paddings, borders and scrollbars.
+    let width = getWidth(styles),
+        height = getHeight(styles);
+
+    // Width & height include paddings and borders
+    // when 'border-box' box model is applied (except for IE).
+    if (styles.boxSizing === 'border-box') {
+        // Following conditions are required to handle Internet Explorer which
+        // doesn't include paddings and borders to computed CSS dimensions.
+        //
+        // We can say that if CSS dimensions + paddings are equal to the "client" properties
+        // then it's either IE, and thus we don't need to subtract anything, or
+        // an element merely doesn't have paddings/borders styles.
+        if (Math.round(width + horizPad) !== clientWidth) {
+            width -= getBordersSize(styles, 'left', 'right') + horizPad;
+        }
+
+        if (Math.round(height + vertPad) !== clientHeight) {
+            height -= getBordersSize(styles, 'top', 'bottom') + vertPad;
+        }
+    }
+
+    // In some browsers (only in Firefox, actually) CSS width & height
+    // include scrollbars size which can be removed at this step as scrollbars
+    // are the only difference between rounded dimensions + paddings
+    // and the "client" properties.
+    width -= Math.round(width + horizPad) - clientWidth;
+    height -= Math.round(height + vertPad) - clientHeight;
+
+    return createContentRect(width, height, paddings.top, paddings.left);
 }
 
 /**

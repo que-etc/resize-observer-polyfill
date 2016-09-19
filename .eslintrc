@@ -60,7 +60,7 @@
         "no-catch-shadow": "error",
         "no-undef": ["error", { "typeof": true }],
         "no-undefined": "error",
-        "no-use-before-define": "error",
+        "no-use-before-define": ["error", "nofunc"],
 
         "array-bracket-spacing": ["error", "never"],
         "block-spacing": ["error", "never"],
@@ -116,7 +116,7 @@
                 "return": "returns"
             },
             "requireReturn": false,
-            "requireParamDescription": true,
+            "requireParamDescription": false,
             "requireReturnType": true,
             "requireReturnDescription": false,
             "matchDescription": ".+"

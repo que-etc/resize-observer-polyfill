@@ -33,12 +33,11 @@ Or just grab one of the pre-built versions from [`dist`](https://github.com/que-
 Polyfill has been tested and known to work in the following browsers:
 
 * Chrome 40+
-* Opera 30+
 * Firefox 31+
 * Safari 9+
+* Opera 30+
 * Edge 13+
-* Internet Explorer 11
-* _Internet Explorer 9-10_ (tested in compatibility mode of IE11)
+* Internet Explorer 9+
 
 **NOTE:** Internet Explorer 8 and its earlier versions are not supported.
 
@@ -151,7 +150,8 @@ gulp test:spec
 If you want to test some specific browser that is not present in karmas' config file you'll need
 to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
 
-And if you need to run tests against native implementation you'll additionally need to remove top imports from the `ResizeObserver.spec.js` test suite.
+To run tests against native implementation you'll need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
+Also don't forget to make sure that ResizeObserver API is enabled in a browser that is being tested.
 
 [travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
 [travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill
