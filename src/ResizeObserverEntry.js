@@ -6,12 +6,16 @@ export default class ResizeObserverEntry {
      * @param {ClientRect} rectData - Data of the elements' content rectangle.
      */
     constructor(target, rectData) {
-        const contentRect = {};
+        // Content rectangle needs to be an instance
+        // of ClientRect if it's available.
+        const rectInterface = window.ClientRect ?
+            ClientRect.prototype :
+            Object.prototype;
 
         // According to the specification following properties
         // are not writable and in native implementation
         // they are also not enumerable.
-        Object.defineProperties(contentRect, {
+        const contentRect = Object.create(rectInterface, {
             width: {value: rectData.width},
             height: {value: rectData.height},
             top: {value: rectData.top},

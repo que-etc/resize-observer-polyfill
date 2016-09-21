@@ -23,6 +23,10 @@ describe('ResizeObserverEntry', () => {
 
             expect(entry.target).toBe(target);
 
+            if (window.ClientRect) {
+                expect(entry.contentRect instanceof ClientRect).toBe(true);
+            }
+
             for (const key of keys) {
                 const descriptor = Object.getOwnPropertyDescriptor(entry.contentRect, key);
 
