@@ -43,6 +43,7 @@ export default class ResizeObserver {
      * @param {Element} target - Element to be observed.
      */
     observe(target) {
+        //  Throw the same errors as in a native implementation.
         if (!arguments.length) {
             throw new TypeError('1 argument required, but only 0 present.');
         }
@@ -60,8 +61,8 @@ export default class ResizeObserver {
 
         targets.set(target, new ResizeObservation(target));
 
-        // Add observer to controller
-        // if it hasn't been connected yet.
+        // Add observer to controller if
+        // it hasn't been connected yet.
         if (!this._controller.isConnected(this)) {
             this._controller.connect(this);
         }
@@ -76,6 +77,7 @@ export default class ResizeObserver {
      * @param {Element} target - Element to stop observing.
      */
     unobserve(target) {
+        //  Throw the same errors as in a native implementation.
         if (!arguments.length) {
             throw new TypeError('1 argument required, but only 0 present.');
         }
@@ -91,10 +93,12 @@ export default class ResizeObserver {
             return;
         }
 
-        // Remove element and an associated with
+        // Remove element and associated with
         // it ResizeObsrvation instance from registry.
         targets.delete(target);
 
+        // Set back the initial state if
+        // there is nothing to observe.
         if (!targets.size) {
             this.disconnect();
         }
@@ -107,7 +111,6 @@ export default class ResizeObserver {
     disconnect() {
         this.clearActive();
         this._targets.clear();
-
         this._controller.disconnect(this);
     }
 
@@ -117,12 +120,16 @@ export default class ResizeObserver {
      * active resize observations.
      */
     broadcastActive() {
+        // Do nothing if observer doesn't
+        // have active observations.
         if (!this.hasActive()) {
             return;
         }
 
         const publicObserver = this._publicObserver;
 
+        // Create ResizeObserverEntry instance
+        // for every active observation.
         const entries = this._activeTargets.map(observation => {
             return new ResizeObserverEntry(
                 observation.target,

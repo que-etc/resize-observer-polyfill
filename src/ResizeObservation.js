@@ -52,7 +52,7 @@ function getHeight(styles) {
  * Extracts borders size from provided styles.
  *
  * @param {CSSStyleDeclaration} styles
- * @param {...String} [positions = boxKeys] - Borders positions (top, right, ...)
+ * @param {...String} positions - Borders positions (top, right, ...)
  * @returns {Number}
  */
 function getBordersSize(styles, ...positions) {

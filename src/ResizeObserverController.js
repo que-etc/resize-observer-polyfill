@@ -72,8 +72,8 @@ export default class ResizeObserverController {
 
         // Fix value of "this" binding for the following methods.
         this.runUpdates = this.runUpdates.bind(this);
-        this._resolveScheduled = this._resolveScheduled.bind(this);
         this._onMutation = this._onMutation.bind(this);
+        this._resolveScheduled = this._resolveScheduled.bind(this);
 
         // Function that will be invoked to re-run the
         // update cycle if continuous cycles are enabled.
@@ -204,10 +204,10 @@ export default class ResizeObserverController {
 
     /**
      * Schedules the update of observers.
-     *
-     * @private
      */
     scheduleUpdate() {
+        // Schedule new update if it
+        // hasn't been scheduled already.
         if (!this._isUpdateScheduled) {
             this._isUpdateScheduled = true;
 
@@ -226,17 +226,22 @@ export default class ResizeObserverController {
 
         this._isUpdateScheduled = false;
 
-        // Do nothing if cycle wasn't started.
+        // Do nothing if cycle wasn't started,
+        // i.e. a single update was requested.
         if (!this._isCycleActive) {
             return;
         }
 
-        // Re-start cycle if changes have been detected.
+        // Re-start cycle so that we can catch future changes,
+        // e.g. when there are active CSS transitions.
         if (hasChanges) {
             this.runUpdates();
         } else if (this._hasRemainingTime()) {
+            // Keep running updates if idle timeout isn't reached yet.
+            // This way we make it possible to adjust to delayed transitions.
             this.scheduleUpdate();
         } else {
+            // Finish update cycle.
             this._endUpdates();
         }
     }
@@ -289,8 +294,6 @@ export default class ResizeObserverController {
         // Fall back to an infinite cycle.
         if (!mutationsSupported) {
             this._isCycleContinuous = true;
-
-            this.runUpdates();
         } else {
             // Subscribe to DOM mutations as they may lead to
             // changes in dimensions of elements.
@@ -302,6 +305,12 @@ export default class ResizeObserverController {
                 characterData: true,
                 subtree: true
             });
+        }
+
+        // Don't wait for possible event that might trigger the
+        // update of observers and manually initiate update cycle.
+        if (this._isCycleContinuous) {
+            this.runUpdates();
         }
     }
 
