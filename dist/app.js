@@ -208,9 +208,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 	
@@ -349,9 +347,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -509,9 +505,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -612,12 +606,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        // Fix value of "this" binding for the following methods.
 	        this.runUpdates = this.runUpdates.bind(this);
-	        this._resolveScheduled = this._resolveScheduled.bind(this);
 	        this._onMutation = this._onMutation.bind(this);
+	        this._resolveScheduled = this._resolveScheduled.bind(this);
 	
 	        // Function that will be invoked to re-run the
 	        // update cycle if continuous cycles are enabled.
-	        this._continuousCycleHandler = debounce(this.runUpdates, 200);
+	        this._continuousCycleHandler = debounce(this.runUpdates, 100);
 	    }
 	
 	    /**
@@ -732,12 +726,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    /**
 	     * Schedules the update of observers.
-	     *
-	     * @private
 	     */
 	
 	
 	    ResizeObserverController.prototype.scheduleUpdate = function scheduleUpdate() {
+	        // Schedule new update if it
+	        // hasn't been scheduled already.
 	        if (!this._isUpdateScheduled) {
 	            this._isUpdateScheduled = true;
 	
@@ -758,17 +752,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        this._isUpdateScheduled = false;
 	
-	        // Do nothing if cycle wasn't started.
+	        // Do nothing if cycle wasn't started,
+	        // i.e. a single update was requested.
 	        if (!this._isCycleActive) {
 	            return;
 	        }
 	
-	        // Re-start cycle if changes have been detected.
+	        // Re-start cycle so that we can catch future changes,
+	        // e.g. when there are active CSS transitions.
 	        if (hasChanges) {
 	            this.runUpdates();
 	        } else if (this._hasRemainingTime()) {
+	            // Keep running updates if idle timeout isn't reached yet.
+	            // This way we make it possible to adjust to delayed transitions.
 	            this.scheduleUpdate();
 	        } else {
+	            // Finish update cycle.
 	            this._endUpdates();
 	        }
 	    };
@@ -827,8 +826,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // Fall back to an infinite cycle.
 	        if (!mutationsSupported) {
 	            this._isCycleContinuous = true;
-	
-	            this.runUpdates();
 	        } else {
 	            // Subscribe to DOM mutations as they may lead to
 	            // changes in dimensions of elements.
@@ -840,6 +837,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                characterData: true,
 	                subtree: true
 	            });
+	        }
+	
+	        // Don't wait for possible event that might trigger the
+	        // update of observers and manually initiate update cycle.
+	        if (this._isCycleContinuous) {
+	            this.runUpdates();
 	        }
 	    };
 	
@@ -917,14 +920,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	        /**
 	         * Enables or disables continuous updates.
 	         *
-	         * @param {Boolean} value - Whether to enable or disable
+	         * @param {Boolean} enable - Whether to enable or disable
 	         *      continuous updates. Note that the value won't be applied
 	         *      if MutationObserver is not supported.
 	         */
 	        ,
-	        set: function set(value) {
-	            if (mutationsSupported) {
-	                this._isCycleContinuous = value;
+	        set: function set(enable) {
+	            // The state of continuous updates should not be modified
+	            // if MutationObserver is not supported.
+	            if (!mutationsSupported) {
+	                return;
+	            }
+	
+	            this._isCycleContinuous = enable;
+	
+	            // Immediately start the update cycle in order not to
+	            // wait for a possible event that will initiate it.
+	            if (this._listenersEnabled && enable) {
+	                this.runUpdates();
 	            }
 	        }
 	    }]);
@@ -941,9 +954,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	/**
 	 * A shim for performance.now method which falls back
@@ -971,9 +982,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	/**
 	 * A shim for requestAnimationFrame which falls back
@@ -1001,9 +1010,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	var _es6Collections = __webpack_require__(2);
 	
@@ -1064,6 +1071,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	
 	    ResizeObserver.prototype.observe = function observe(target) {
+	        //  Throw the same errors as in a native implementation.
 	        if (!arguments.length) {
 	            throw new TypeError('1 argument required, but only 0 present.');
 	        }
@@ -1081,8 +1089,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        targets.set(target, new _ResizeObservation2.default(target));
 	
-	        // Add observer to controller
-	        // if it hasn't been connected yet.
+	        // Add observer to controller if
+	        // it hasn't been connected yet.
 	        if (!this._controller.isConnected(this)) {
 	            this._controller.connect(this);
 	        }
@@ -1099,6 +1107,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	
 	    ResizeObserver.prototype.unobserve = function unobserve(target) {
+	        //  Throw the same errors as in a native implementation.
 	        if (!arguments.length) {
 	            throw new TypeError('1 argument required, but only 0 present.');
 	        }
@@ -1114,10 +1123,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return;
 	        }
 	
-	        // Remove element and an associated with
+	        // Remove element and associated with
 	        // it ResizeObsrvation instance from registry.
 	        targets.delete(target);
 	
+	        // Set back the initial state if
+	        // there is nothing to observe.
 	        if (!targets.size) {
 	            this.disconnect();
 	        }
@@ -1132,7 +1143,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ResizeObserver.prototype.disconnect = function disconnect() {
 	        this.clearActive();
 	        this._targets.clear();
-	
 	        this._controller.disconnect(this);
 	    };
 	
@@ -1144,12 +1154,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	
 	    ResizeObserver.prototype.broadcastActive = function broadcastActive() {
+	        // Do nothing if observer doesn't
+	        // have active observations.
 	        if (!this.hasActive()) {
 	            return;
 	        }
 	
 	        var publicObserver = this._publicObserver;
 	
+	        // Create ResizeObserverEntry instance
+	        // for every active observation.
 	        var entries = this._activeTargets.map(function (observation) {
 	            return new _ResizeObserverEntry2.default(observation.target, observation.broadcastRect());
 	        });
@@ -1211,9 +1225,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -1271,7 +1283,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Extracts borders size from provided styles.
 	 *
 	 * @param {CSSStyleDeclaration} styles
-	 * @param {...String} [positions = boxKeys] - Borders positions (top, right, ...)
+	 * @param {...String} positions - Borders positions (top, right, ...)
 	 * @returns {Number}
 	 */
 	function getBordersSize(styles) {
@@ -1408,9 +1420,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // In some browsers (only in Firefox, actually) CSS width & height
 	    // include scrollbars size which can be removed at this step as scrollbars
 	    // are the only difference between rounded dimensions + paddings
-	    // and the "client" properties.
-	    width -= Math.round(width + horizPad) - clientWidth;
-	    height -= Math.round(height + vertPad) - clientHeight;
+	    // and "client" properties, though that is not always true in Chrome.
+	    var scrollbarX = Math.round(width + horizPad) - clientWidth;
+	    var scrollbarY = Math.round(height + vertPad) - clientHeight;
+	
+	    // Chrome has a rather weird rounding of "client" properties.
+	    // E.g. for an element whose content width is 314.2px it sometimes
+	    // gives the client width of 315px and for the width of 314.7px
+	    // it may give 314px. And it doesn't happen all the time.
+	    // This kind of difference needs to be ignored.
+	    if (Math.abs(scrollbarX) !== 1) {
+	        width -= scrollbarX;
+	    }
+	
+	    if (Math.abs(scrollbarY) !== 1) {
+	        height -= scrollbarY;
+	    }
 	
 	    return createContentRect(width, height, paddings.top, paddings.left);
 	}
@@ -1513,9 +1538,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
+	exports.__esModule = true;
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -1529,12 +1552,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	function ResizeObserverEntry(target, rectData) {
 	    _classCallCheck(this, ResizeObserverEntry);
 	
-	    var contentRect = {};
+	    // Content rectangle needs to be an instance
+	    // of ClientRect if it's available.
+	    var rectInterface = window.ClientRect ? ClientRect.prototype : Object.prototype;
 	
 	    // According to the specification following properties
 	    // are not writable and in native implementation
 	    // they are also not enumerable.
-	    Object.defineProperties(contentRect, {
+	    var contentRect = Object.create(rectInterface, {
 	        width: { value: rectData.width },
 	        height: { value: rectData.height },
 	        top: { value: rectData.top },
