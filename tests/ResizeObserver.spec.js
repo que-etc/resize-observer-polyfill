@@ -1,5 +1,5 @@
-/*import ResizeObserver from '../src/ResizeObserver';
-import ResizeObserverEntry from '../src/ResizeObserverEntry';*/
+import ResizeObserver from '../src/ResizeObserver';
+import ResizeObserverEntry from '../src/ResizeObserverEntry';
 
 /* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
 
