@@ -14,8 +14,10 @@ const builds = {
                 test: /\.js$/,
                 loader: 'babel-loader',
                 query: {
-                    presets: ['es2015-loose', 'stage-1'],
-                    plugins: ['add-module-exports', 'transform-es2015-modules-commonjs']
+                    presets: [['es2015', {
+                        loose: true
+                    }]],
+                    plugins: ['add-module-exports']
                 }
             }]
         }
