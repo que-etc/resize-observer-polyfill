@@ -4,7 +4,7 @@ ResizeObserver Polyfill
 [![Build Status][travis-image]][travis-url]
 
 
-A polyfill for ResizeObserver API.
+A polyfill for Resize Observer API.
 
 Implements event based tracking of changes in the dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles long running CSS transitions/animations, attributes and nodes mutations along with changes made by :hover pseudo-class (optional).
 
@@ -114,7 +114,7 @@ Note that even if transitions don't have a delay it's still better to leave this
 
 ### continuousUpdates
 
-By default possible changes in dimensions of elements caused by CSS `:hover` class are not tracked. To handle them you can set `ResizeObserver.continuousUpdtaes = true` which in turn will start a continuous update cycle with an interval of `200` milliseconds (using RAF, of course). Keep in mind that this is going to affect the performance.
+By default possible changes in dimensions of elements caused by CSS `:hover` class are not tracked. To handle them you can set `ResizeObserver.continuousUpdtaes = true` which in turn will start a continuous update cycle with an interval of `100` milliseconds (using RAF, of course). This also comes in handy for monitoring the dimensions of a textarea. Keep in mind that this is going to affect performance.
 
 **NOTE:** Changes made to these properties will affect all existing and future instances of ResizeObserver.
 
@@ -151,7 +151,7 @@ If you want to test some specific browser that is not present in karmas' config 
 to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
 
 To run tests against native implementation you'll need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
-Also don't forget to make sure that ResizeObserver API is enabled in a browser that is being tested.
+Also don't forget to make sure that Resize Observer API is enabled in a browser that is being tested.
 
 [travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
 [travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill

@@ -77,7 +77,7 @@ export default class ResizeObserverController {
 
         // Function that will be invoked to re-run the
         // update cycle if continuous cycles are enabled.
-        this._continuousCycleHandler = debounce(this.runUpdates, 200);
+        this._continuousCycleHandler = debounce(this.runUpdates, 100);
     }
 
     /**
@@ -110,13 +110,23 @@ export default class ResizeObserverController {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} value - Whether to enable or disable
+     * @param {Boolean} enable - Whether to enable or disable
      *      continuous updates. Note that the value won't be applied
      *      if MutationObserver is not supported.
      */
-    set continuousUpdates(value) {
-        if (mutationsSupported) {
-            this._isCycleContinuous = value;
+    set continuousUpdates(enable) {
+        // The state of continuous updates should not be modified
+        // if MutationObserver is not supported.
+        if (!mutationsSupported) {
+            return;
+        }
+
+        this._isCycleContinuous = enable;
+
+        // Immediately start the update cycle in order not to
+        // wait for a possible event that will initiate it.
+        if (this._listenersEnabled && enable) {
+            this.runUpdates();
         }
     }
 

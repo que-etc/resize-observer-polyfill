@@ -172,9 +172,22 @@ function getHTMLElementContentRect(target) {
     // In some browsers (only in Firefox, actually) CSS width & height
     // include scrollbars size which can be removed at this step as scrollbars
     // are the only difference between rounded dimensions + paddings
-    // and the "client" properties.
-    width -= Math.round(width + horizPad) - clientWidth;
-    height -= Math.round(height + vertPad) - clientHeight;
+    // and "client" properties, though that is not always true in Chrome.
+    const scrollbarX = Math.round(width + horizPad) - clientWidth;
+    const scrollbarY = Math.round(height + vertPad) - clientHeight;
+
+    // Chrome has a rather weird rounding of "client" properties.
+    // E.g. for an element whose content width is 314.2px it sometimes
+    // gives the client width of 315px and for the width of 314.7px
+    // it may give 314px. And it doesn't happen all the time.
+    // This kind of difference needs to be ignored.
+    if (Math.abs(scrollbarX) !== 1) {
+        width -= scrollbarX;
+    }
+
+    if (Math.abs(scrollbarY) !== 1) {
+        height -= scrollbarY;
+    }
 
     return createContentRect(width, height, paddings.top, paddings.left);
 }

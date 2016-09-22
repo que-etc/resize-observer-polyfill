@@ -1,5 +1,5 @@
-import ResizeObserver from '../src/ResizeObserver';
-import ResizeObserverEntry from '../src/ResizeObserverEntry';
+/*import ResizeObserver from '../src/ResizeObserver';
+import ResizeObserverEntry from '../src/ResizeObserverEntry';*/
 
 /* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
 
@@ -53,7 +53,7 @@ const template = `
     </div>
 `;
 
-const timeout = 250;
+const timeout = 150;
 const defaultIdleTimeout = ResizeObserver.idleTimeout;
 
 let styles,
@@ -1178,7 +1178,7 @@ describe('ResizeObserver', () => {
                         done();
                     }, timeout);
                 }, done => {
-                    elements.target1.style.transform = 'scale(0.5)';
+                    elements.container.style.transform = 'scale(0.5)';
                     elements.target2.style.transform = 'scale(0.5)';
 
                     observer.observe(elements.target2);
@@ -1199,7 +1199,7 @@ describe('ResizeObserver', () => {
                         done();
                     }, timeout);
                 }, done => {
-                    elements.target1.style.transform = '';
+                    elements.container.style.transform = '';
                     elements.target2.style.transform = '';
 
                     setTimeout(() => {
