@@ -340,6 +340,64 @@ describe('ResizeObserver', () => {
             }], done);
         });
 
+        it('handles resizing of a documentElement', done => {
+            const spy = jasmine.createSpy();
+            const docElement = document.documentElement;
+            const styles = window.getComputedStyle(docElement);
+
+            observer = new ResizeObserver(spy);
+
+            observer.observe(document.documentElement);
+
+            runSequence([done => {
+                const width = parseFloat(styles.width);
+                const height = parseFloat(styles.height);
+
+                setTimeout(() => {
+                    const entries = spy.calls.mostRecent().args[0];
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(docElement);
+
+                    expect(entries[0].contentRect.width).toBe(width);
+                    expect(entries[0].contentRect.height).toBe(height);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(width);
+                    expect(entries[0].contentRect.bottom).toBe(height);
+                    expect(entries[0].contentRect.left).toBe(0);
+
+                    done();
+                }, timeout);
+            }, done => {
+                document.body.removeChild(elements.root);
+
+                const width = parseFloat(styles.width);
+                const height = parseFloat(styles.height);
+
+                setTimeout(() => {
+                    const entries = spy.calls.mostRecent().args[0];
+
+                    expect(spy).toHaveBeenCalledTimes(2);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(docElement);
+
+                    expect(entries[0].contentRect.width).toBe(width);
+                    expect(entries[0].contentRect.height).toBe(height);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(width);
+                    expect(entries[0].contentRect.bottom).toBe(height);
+                    expect(entries[0].contentRect.left).toBe(0);
+
+                    done();
+                }, timeout);
+            }], done);
+        });
+
         it('handles hidden elements', done => {
             const spy = jasmine.createSpy();
 

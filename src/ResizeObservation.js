@@ -1,8 +1,6 @@
 // Placeholder of a content rectangle.
 const emptyRect = createContentRect(0, 0, 0, 0);
 
-const boxKeys = ['top', 'right', 'bottom', 'left'];
-
 /**
  * Extracts computed styles of provided element.
  *
@@ -21,31 +19,7 @@ function getStyles(target) {
  * @returns {Number}
  */
 function pixelsToNumber(value) {
-    let result = value.replace('px', '');
-
-    result = parseFloat(result);
-
-    return isNaN(result) ? 0 : result;
-}
-
-/**
- * Extracts computed width from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @returns {Number}
- */
-function getWidth(styles) {
-    return pixelsToNumber(styles.width);
-}
-
-/**
- * Extracts computed height from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @returns {Number}
- */
-function getHeight(styles) {
-    return pixelsToNumber(styles.height);
+    return parseFloat(value) || 0;
 }
 
 /**
@@ -70,6 +44,7 @@ function getBordersSize(styles, ...positions) {
  * @returns {Object} Paddings box.
  */
 function getPaddings(styles) {
+    const boxKeys = ['top', 'right', 'bottom', 'left'];
     const paddings = {};
 
     for (const key of boxKeys) {
@@ -114,6 +89,25 @@ function getSVGContentRect(target) {
 }
 
 /**
+ * Calculates content rectangle of a root element.
+ *
+ * @returns {ClientRect}
+ */
+function getDocElementRect() {
+    // Neither scroll[Width/Height] nor offset[Width/Height] can be used to define
+    // content dimensions as they give inconsistent results across different browser.
+    // E.g. in Internet Explorer 10 and lower these properties can't be less than
+    // client dimensions (same thing with the "getBoundingClientRect" method).
+    // And Firefox has the same behavior with its "scroll" properties.
+    const styles = getStyles(document.documentElement);
+
+    const width = pixelsToNumber(styles.width);
+    const height = pixelsToNumber(styles.height);
+
+    return createContentRect(width, height, 0, 0);
+}
+
+/**
  * Calculates content rectangle of provided HTMLElement.
  *
  * @param {HTMLElement} target - Element whose content
@@ -147,9 +141,9 @@ function getHTMLElementContentRect(target) {
     // Computed styles of width & height are being used because they
     // are the only dimensions available to JS that contain non-rounded values. It could
     // have been possible to utilize getBoundingClientRect if only its' data wasn't
-    // affected by CSS transformations let alone paddings, borders and scrollbars.
-    let width = getWidth(styles),
-        height = getHeight(styles);
+    // affected by CSS transformations let alone paddings, borders and scroll bars.
+    let width = pixelsToNumber(styles.width),
+        height = pixelsToNumber(styles.height);
 
     // Width & height include paddings and borders
     // when 'border-box' box model is applied (except for IE).
@@ -170,23 +164,23 @@ function getHTMLElementContentRect(target) {
     }
 
     // In some browsers (only in Firefox, actually) CSS width & height
-    // include scrollbars size which can be removed at this step as scrollbars
+    // include scroll bars size which can be removed at this step as scroll bars
     // are the only difference between rounded dimensions + paddings
     // and "client" properties, though that is not always true in Chrome.
-    const scrollbarX = Math.round(width + horizPad) - clientWidth;
-    const scrollbarY = Math.round(height + vertPad) - clientHeight;
+    const vertScrollbar = Math.round(width + horizPad) - clientWidth;
+    const horizScrollbar = Math.round(height + vertPad) - clientHeight;
 
     // Chrome has a rather weird rounding of "client" properties.
     // E.g. for an element whose content width is 314.2px it sometimes
     // gives the client width of 315px and for the width of 314.7px
     // it may give 314px. And it doesn't happen all the time.
     // This kind of difference needs to be ignored.
-    if (Math.abs(scrollbarX) !== 1) {
-        width -= scrollbarX;
+    if (Math.abs(vertScrollbar) !== 1) {
+        width -= vertScrollbar;
     }
 
-    if (Math.abs(scrollbarY) !== 1) {
-        height -= scrollbarY;
+    if (Math.abs(horizScrollbar) !== 1) {
+        height -= horizScrollbar;
     }
 
     return createContentRect(width, height, paddings.top, paddings.left);
@@ -204,6 +198,17 @@ function isSVGElement(target) {
 }
 
 /**
+ * Checks whether provided element is
+ * a document element (root element of a document).
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {Boolean}
+ */
+function isDocumentElement(target) {
+    return target === document.documentElement;
+}
+
+/**
  * Calculates an appropriate content rectangle
  * for provided html or svg element.
  *
@@ -212,9 +217,15 @@ function isSVGElement(target) {
  * @returns {ClientRect}
  */
 function getContentRect(target) {
-    return isSVGElement(target) ?
-        getSVGContentRect(target) :
-        getHTMLElementContentRect(target);
+    if (isSVGElement(target)) {
+        return getSVGContentRect(target);
+    }
+
+    if (isDocumentElement(target)) {
+        return getDocElementRect();
+    }
+
+    return getHTMLElementContentRect(target);
 }
 
 /**

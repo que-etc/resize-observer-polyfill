@@ -3,10 +3,12 @@ const webpack = require('webpack');
 
 const builds = {
     general: {
+        devtool: 'source-map',
         resolve: {
             extensions: ['', '.js']
         },
         output: {
+            library: 'ResizeObserver',
             libraryTarget: 'umd'
         },
         module: {
@@ -25,14 +27,15 @@ const builds = {
 };
 
 builds.test = _.merge({}, builds.general, {
-    devtool: 'inline-source-map'
+    devtool: 'inline-source-map',
+    output: {
+        library: false
+    }
 });
 
 builds.dev = _.merge({}, builds.general, {
     entry: './src/ResizeObserver.js',
-    devtool: 'source-map',
     output: {
-        library: 'ResizeObserver',
         path: './tmp/',
         filename: 'ResizeObserver.js'
     }
@@ -41,7 +44,6 @@ builds.dev = _.merge({}, builds.general, {
 builds.production = _.merge({}, builds.general, {
     entry: './index.js',
     output: {
-        library: 'ResizeObserver',
         path: './dist/',
         filename: 'ResizeObserver.js'
     },

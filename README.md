@@ -6,11 +6,11 @@ ResizeObserver Polyfill
 
 A polyfill for Resize Observer API.
 
-Implements event based tracking of changes in the dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles long running CSS transitions/animations, attributes and nodes mutations along with changes made by :hover pseudo-class (optional).
+Implements event based tracking of changes in the content dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles DOM mutations and long running CSS transitions/animations. Optionally can observe resizing of a `<textarea>` and track changes caused by the `:hover` pseudo-class.
 
-Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html). Doesn't contain any publicly available methods except for those described in the spec. Size is 3.4kb when minified and gzipped.
+Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html). Doesn't contain any publicly available methods except for those described in the spec. The size is 3.4kb when minified and gzipped.
 
-[Live demo](http://que-etc.github.io/resize-observer-polyfill) (won't run in IE9).
+[Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
 
 ## Installation
 
@@ -33,7 +33,7 @@ Or just grab one of the pre-built versions from [`dist`](https://github.com/que-
 Polyfill has been tested and known to work in the following browsers:
 
 * Chrome 40+
-* Firefox 31+
+* Firefox 37+
 * Safari 9+
 * Opera 30+
 * Edge 13+
@@ -120,7 +120,7 @@ By default possible changes in dimensions of elements caused by CSS `:hover` cla
 
 ## Building and testing
 
-First make sure that you have all dependencies installed by running `npm install`. Then you can execute following tasks either with a gulp CLI or with `npm run gulp` command.
+First make sure that you have all dependencies installed by running `npm install`. Then you can execute following tasks either with a gulp CLI or with the `npm run gulp` command.
 
 To make a production build:
 
@@ -128,7 +128,7 @@ To make a production build:
 gulp build:production
 ```
 
-To make a development build of polyfill itself (including sourcemap).
+To make a development build of polyfill itself.
 Files will be located in `tmp` folder:
 
 ```sh
@@ -150,8 +150,8 @@ gulp test:spec
 If you want to test some specific browser that is not present in karmas' config file you'll need
 to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
 
-To run tests against native implementation you'll need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
-Also don't forget to make sure that Resize Observer API is enabled in a browser that is being tested.
+To run tests against a native implementation you'll need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
+Also don't forget to make sure that Resize Observer API is enabled in browser that is being tested.
 
 [travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
 [travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill
