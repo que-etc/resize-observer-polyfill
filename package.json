@@ -23,7 +23,7 @@
     ],
     "homepage": "https://github.com/que-etc/resize-observer-polyfill",
     "devDependencies": {
-        "resize-observer-polyfill": "^1.1.2",
+        "resize-observer-polyfill": "^1.1.3",
         "babel-core": "^6.14.0",
         "babel-loader": "^6.2.5",
         "babel-preset-es2015": "^6.14.0",

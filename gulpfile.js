@@ -22,6 +22,13 @@ gulp.task('build', callback => {
             path: './dist/',
             filename: 'app.js'
         },
+        plugins: [
+            new webpack.optimize.UglifyJsPlugin({
+                mangle: {
+                    except: ['ResizeObserver', 'ResizeObserverEntry']
+                }
+            })
+        ],
         devtool: 'source-map',
         resolve: {
             extensions: ['', '.js']
