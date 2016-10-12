@@ -1,5 +1,5 @@
 /**
- * A collection of shims that provided minimal
+ * A collection of shims that provides minimal
  * support of WeakMap and Map classes.
  *
  * These implementations are not meant to be used outside of

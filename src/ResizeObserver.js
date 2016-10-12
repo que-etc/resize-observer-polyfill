@@ -2,10 +2,10 @@ import {WeakMap} from './shims/es6-collections';
 import ResizeObserverController from './ResizeObserverController';
 import _ResizeObserver from './_ResizeObserver';
 
-// Controller which will be assigned to all instances of ResizeObserver.
+// Controller that will be assigned to all instances of ResizeObserver.
 const controller = new ResizeObserverController();
 
-// Registry of internal observers.
+// Registry of the internal observers.
 const observers = new WeakMap();
 
 /**
@@ -13,15 +13,15 @@ const observers = new WeakMap();
  * properties and methods from public instances.
  *
  * Additionally it implements "idleTimeout" and "continuousUpdates" static property
- * accessors to give a control over the behavior of ResizeObserverController
- * instance. Changes made to these properties will affect all future and
+ * accessors to give control over the behavior of the ResizeObserverController
+ * instance. Changes made to these properties affect all future and
  * existing observers.
  */
 class ResizeObserver {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback which will
+     * @param {Function} callback - Callback that will
      *      be invoked when dimensions of one of the
      *      observed elements have been changed.
      */
@@ -52,7 +52,7 @@ class ResizeObserver {
      */
     static set idleTimeout(value) {
         if (typeof value !== 'number') {
-            throw new TypeError('type of "idleTimeout" value must be a number.');
+            throw new TypeError('type of "idleTimeout" value must be number.');
         }
 
         if (typeof value < 0) {
@@ -79,7 +79,7 @@ class ResizeObserver {
      */
     static set continuousUpdates(value) {
         if (typeof value !== 'boolean') {
-            throw new TypeError('type of "continuousUpdates" value must be a boolean.');
+            throw new TypeError('type of "continuousUpdates" value must be boolean.');
         }
 
         controller.continuousUpdates = value;

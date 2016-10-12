@@ -1,4 +1,4 @@
-// Placeholder of a content rectangle.
+// Placeholder of an empty content rectangle.
 const emptyRect = createContentRect(0, 0, 0, 0);
 
 /**
@@ -95,9 +95,9 @@ function getSVGContentRect(target) {
  */
 function getDocElementRect() {
     // Neither scroll[Width/Height] nor offset[Width/Height] can be used to define
-    // content dimensions as they give inconsistent results across different browser.
-    // E.g. in Internet Explorer 10 and lower these properties can't be less than
-    // client dimensions (same thing with the "getBoundingClientRect" method).
+    // content dimensions as they give inconsistent results across different browsers.
+    // E.g. in the Internet Explorer 10 and lower value of these properties can't be
+    // less than the client dimensions (same thing with the "getBoundingClientRect" method).
     // And Firefox has the same behavior with its "scroll" properties.
     const styles = getStyles(document.documentElement);
 
@@ -121,14 +121,13 @@ function getHTMLElementContentRect(target) {
     const clientHeight = target.clientHeight;
 
     // By this condition we can catch all non-replaced inline, hidden and detached
-    // elements. Though elements whose width & height are less than 0.5 will
+    // elements. Though elements with width & height properties less than 0.5 will
     // be discarded as well.
     //
     // Without it we would need to implement separate methods for each of
     // those cases and it's not possible to perform a precise and performance
     // effective test for hidden elements. E.g. even jQuerys' ':visible' filter
-    // gives wrong results for elements whose width & height are less
-    // than 0.5.
+    // gives wrong results for elements with width & height less than 0.5.
     if (!clientWidth && !clientHeight) {
         return emptyRect;
     }
@@ -138,9 +137,9 @@ function getHTMLElementContentRect(target) {
     const horizPad = paddings.left + paddings.right;
     const vertPad = paddings.top + paddings.bottom;
 
-    // Computed styles of width & height are being used because they
-    // are the only dimensions available to JS that contain non-rounded values. It could
-    // have been possible to utilize getBoundingClientRect if only its' data wasn't
+    // Computed styles of width & height are being used because they are the
+    // only dimensions available to JS that contain non-rounded values. It could
+    // be possible to utilize getBoundingClientRect if only its' data wasn't
     // affected by CSS transformations let alone paddings, borders and scroll bars.
     let width = pixelsToNumber(styles.width),
         height = pixelsToNumber(styles.height);

@@ -4,11 +4,11 @@ ResizeObserver Polyfill
 [![Build Status][travis-image]][travis-url]
 
 
-A polyfill for Resize Observer API.
+A polyfill for the Resize Observer API.
 
-Implements event based tracking of changes in the content dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles DOM mutations and long running CSS transitions/animations. Optionally can observe resizing of a `<textarea>` and track changes caused by the `:hover` pseudo-class.
+Implements event based tracking of changes in the content dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles DOM mutations and long running CSS transitions/animations. Can optionally observe resizing of a `<textarea>` and track changes caused by the `:hover` pseudo-class.
 
-Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html). Doesn't contain any publicly available methods except for those described in the spec. The size is 3.4kb when minified and gzipped.
+Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html). Doesn't contain any publicly available methods except for those described in the spec. The size is 3.6kb when minified and gzipped.
 
 [Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
 
@@ -110,7 +110,7 @@ After the mutations of DOM attributes, like `class` or `style`, an update cycle 
 
 Default timeout value is `50` milliseconds and you can increase it to match the delay of transitions, e.g. when transition starts with the delay of `500` milliseconds you can set `ResizeObserver.idleTimeout = 500` to the corresponding value.
 
-Note that even if transitions don't have a delay it's still better to leave this value as it is.
+Note that even if transitions don't have a delay it's still better to leave this value as it is. And you can set this property to zero if don't need transitions to be tracked.
 
 ### continuousUpdates
 
@@ -147,10 +147,10 @@ defined in `karma.config.js` file:
 gulp test:spec
 ```
 
-If you want to test some specific browser that is not present in karmas' config file you'll need
+If you want to test some specific browser that is not present in karmas' config file you need
 to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
 
-To run tests against a native implementation you'll need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
+To run tests against a native implementation you need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
 Also don't forget to make sure that Resize Observer API is enabled in browser that is being tested.
 
 [travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master

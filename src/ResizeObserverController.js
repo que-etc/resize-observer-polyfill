@@ -4,9 +4,8 @@ import requestAnimFrame from './shims/requestAnimationFrame';
 const mutationsSupported = typeof window.MutationObserver === 'function';
 
 /**
- * Creates a wrapper function which ensures that
- * provided callback will be invoked only once
- * during the specified delay.
+ * Creates a wrapper function which ensures only one
+ * invocation of provided callback during the specified delay.
  *
  * @param {Function} callback - Function to be invoked.
  * @param {Number} [delay = 0] - Delay after which to invoke callback.
@@ -201,7 +200,7 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Starts the update cycle which will run either
+     * Starts the update cycle which runs either
      * until it detects changes in the dimensions of
      * elements or the idle timeout is reached.
      */

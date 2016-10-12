@@ -13,8 +13,8 @@ export default class ResizeObserverEntry {
             Object.prototype;
 
         // According to the specification following properties
-        // are not writable and in native implementation
-        // they are also not enumerable.
+        // are not writable and are also not enumerable in the
+        // native implementation
         const contentRect = Object.create(rectInterface, {
             width: {value: rectData.width},
             height: {value: rectData.height},

@@ -22,14 +22,14 @@ export default class ResizeObserver {
         // Reference to the callback function.
         this._callback = callback;
 
-        // A registry of ResizeObservation instances.
+        // Registry of ResizeObservation instances.
         this._targets = new Map();
 
-        // A collection of resize observations that have detected
+        // Collection of resize observations that have detected
         // changes in dimensions of elements.
         this._activeTargets = [];
 
-        // Reference to associated ResizeObserverController.
+        // Reference to the associated ResizeObserverController.
         this._controller = controller;
 
         // Public ResizeObserver instance which will be passed
@@ -161,8 +161,8 @@ export default class ResizeObserver {
 
     /**
      * Clears an array of previously collected active observations
-     * and collects observation instances whose associated element
-     * has changes in its' content rectangle.
+     * and collects observation instances which associated element
+     * has changed its' content rectangle.
      */
     gatherActive() {
         this.clearActive();
