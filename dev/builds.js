@@ -1,51 +1,61 @@
 const _ = require('lodash');
 const webpack = require('webpack');
 
-const builds = {
-    general: {
-        devtool: 'source-map',
-        resolve: {
-            extensions: ['', '.js']
-        },
-        output: {
-            library: 'ResizeObserver',
-            libraryTarget: 'umd'
-        },
-        module: {
-            loaders: [{
-                test: /\.js$/,
-                loader: 'babel-loader',
-                query: {
-                    presets: [['es2015', {
-                        loose: true
-                    }]],
-                    plugins: ['add-module-exports']
-                }
-            }]
-        }
+const base = {
+    resolve: {
+        extensions: ['', '.js']
+    },
+    output: {
+        library: 'ResizeObserver',
+        libraryTarget: 'umd'
+    },
+    module: {
+        loaders: [{
+            test: /\.js$/,
+            loader: 'babel-loader',
+            query: {
+                presets: [['es2015', {
+                    loose: true
+                }]],
+                plugins: ['add-module-exports']
+            }
+        }]
     }
 };
 
-builds.test = _.merge({}, builds.general, {
-    devtool: 'inline-source-map',
-    output: {
-        library: false
-    }
-});
+const builds = {
+    test: _.merge({}, base, {
+        devtool: 'inline-source-map',
+        output: {
+            library: false
+        }
+    }),
 
-builds.dev = _.merge({}, builds.general, {
-    entry: './src/ResizeObserver.js',
-    output: {
-        path: './tmp/',
-        filename: 'ResizeObserver.js'
-    }
-});
+    dev: _.merge({}, base, {
+        devtool: 'source-map',
+        entry: './src/ResizeObserver.js',
+        output: {
+            path: './tmp/',
+            filename: 'ResizeObserver.js'
+        }
+    }),
 
-builds.production = _.merge({}, builds.general, {
-    entry: './index.js',
+    production: _.merge({}, base, {
+        entry: {
+            ResizeObserver: './index.js',
+            'ResizeObserver.global': './index.global.js'
+        },
+        output: {
+            path: './dist/',
+            filename: '[name].js'
+        }
+    })
+};
+
+builds.prodMin = _.merge({}, builds.production, {
+    devtool: 'source-map',
     output: {
-        path: './dist/',
-        filename: 'ResizeObserver.js'
+        filename: '[name].min.js'
     },
     plugins: [
         new webpack.optimize.UglifyJsPlugin({
@@ -54,13 +64,6 @@ builds.production = _.merge({}, builds.general, {
             }
         })
     ]
-});
-
-builds.prodGlobal = _.merge({}, builds.production, {
-    entry: './index.global.js',
-    output: {
-        filename: 'ResizeObserver.global.js'
-    }
 });
 
 module.exports = builds;

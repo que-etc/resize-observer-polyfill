@@ -1,12 +1,9 @@
 {
     "name": "resize-observer-polyfill",
     "author": "Denis Rul <que.etc@bgmail.com>",
-    "version": "1.1.3",
-    "description": "A polyfill for Resize Observer API",
+    "version": "1.1.4",
+    "description": "A polyfill for the Resize Observer API",
     "main": "index.js",
-    "engines": {
-        "node": ">=6.0.0"
-    },
     "scripts": {
         "test": "gulp test:lint && karma start karma.config.js --browsers Firefox",
         "gulp": "gulp"
@@ -32,7 +29,8 @@
         "util",
         "client",
         "browser",
-        "polyfill"
+        "polyfill",
+        "ponyfill"
     ],
     "homepage": "https://github.com/que-etc/resize-observer-polyfill",
     "devDependencies": {

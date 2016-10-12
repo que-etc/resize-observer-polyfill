@@ -1316,7 +1316,7 @@ describe('ResizeObserver', () => {
                 elements.target1.style.transition = 'width 0.5s, height 0.5s';
                 elements.target2.style.transition = 'width 0.5s, height 0.5s';
 
-                ResizeObserver.idleTimeout = 500;
+                ResizeObserver.idleTimeout = 540;
 
                 observer = new ResizeObserver(spy);
 
@@ -1351,7 +1351,7 @@ describe('ResizeObserver', () => {
                         expect(entries[0].contentRect.height).toBe(700);
 
                         done();
-                    }, 540);
+                    }, 600);
                 }], done);
             });
         }

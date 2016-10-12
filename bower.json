@@ -1,6 +1,6 @@
 {
     "name": "resize-observer-polyfill",
-    "description": "A polyfill for Resize Observer API",
+    "description": "A polyfill for the Resize Observer API",
     "authors": [
         "Denis Rul <que.etc@bgmail.com>"
     ],
@@ -10,7 +10,7 @@
         "node",
         "es6"
     ],
-    "version": "1.1.3",
+    "version": "1.1.4",
     "main": [
         "index.js"
     ],
@@ -21,6 +21,7 @@
         "util",
         "client",
         "browser",
-        "polyfill"
+        "polyfill",
+        "ponyfill"
     ]
 }

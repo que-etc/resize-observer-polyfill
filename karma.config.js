@@ -1,5 +1,3 @@
-const webpack = require('karma-webpack');
-
 module.exports = function (config) {
     config.set({
         singleRun: true,
@@ -8,7 +6,7 @@ module.exports = function (config) {
             'tests/**/*.spec.js'
         ],
         plugins: [
-            webpack,
+            'karma-webpack',
             'karma-jasmine',
             'karma-sourcemap-loader',
             'karma-chrome-launcher',

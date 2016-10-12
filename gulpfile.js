@@ -22,12 +22,12 @@ gulp.task('build:dev', callback => {
     webpack(builds.dev, createWebpackCallback(callback));
 });
 
-gulp.task('build:production', ['build:production:global'], callback => {
+gulp.task('build:production', ['build:production:min'], callback => {
     webpack(builds.production, createWebpackCallback(callback));
 });
 
-gulp.task('build:production:global', callback => {
-    webpack(builds.prodGlobal, createWebpackCallback(callback));
+gulp.task('build:production:min', callback => {
+    webpack(builds.prodMin, createWebpackCallback(callback));
 });
 
 gulp.task('build', ['build:dev', 'build:production']);
