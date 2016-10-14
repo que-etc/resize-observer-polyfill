@@ -1,7 +1,11 @@
+/* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
+
 import ResizeObserver from '../src/ResizeObserver';
 import ResizeObserverEntry from '../src/ResizeObserverEntry';
 
-/* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
+let observer = null,
+    elements = {},
+    styles;
 
 const emptyFn = () => {};
 const css = `
@@ -55,10 +59,6 @@ const template = `
 
 const timeout = 150;
 const defaultIdleTimeout = ResizeObserver.idleTimeout;
-
-let styles,
-    observer = null,
-    elements = {};
 
 function appendStyles() {
     styles = document.createElement('style');
@@ -143,7 +143,7 @@ describe('ResizeObserver', () => {
     });
 
     describe('observe', () => {
-        it('throws an error if no arguments have been provided', () => {
+        it('throws an error if no arguments were provided', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -340,7 +340,7 @@ describe('ResizeObserver', () => {
             }], done);
         });
 
-        it('handles resizing of a documentElement', done => {
+        it('handles resizing of the documentElement', done => {
             const spy = jasmine.createSpy();
             const docElement = document.documentElement;
             const styles = window.getComputedStyle(docElement);
@@ -779,7 +779,7 @@ describe('ResizeObserver', () => {
             }], done);
         });
 
-        it('handles scrollbars size', done => {
+        it('handles scroll bars size', done => {
             const spy = jasmine.createSpy();
 
             observer = new ResizeObserver(spy);
@@ -792,55 +792,63 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.root);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            setTimeout(() => {
+                const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(spy).toHaveBeenCalledTimes(1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.root);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.root);
 
-                    expect(entries[0].contentRect.width).toBe(elements.root.clientWidth);
-                    expect(entries[0].contentRect.height).toBe(elements.root.clientHeight);
+                expect(entries[0].contentRect.width).toBe(elements.root.clientWidth);
+                expect(entries[0].contentRect.height).toBe(elements.root.clientHeight);
 
+                // It is not possible to run further tests if browser has overlaid scroll bars.
+                if (
+                    elements.root.clientWidth === elements.root.offsetWidth &&
+                    elements.root.clientHeight === elements.root.offsetHeight
+                ) {
                     done();
-                }, timeout);
-            }, done => {
-                const width = elements.root.clientWidth;
 
-                elements.target1.style.width = width + 'px';
-                elements.target2.style.width = width + 'px';
+                    return;
+                }
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                runSequence([done => {
+                    const width = elements.root.clientWidth;
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                    elements.target1.style.width = width + 'px';
+                    elements.target2.style.width = width + 'px';
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.root);
+                    setTimeout(() => {
+                        const entries = spy.calls.mostRecent().args[0];
 
-                    expect(entries[0].contentRect.height).toBe(250);
+                        expect(spy).toHaveBeenCalledTimes(2);
 
-                    done();
-                }, timeout);
-            }, done => {
-                elements.target1.style.height = '125px';
-                elements.target2.style.height = '125px';
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.root);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                        expect(entries[0].contentRect.height).toBe(250);
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                        done();
+                    }, timeout);
+                }, done => {
+                    elements.target1.style.height = '125px';
+                    elements.target2.style.height = '125px';
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.root);
+                    setTimeout(() => {
+                        const entries = spy.calls.mostRecent().args[0];
 
-                    expect(entries[0].contentRect.width).toBe(100);
+                        expect(spy).toHaveBeenCalledTimes(3);
 
-                    done();
-                }, timeout);
-            }], done);
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.root);
+
+                        expect(entries[0].contentRect.width).toBe(100);
+
+                        done();
+                    }, timeout);
+                }], done);
+            }, timeout);
         });
 
         it('handles non-replaced inline elements', done => {
