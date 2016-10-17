@@ -8,51 +8,47 @@
 	else
 		root["ResizeObserver"] = factory();
 })(this, function() {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
+return   (function(modules) { // webpackBootstrap
+  	// The module cache
+  	var installedModules = {};
 
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
+  	// The require function
+	function __webpack_require__(moduleId) {
 
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
-/******/ 			return installedModules[moduleId].exports;
+  		// Check if module is in cache
+		if(installedModules[moduleId])
+  			return installedModules[moduleId].exports;
 
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			exports: {},
-/******/ 			id: moduleId,
-/******/ 			loaded: false
-/******/ 		};
+  		// Create a new module (and put it into the cache)
+  		var module = installedModules[moduleId] = {
+  			exports: {},
+  			id: moduleId,
+  			loaded: false
+  		};
 
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+  		// Execute the module function
+  		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
+  		// Flag the module as loaded
+  		module.loaded = true;
 
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
+  		// Return the exports of the module
+  		return module.exports;
+  	}
 
 
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
+  	// expose the modules object (__webpack_modules__)
+  	__webpack_require__.m = modules;
 
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
+  	// expose the module cache
+  	__webpack_require__.c = installedModules;
 
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
+  	// __webpack_public_path__
+  	__webpack_require__.p = "";
 
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(0);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ function(module, exports, __webpack_require__) {
+  	// Load entry module and return exports
+  	return __webpack_require__(0);
+})([function(module, exports, __webpack_require__) {
 
 	'use strict';
 
@@ -74,9 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObserver;
 	module.exports = exports['default'];
 
-/***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
+}, function(module, exports, __webpack_require__) {
 
 	'use strict';
 
@@ -115,8 +109,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * instance. Changes made to these properties affect all future and
 	 * existing observers.
 	 */
-
-	var ResizeObserver = function () {
+	 var ResizeObserver = function () {
 	    /**
 	     * Creates a new instance of ResizeObserver.
 	     *
@@ -142,20 +135,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @returns {Number}
 	     */
-
-
 	    _createClass(ResizeObserver, null, [{
 	        key: 'idleTimeout',
 	        get: function get() {
 	            return controller.idleTimeout;
-	        }
+	        },
 
 	        /**
 	         * Sets up new idle timeout.
 	         *
 	         * @param {Number} value - New timeout value.
 	         */
-	        ,
 	        set: function set(value) {
 	            if (typeof value !== 'number') {
 	                throw new TypeError('type of "idleTimeout" value must be number.');
@@ -172,13 +162,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * Tells whether continuous updates are enabled.
 	         *
 	         * @returns {Boolean}
-	         */
-
-	    }, {
+	         */	    }, {
 	        key: 'continuousUpdates',
 	        get: function get() {
 	            return controller.continuousUpdates;
-	        }
+	        },
 
 	        /**
 	         * Enables or disables continuous updates.
@@ -186,7 +174,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * @param {Boolean} value - Whether to enable or disable
 	         *      continuous updates.
 	         */
-	        ,
 	        set: function set(value) {
 	            if (typeof value !== 'boolean') {
 	                throw new TypeError('type of "continuousUpdates" value must be boolean.');
@@ -200,8 +187,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	}();
 
 	// Expose public methods of ResizeObserver.
-
-
 	['observe', 'unobserve', 'disconnect'].forEach(function (method) {
 	    ResizeObserver.prototype[method] = function () {
 	        var _observers$get;
@@ -213,9 +198,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObserver;
 	module.exports = exports['default'];
 
-/***/ },
-/* 2 */
-/***/ function(module, exports) {
+}, function(module, exports) {
 
 	'use strict';
 
@@ -237,8 +220,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * ResizeObserver modules as they cover only a limited range
 	 * of use cases.
 	 */
-
-	/* eslint-disable require-jsdoc */
+	 /* eslint-disable require-jsdoc */
 	var hasNativeCollections = typeof window.WeakMap === 'function' && typeof window.Map === 'function';
 
 	var WeakMap = function () {
@@ -371,9 +353,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.Map = Map;
 	exports.WeakMap = WeakMap;
 
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
+}, function(module, exports, __webpack_require__) {
 
 	'use strict';
 
@@ -440,9 +420,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Timeout value can be manually increased if transitions have a delay.
 	 *
 	 * Continuous update cycle will be used automatically in case if MutationObserver is not supported.
-	 */
-
-	var ResizeObserverController = function () {
+	 */	var ResizeObserverController = function () {
 	    /**
 	     * Creates a new instance of ResizeObserverController.
 	     *
@@ -486,13 +464,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    /**
-	     * Returns current idle timeout value.
-	     *
-	     * @returns {Number}
-	     */
-
-
-	    /**
 	     * Adds observer to observers list.
 	     *
 	     * @param {ResizeObserver} observer - Observer to be added.
@@ -513,8 +484,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @param {ResizeObserver} observer - Observer to be removed.
 	     */
-
-
 	    ResizeObserverController.prototype.disconnect = function disconnect(observer) {
 	        var observers = this._observers,
 	            index = observers.indexOf(observer);
@@ -536,8 +505,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @param {ResizeObserver} observer - Observer to be checked.
 	     * @returns {Boolean}
 	     */
-
-
 	    ResizeObserverController.prototype.isConnected = function isConnected(observer) {
 	        return !!~this._observers.indexOf(observer);
 	    };
@@ -550,8 +517,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @returns {Boolean} Returns "true" if any observer
 	     *      has detected changes in dimensions of its' elements.
 	     */
-
-
 	    ResizeObserverController.prototype._updateObservers = function _updateObservers() {
 	        var hasChanges = false;
 
@@ -586,8 +551,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * until it detects changes in the dimensions of
 	     * elements or the idle timeout is reached.
 	     */
-
-
 	    ResizeObserverController.prototype.runUpdates = function runUpdates() {
 	        this._cycleStartTime = (0, _performance2.default)();
 	        this._isCycleActive = true;
@@ -598,8 +561,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /**
 	     * Schedules the update of observers.
 	     */
-
-
 	    ResizeObserverController.prototype.scheduleUpdate = function scheduleUpdate() {
 	        // Schedule new update if it
 	        // hasn't been scheduled already.
@@ -616,8 +577,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @private
 	     */
-
-
 	    ResizeObserverController.prototype._resolveScheduled = function _resolveScheduled() {
 	        var hasChanges = this._updateObservers();
 
@@ -649,8 +608,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     * @returns {Boolean}
 	     */
-
-
 	    ResizeObserverController.prototype._hasRemainingTime = function _hasRemainingTime() {
 	        var timePassed = (0, _performance2.default)() - this._cycleStartTime;
 
@@ -664,8 +621,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @private
 	     */
-
-
 	    ResizeObserverController.prototype._endUpdates = function _endUpdates() {
 	        this._isCycleActive = false;
 
@@ -679,8 +634,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @private
 	     */
-
-
 	    ResizeObserverController.prototype._addListeners = function _addListeners() {
 	        // Do nothing if listeners have been already added.
 	        if (this._listenersEnabled) {
@@ -722,8 +675,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @private
 	     */
-
-
 	    ResizeObserverController.prototype._removeListeners = function _removeListeners() {
 	        // Do nothing if listeners have been already removed.
 	        if (!this._listenersEnabled) {
@@ -746,8 +697,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     * @param {Array<MutationRecord>} entries - An array of mutation records.
 	     */
-
-
 	    ResizeObserverController.prototype._onMutation = function _onMutation(entries) {
 	        // Check if at least one entry
 	        // contains attributes changes.
@@ -761,17 +710,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    _createClass(ResizeObserverController, [{
+	    	/**
+		     * Returns current idle timeout value.
+		     *
+		     * @returns {Number}
+		     */
 	        key: 'idleTimeout',
 	        get: function get() {
 	            return this._idleTimeout;
-	        }
+	        },
 
 	        /**
 	         * Sets up new idle timeout value.
 	         *
 	         * @param {Number} value - New timeout value.
 	         */
-	        ,
 	        set: function set(value) {
 	            this._idleTimeout = value;
 	        }
@@ -780,13 +733,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * Tells whether continuous updates are enabled.
 	         *
 	         * @returns {Boolean}
-	         */
-
-	    }, {
+	         */	    }, {
 	        key: 'continuousUpdates',
 	        get: function get() {
 	            return this._isCycleContinuous;
-	        }
+	        },
 
 	        /**
 	         * Enables or disables continuous updates.
@@ -795,7 +746,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	         *      continuous updates. Note that the value won't be applied
 	         *      if MutationObserver is not supported.
 	         */
-	        ,
 	        set: function set(enable) {
 	            // The state of continuous updates should not be modified
 	            // if MutationObserver is not supported.
@@ -819,9 +769,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObserverController;
 	module.exports = exports['default'];
 
-/***/ },
-/* 4 */
-/***/ function(module, exports) {
+}, function(module, exports) {
 
 	'use strict';
 
@@ -847,9 +795,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = exports['default'];
 
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
+}, function(module, exports) {
 
 	'use strict';
 
@@ -875,9 +821,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = exports['default'];
 
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
+}, function(module, exports, __webpack_require__) {
 
 	'use strict';
 
@@ -939,8 +883,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @param {Element} target - Element to be observed.
 	     */
-
-
 	    ResizeObserver.prototype.observe = function observe(target) {
 	        //  Throw the same errors as in a native implementation.
 	        if (!arguments.length) {
@@ -975,8 +917,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @param {Element} target - Element to stop observing.
 	     */
-
-
 	    ResizeObserver.prototype.unobserve = function unobserve(target) {
 	        //  Throw the same errors as in a native implementation.
 	        if (!arguments.length) {
@@ -1009,8 +949,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * Stops observing all elements and
 	     * clears the observations list.
 	     */
-
-
 	    ResizeObserver.prototype.disconnect = function disconnect() {
 	        this.clearActive();
 	        this._targets.clear();
@@ -1022,8 +960,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * of ResizeObserverEntry instances collected from
 	     * active resize observations.
 	     */
-
-
 	    ResizeObserver.prototype.broadcastActive = function broadcastActive() {
 	        // Do nothing if observer doesn't
 	        // have active observations.
@@ -1047,8 +983,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /**
 	     * Clears the collection of pending/active observations.
 	     */
-
-
 	    ResizeObserver.prototype.clearActive = function clearActive() {
 	        this._activeTargets.splice(0);
 	    };
@@ -1059,8 +993,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @returns {Boolean}
 	     */
-
-
 	    ResizeObserver.prototype.hasActive = function hasActive() {
 	        return !!this._activeTargets.length;
 	    };
@@ -1070,8 +1002,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * and collects observation instances which associated element
 	     * has changed its' content rectangle.
 	     */
-
-
 	    ResizeObserver.prototype.gatherActive = function gatherActive() {
 	        this.clearActive();
 
@@ -1090,9 +1020,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObserver;
 	module.exports = exports['default'];
 
-/***/ },
-/* 7 */
-/***/ function(module, exports) {
+}, function(module, exports) {
 
 	'use strict';
 
@@ -1144,7 +1072,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	/**
-	 *  Extracts paddings sizes from provided styles.
+	 * Extracts paddings sizes from provided styles.
 	 *
 	 * @param {CSSStyleDeclaration} styles
 	 * @returns {Object} Paddings box.
@@ -1351,8 +1279,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * content rectangle of provided DOM element and
 	 * for keeping track of its' changes.
 	 */
-
-	var ResizeObservation = function () {
+	 var ResizeObservation = function () {
 	    /**
 	     * Creates an instance of ResizeObservation.
 	     *
@@ -1381,8 +1308,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @returns {ClientRect} Last observed content rectangle.
 	     */
-
-
 	    ResizeObservation.prototype.broadcastRect = function broadcastRect() {
 	        var rect = this._contentRect;
 
@@ -1399,8 +1324,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * @returns {Boolean}
 	     */
-
-
 	    ResizeObservation.prototype.isActive = function isActive() {
 	        var rect = getContentRect(this.target);
 
@@ -1415,9 +1338,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObservation;
 	module.exports = exports['default'];
 
-/***/ },
-/* 8 */
-/***/ function(module, exports) {
+}, function(module, exports) {
 
 	"use strict";
 
@@ -1460,7 +1381,4 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = ResizeObserverEntry;
 	module.exports = exports["default"];
 
-/***/ }
-/******/ ])
-});
-;
+}])});
