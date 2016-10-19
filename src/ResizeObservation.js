@@ -38,7 +38,7 @@ function getBordersSize(styles, ...positions) {
 }
 
 /**
- *  Extracts paddings sizes from provided styles.
+ * Extracts paddings sizes from provided styles.
  *
  * @param {CSSStyleDeclaration} styles
  * @returns {Object} Paddings box.

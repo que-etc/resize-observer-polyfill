@@ -31,15 +31,6 @@ const builds = {
         }
     }),
 
-    dev: _.merge({}, base, {
-        devtool: 'source-map',
-        entry: './src/ResizeObserver.js',
-        output: {
-            path: './tmp/',
-            filename: 'ResizeObserver.js'
-        }
-    }),
-
     production: _.merge({}, base, {
         entry: {
             ResizeObserver: './index.js',

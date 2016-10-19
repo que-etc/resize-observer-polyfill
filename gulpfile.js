@@ -18,19 +18,13 @@ function createWebpackCallback(callback) {
     };
 }
 
-gulp.task('build:dev', callback => {
-    webpack(builds.dev, createWebpackCallback(callback));
-});
-
-gulp.task('build:production', ['build:production:min'], callback => {
+gulp.task('build', ['build:min'], callback => {
     webpack(builds.production, createWebpackCallback(callback));
 });
 
-gulp.task('build:production:min', callback => {
+gulp.task('build:min', callback => {
     webpack(builds.prodMin, createWebpackCallback(callback));
 });
-
-gulp.task('build', ['build:dev', 'build:production']);
 
 gulp.task('test:lint', () => {
     return gulp.src(['**/*.js', '!dist/*', '!tmp/*'])
@@ -45,10 +39,20 @@ gulp.task('test:spec', callback => {
     }, callback).start();
 });
 
-gulp.task('test:spec:manual', callback => {
+gulp.task('test:spec:custom', callback => {
     new Server({
         configFile: __dirname + '/karma.config.js',
         browsers: false
+    }, callback).start();
+});
+
+gulp.task('test:spec:native', callback => {
+    new Server({
+        configFile: __dirname + '/karma.config.js',
+        browsers: false,
+        client: {
+            target: 'native'
+        }
     }, callback).start();
 });
 

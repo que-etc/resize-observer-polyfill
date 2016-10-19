@@ -6,9 +6,9 @@ ResizeObserver Polyfill
 
 A polyfill for the Resize Observer API.
 
-Implements event based tracking of changes in the content dimensions of elements. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles DOM mutations and long running CSS transitions/animations. Can optionally observe resizing of a `<textarea>` and track changes caused by the `:hover` pseudo-class.
+Implements event based tracking of changes in the content dimensions of elements, i.e. no polling (in the general case) unless DOM is mutated or the `resize` event is triggered. Uses MutationsObserver and falls back to an infinite dirty checking cycle if the first one is not supported. Handles long running CSS transitions/animations and can optionally observe resizing of a `<textarea>` element along with changes caused by the `:hover` pseudo-class.
 
-Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html). Doesn't contain any publicly available methods except for those described in the spec. The size is 3.6kb when minified and gzipped.
+Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. Doesn't contain any publicly available methods except for those described in the spec. The size is _3.6kb_ when minified and gzipped.
 
 [Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
 
@@ -34,7 +34,7 @@ Polyfill has been tested and known to work in the following browsers:
 
 * Chrome 40+
 * Firefox 37+
-* Safari 9+
+* Safari 9+, _including mobile_
 * Opera 30+
 * Edge 13+
 * Internet Explorer 9+
@@ -43,20 +43,28 @@ Polyfill has been tested and known to work in the following browsers:
 
 ## Usage Examples
 
-If you are using ES6 modules with bundlers like [Webpack](https://webpack.github.io/) or [JSPM](http://jspm.io/):
+It's recommended to use this library in the form of the [ponyfill](https://github.com/sindresorhus/ponyfill), which doesn't inflict modifications of the global object.
+
+With ES6 modules:
 
 ```javascript
 import ResizeObserver from 'resize-observer-polyfill';
 
-const observer = new ResizeObserver((entries, observer) => {});
+const ro = new ResizeObserver((entries, observer) => {
+    const entry = entries[0];
+    const cr = entry.contentRect;
 
-observer.observe(document.body);
-// ...
+    console.log('Element:', entry.target);
+    console.log(`Element size: ${cr.width}px x ${cr.height}px`);
+    console.log(`Element padding: ${cr.top}px ; ${cr.left}px`);
+});
+
+ro.observe(document.body);
 ```
 
-Alternatively you can take a pre-built UMD version.
+As a pre-built ES5 UMD module.
 
-With AMD:
+AMD:
 
 ```javascript
 define([
@@ -66,7 +74,7 @@ define([
 });
 ```
 
-With CommonJS:
+CommonJS:
 
 ```javascript
 var ResizeObserver = require('resize-observer-polyfill/dist/ResizeObserver');
@@ -78,27 +86,25 @@ As a browsers' global object:
 <script src="resize-observer-polyfill/dist/ResizeObserver.js"></script>
 <script>
     (function () {
-        var observer = new ResizeObserver(function () {});
+        var ro = new ResizeObserver(function () {});
     })();
 </script>
 ```
 ### Global exports
 
-You can also take a version that always extends browsers' global object.
+Use following versions in case if you need to export polyfill globally.
 
 With ES6 modules:
 
 ```javascript
 import 'resize-observer-polyfill/index.global';
 
-const observer = new ResizeObserver(() => {});
+const ro = new ResizeObserver(() => {});
 ```
 
-With AMD/CommonJS:
+As UMD module: `resize-observer-polyfill/dist/ResizeObserver.global`.
 
-```javascript
-require('resize-observer-polyfill/dist/ResizeObserver.global');
-```
+You can also take the minified bundles: `ResizeObserver.min.js` or `ResizeObserver.global.min.js`.
 
 ## Configuration
 
@@ -106,33 +112,26 @@ require('resize-observer-polyfill/dist/ResizeObserver.global');
 
 ### idleTimeout
 
-After the mutations of DOM attributes, like `class` or `style`, an update cycle will be started which will run either until the dimensions of observed elements keep changing or the `idleTimeout` is reached. This approach is used to handle transitions and animations.
+After the mutations of DOM attributes, like `class` or `style`, the update cycle will be started which will run either until the dimensions of observed elements keep changing or the `idleTimeout` is reached. This approach is used to handle transitions and animations.
 
-Default timeout value is `50` milliseconds and you can increase it to match the delay of transitions, e.g. when transition starts with the delay of `500` milliseconds you can set `ResizeObserver.idleTimeout = 500` to the corresponding value.
+Default timeout value is `50` milliseconds and you can increase it to match the delay of transitions, e.g. if the delay is `500` milliseconds you can set `ResizeObserver.idleTimeout = 500` to the corresponding value.
 
-Note that even if transitions don't have a delay it's still better to leave this value as it is. And you can set this property to zero if don't need transitions to be tracked.
+Note that even if transitions are meant to start "immediately" it's still better to leave this value as it is. And you can set this property to zero if you don't need transitions to be tracked.
 
 ### continuousUpdates
 
-By default possible changes in dimensions of elements caused by CSS `:hover` class are not tracked. To handle them you can set `ResizeObserver.continuousUpdtaes = true` which in turn will start a continuous update cycle with an interval of `100` milliseconds (using RAF, of course). This also comes in handy for monitoring the dimensions of a textarea. Keep in mind that this is going to affect performance.
+By default resizing of a `<textarea>` element and changes caused by the CSS `:hover` pseudo-class are not tracked. To handle them you can set `ResizeObserver.continuousUpdtaes = true` which in turn will start a continuous update cycle with the interval of `100` milliseconds (using RAF, of course). Keep in mind that this is going to affect the performance.
 
-**NOTE:** Changes made to these properties will affect all existing and future instances of ResizeObserver.
+**NOTE:** changes made to these properties will affect all existing and future instances of ResizeObserver.
 
 ## Building and testing
 
 First make sure that you have all dependencies installed by running `npm install`. Then you can execute following tasks either with a gulp CLI or with the `npm run gulp` command.
 
-To make a production build:
+To build polyfill. This will create UMD bundles in the `dist` folder:
 
 ```sh
-gulp build:production
-```
-
-To make a development build of polyfill itself.
-Files will be located in `tmp` folder:
-
-```sh
-gulp build:dev
+gulp build
 ```
 
 To run a code style test:
@@ -142,16 +141,21 @@ gulp test:lint
 
 Functional tests for all available browsers that are
 defined in `karma.config.js` file:
-
 ```sh
 gulp test:spec
 ```
 
-If you want to test some specific browser that is not present in karmas' config file you need
-to run `gulp test:spec:manual` and then navigate to the `http://localhost:9876/debug.html` page.
+To test in a browser that is not present in karmas' config file:
+```sh
+gulp test:spec:custom
+```
 
-To run tests against a native implementation you need to remove top imports from the `ResizeObserver.spec.js` test suite in the first place.
-Also don't forget to make sure that Resize Observer API is enabled in browser that is being tested.
+Testing against a native implementation:
+```sh
+gulp test:spec:native
+```
+
+**NOTE:** after you invoke `spec:native` and `spec:custom` commands head to the `http://localhost:9876/debug.html` page.
 
 [travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
 [travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill

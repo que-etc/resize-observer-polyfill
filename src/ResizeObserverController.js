@@ -50,7 +50,7 @@ export default class ResizeObserverController {
      */
     constructor(idleTimeout = 50, continuousUpdates = false) {
         this._idleTimeout = idleTimeout;
-        this._isCycleContinuous = continuousUpdates;
+        this._isCycleContinuous = !mutationsSupported || continuousUpdates;
 
         this._cycleStartTime = 0;
 
@@ -109,22 +109,22 @@ export default class ResizeObserverController {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} enable - Whether to enable or disable
+     * @param {Boolean} useContinuous - Whether to enable or disable
      *      continuous updates. Note that the value won't be applied
      *      if MutationObserver is not supported.
      */
-    set continuousUpdates(enable) {
+    set continuousUpdates(useContinuous) {
         // The state of continuous updates should not be modified
         // if MutationObserver is not supported.
         if (!mutationsSupported) {
             return;
         }
 
-        this._isCycleContinuous = enable;
+        this._isCycleContinuous = useContinuous;
 
         // Immediately start the update cycle in order not to
         // wait for a possible event that will initiate it.
-        if (this._listenersEnabled && enable) {
+        if (this._listenersEnabled && useContinuous) {
             this.runUpdates();
         }
     }
@@ -158,8 +158,7 @@ export default class ResizeObserverController {
             observers.splice(index, 1);
         }
 
-        // Remove listeners if controller
-        // has no connected observers.
+        // Remove listeners if controller has no connected observers.
         if (!observers.length && this._listenersEnabled) {
             this._removeListeners();
         }
@@ -277,6 +276,7 @@ export default class ResizeObserverController {
     _endUpdates() {
         this._isCycleActive = false;
 
+        // Automatically repeat cycle if it's necessary.
         if (this._isCycleContinuous && this._listenersEnabled) {
             this._continuousCycleHandler();
         }
@@ -300,12 +300,9 @@ export default class ResizeObserverController {
         // are controlled by CSS transitions.
         window.addEventListener('resize', this.runUpdates);
 
-        // Fall back to an infinite cycle.
-        if (!mutationsSupported) {
-            this._isCycleContinuous = true;
-        } else {
-            // Subscribe to DOM mutations as they may lead to
-            // changes in dimensions of elements.
+        // Subscribe to DOM mutations if it's possible as they may lead to
+        // changes in the dimensions of elements.
+        if (mutationsSupported) {
             this._mutationsObserver = new MutationObserver(this._onMutation);
 
             this._mutationsObserver.observe(document, {
@@ -316,8 +313,8 @@ export default class ResizeObserverController {
             });
         }
 
-        // Don't wait for possible event that might trigger the
-        // update of observers and manually initiate update cycle.
+        // Don't wait for a possible event that might trigger the
+        // update of observers and manually initiate the update cycle.
         if (this._isCycleContinuous) {
             this.runUpdates();
         }

@@ -1,70 +1,83 @@
-import ResizeObserverEntry from '../src/ResizeObserverEntry';
+import {ResizeObserver} from './source';
 
-const properties = [
-    'target',
-    'contentRect'
-];
+const NEW_VALUE = Date.now();
 
-const rectData = {
-    width: 10,
-    height: 20,
-    top: 8,
-    right: 25,
-    bottom: 28,
-    left: 15
-};
+let entry = null;
+
+/**
+ * Checks whether the specified property is present in provided object
+ * and that it's neither enumerable nor writable.
+ *
+ * @param {Object} target
+ * @param {String} prop
+ * @returns {Boolean}
+ */
+function isReadOnlyAttr(target, prop) {
+    if (!(prop in target)) {
+        throw new ReferenceError(`${ prop } is not defined`);
+    }
+
+    const keys = Object.keys(target);
+
+    // Property shouldn't be enumerable.
+    if (~keys.indexOf(prop)) {
+        return false;
+    }
+
+    // Property shouldn't be writable.
+    try {
+        target[prop] = NEW_VALUE;
+    } catch (e) {
+        // An error is expected in 'strict' mode
+        // for the major browsers.
+    }
+
+    if (target[prop] === NEW_VALUE) {
+        return false;
+    }
+
+    // Properties' descriptor can be changed.
+    try {
+        Object.defineProperty(target, prop, {
+            value: NEW_VALUE
+        });
+    } catch (e) {
+        // If property is configurable
+        // an error shouldn't be thrown.
+        return false;
+    }
+
+    return target[prop] === NEW_VALUE;
+}
 
 describe('ResizeObserverEntry', () => {
-    describe('constructor', () => {
-        it('creates new ResizeObserverEntry', () => {
-            const target = document.body;
-            const keys = Object.keys(rectData);
-            const entry = new ResizeObserverEntry(target, rectData);
+    beforeEach(done => {
+        const observer = new ResizeObserver((entries) => {
+            entry = entries[0];
 
-            expect(entry.target).toBe(target);
+            observer.disconnect();
+            done();
+        });
+
+        observer.observe(document.body);
+    });
+
+    describe('constructor', () => {
+        it('properties are readonly and not enumerable', () => {
+            expect(isReadOnlyAttr(entry, 'target')).toBe(true);
+            expect(isReadOnlyAttr(entry, 'contentRect')).toBe(true);
+        });
+
+        it('content rectangle is an instance of the ClientRect', () => {
+            const rectKeys = ['width', 'height', 'top', 'right', 'bottom', 'left'];
+            const contentRect = entry.contentRect;
 
             if (window.ClientRect) {
-                expect(entry.contentRect instanceof ClientRect).toBe(true);
+                expect(contentRect instanceof ClientRect).toBe(true);
             }
 
-            for (const key of keys) {
-                const descriptor = Object.getOwnPropertyDescriptor(entry.contentRect, key);
-
-                expect(entry.contentRect[key]).toEqual(rectData[key]);
-
-                expect(descriptor.writable).toBe(false);
-                expect(descriptor.enumerable).toBe(false);
-                expect(descriptor.configurable).toBe(false);
-            }
-        });
-
-        it('has no enumerable properties', () => {
-            const target = document.body;
-            const entry = new ResizeObserverEntry(target, rectData);
-            const keys = Object.keys(entry);
-
-            expect(keys.length).toEqual(0);
-        });
-
-        it('properties are not configurable', () => {
-            const target = document.body;
-            const entry = new ResizeObserverEntry(target, rectData);
-
-            for (const key of properties) {
-                const descriptor = Object.getOwnPropertyDescriptor(entry, key);
-
-                expect(descriptor.configurable).toBe(false);
-            }
-        });
-
-        it('properties are not writable', () => {
-            const target = document.body;
-            const entry = new ResizeObserverEntry(target, rectData);
-
-            for (const key of properties) {
-                const descriptor = Object.getOwnPropertyDescriptor(entry, key);
-
-                expect(descriptor.writable).toBe(false);
+            for (const key of rectKeys) {
+                expect(isReadOnlyAttr(contentRect, key)).toBe(true);
             }
         });
     });
