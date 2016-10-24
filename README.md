@@ -92,7 +92,7 @@ As a browsers' global object:
 ```
 ### Global exports
 
-Use following versions in case if you need to export polyfill globally.
+Use following versions in case you need to export polyfill globally.
 
 With ES6 modules:
 

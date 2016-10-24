@@ -12,8 +12,7 @@ function getStyles(target) {
 }
 
 /**
- * Converts provided string defined
- * in q form of '{{value}}px' to number.
+ * Converts provided string defined in q form of '{{value}}px' to number.
  *
  * @param {String} value
  * @returns {Number}
@@ -94,11 +93,12 @@ function getSVGContentRect(target) {
  * @returns {ClientRect}
  */
 function getDocElementRect() {
-    // Neither scroll[Width/Height] nor offset[Width/Height] can be used to define
-    // content dimensions as they give inconsistent results across different browsers.
-    // E.g. in the Internet Explorer 10 and lower value of these properties can't be
-    // less than the client dimensions (same thing with the "getBoundingClientRect" method).
-    // And Firefox has the same behavior with its "scroll" properties.
+    // Neither scroll[Width/Height] nor offset[Width/Height] can be used to
+    // define content dimensions as they give inconsistent results across
+    // different browsers. E.g. in the Internet Explorer 10 and lower value of
+    // these properties can't be less than the client dimensions (same thing
+    // with the "getBoundingClientRect" method). And Firefox has the same
+    // behavior with its "scroll" properties.
     const styles = getStyles(document.documentElement);
 
     const width = pixelsToNumber(styles.width);
@@ -150,9 +150,9 @@ function getHTMLElementContentRect(target) {
         // Following conditions are required to handle Internet Explorer which
         // doesn't include paddings and borders to computed CSS dimensions.
         //
-        // We can say that if CSS dimensions + paddings are equal to the "client" properties
-        // then it's either IE, and thus we don't need to subtract anything, or
-        // an element merely doesn't have paddings/borders styles.
+        // We can say that if CSS dimensions + paddings are equal to the "client"
+        // properties then it's either IE, and thus we don't need to subtract
+        // anything, or an element merely doesn't have paddings/borders styles.
         if (Math.round(width + horizPad) !== clientWidth) {
             width -= getBordersSize(styles, 'left', 'right') + horizPad;
         }
@@ -164,16 +164,16 @@ function getHTMLElementContentRect(target) {
 
     // In some browsers (only in Firefox, actually) CSS width & height
     // include scroll bars size which can be removed at this step as scroll bars
-    // are the only difference between rounded dimensions + paddings
-    // and "client" properties, though that is not always true in Chrome.
+    // are the only difference between rounded dimensions + paddings and "client"
+    // properties, though that is not always true in Chrome.
     const vertScrollbar = Math.round(width + horizPad) - clientWidth;
     const horizScrollbar = Math.round(height + vertPad) - clientHeight;
 
     // Chrome has a rather weird rounding of "client" properties.
-    // E.g. for an element whose content width is 314.2px it sometimes
-    // gives the client width of 315px and for the width of 314.7px
-    // it may give 314px. And it doesn't happen all the time.
-    // This kind of difference needs to be ignored.
+    // E.g. for an element whose content width is 314.2px it sometimes gives the
+    // client width of 315px and for the width of 314.7px it may give 314px.
+    // And it doesn't happen all the time. This kind of difference needs to be
+    // ignored.
     if (Math.abs(vertScrollbar) !== 1) {
         width -= vertScrollbar;
     }
@@ -186,8 +186,7 @@ function getHTMLElementContentRect(target) {
 }
 
 /**
- * Checks whether provided element
- * is an instance of SVGElement.
+ * Checks whether provided element is an instance of SVGElement.
  *
  * @param {Element} target - Element to be checked.
  * @returns {Boolean}
@@ -197,8 +196,7 @@ function isSVGElement(target) {
 }
 
 /**
- * Checks whether provided element is
- * a document element (root element of a document).
+ * Checks whether provided element is a document element (root element of a document).
  *
  * @param {Element} target - Element to be checked.
  * @returns {Boolean}
@@ -208,8 +206,7 @@ function isDocumentElement(target) {
 }
 
 /**
- * Calculates an appropriate content rectangle
- * for provided html or svg element.
+ * Calculates an appropriate content rectangle for provided html or svg element.
  *
  * @param {Element} target - Element whose content rectangle
  *      needs to be calculated.
@@ -228,16 +225,14 @@ function getContentRect(target) {
 }
 
 /**
- * Class that is responsible for computations of the
- * content rectangle of provided DOM element and
- * for keeping track of its' changes.
+ * Class that is responsible for computations of the content rectangle of
+ * provided DOM element and for keeping track of its' changes.
  */
 export default class ResizeObservation {
     /**
      * Creates an instance of ResizeObservation.
      *
-     * @param {Element} target - Element whose content
-     *      rectangle needs to be observed.
+     * @param {Element} target - Element whose content rectangle needs to be observed.
      */
     constructor(target) {
         this.target = target;
@@ -253,9 +248,8 @@ export default class ResizeObservation {
     }
 
     /**
-     * Updates 'broadcastWidth' and 'broadcastHeight'
-     * properties with a data from the corresponding
-     * properties of the last observed content rectangle.
+     * Updates 'broadcastWidth' and 'broadcastHeight' properties with a data
+     * from the corresponding properties of the last observed content rectangle.
      *
      * @returns {ClientRect} Last observed content rectangle.
      */
@@ -269,9 +263,8 @@ export default class ResizeObservation {
     }
 
     /**
-     * Updates content rectangle and tells whether its'
-     * width or height properties have changed since
-     * the last broadcast.
+     * Updates content rectangle and tells whether its' width or height properties
+     * have changed since the last broadcast.
      *
      * @returns {Boolean}
      */

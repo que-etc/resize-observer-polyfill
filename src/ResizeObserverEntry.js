@@ -30,25 +30,21 @@ export default class ResizeObserverEntry {
      * @param {ClientRect} rectData - Data of the elements' content rectangle.
      */
     constructor(target, rectData) {
-        // Content rectangle needs to be an instance
-        // of ClientRect if it's available.
+        // Content rectangle needs to be an instance of ClientRect if it's
+        // available.
         const rectInterface = window.ClientRect ?
             ClientRect.prototype :
             Object.prototype;
 
         const contentRect = Object.create(rectInterface);
 
-        // According to the specification following properties
-        // are not writable and are also not enumerable in the
-        // native implementation.
-        defineProperties(contentRect, {
-            top: rectData.top,
-            right: rectData.right,
-            bottom: rectData.bottom,
-            left: rectData.left,
-            width: rectData.width,
-            height: rectData.height
-        }, {configurable: true});
+        // According to the specification following properties are not writable
+        // and are also not enumerable in the native implementation.
+        //
+        // Property accessors are not being used as they'd require to define a
+        // private WeakMap storage which may cause memory leaks in browsers that
+        // don't support this type of collections.
+        defineProperties(contentRect, rectData, {configurable: true});
 
         defineProperties(this, {
             target, contentRect

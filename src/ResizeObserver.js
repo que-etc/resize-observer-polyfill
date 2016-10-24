@@ -9,21 +9,20 @@ const controller = new ResizeObserverController();
 const observers = new WeakMap();
 
 /**
- * ResizeObservers' "Proxy" class which is meant to hide private
- * properties and methods from public instances.
+ * ResizeObservers' "Proxy" class which is meant to hide private properties and
+ * methods from public instances.
  *
  * Additionally it implements "idleTimeout" and "continuousUpdates" static property
  * accessors to give control over the behavior of the ResizeObserverController
- * instance. Changes made to these properties affect all future and
- * existing observers.
+ * instance. Changes made to these properties affect all future and existing
+ * observers.
  */
 class ResizeObserver {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback that will
-     *      be invoked when dimensions of one of the
-     *      observed elements have been changed.
+     * @param {Function} callback - Callback that will be invoked when dimensions
+     *      of one of the observed elements have been changed.
      */
     constructor(callback) {
         if (!arguments.length) {
@@ -74,8 +73,7 @@ class ResizeObserver {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} value - Whether to enable or disable
-     *      continuous updates.
+     * @param {Boolean} value - Whether to enable or disable continuous updates.
      */
     static set continuousUpdates(value) {
         if (typeof value !== 'boolean') {

@@ -4,8 +4,8 @@ import requestAnimFrame from './shims/requestAnimationFrame';
 const mutationsSupported = typeof window.MutationObserver === 'function';
 
 /**
- * Creates a wrapper function which ensures only one
- * invocation of provided callback during the specified delay.
+ * Creates a wrapper function which ensures only one invocation of provided
+ * callback during the specified delay.
  *
  * @param {Function} callback - Function to be invoked.
  * @param {Number} [delay = 0] - Delay after which to invoke callback.
@@ -22,31 +22,33 @@ function debounce(callback, delay = 0) {
         timeoutID = setTimeout(() => {
             timeoutID = false;
 
-            /* eslint-disable no-invalid-this */
+            // eslint-disable-next-line no-invalid-this
             callback.apply(this, args);
-
-            /* eslint-enable no-invalid-this */
         }, delay);
     };
 }
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
- * It's meant to decide when and for how long it's necessary to run updates by listening to the windows
- * "resize" event along with a tracking of DOM mutations (nodes removal, changes of attributes, etc.).
+ * It's meant to decide when and for how long it's necessary to run updates by
+ * listening to the windows "resize" event along with a tracking of DOM mutations
+ * (nodes removal, changes of attributes, etc.).
  *
- * Transitions and animations are handled by running a repeatable update cycle either until the dimensions
- * of observed elements are changing or the timeout is reached (default timeout is 50 milliseconds).
- * Timeout value can be manually increased if transitions have a delay.
+ * Transitions and animations are handled by running a repeatable update cycle
+ * either until the dimensions of observed elements are changing or the timeout
+ * is reached (default timeout is 50 milliseconds). Timeout value can be manually
+ * increased if transitions have a delay.
  *
- * Continuous update cycle will be used automatically in case if MutationObserver is not supported.
+ * Continuous update cycle will be used automatically in case if MutationObserver
+ * is not supported.
  */
 export default class ResizeObserverController {
     /**
      * Creates a new instance of ResizeObserverController.
      *
      * @param {Number} [idleTimeout = 0] - Idle timeout value.
-     * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous update cycle.
+     * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous
+     *      update cycle.
      */
     constructor(idleTimeout = 50, continuousUpdates = false) {
         this._idleTimeout = idleTimeout;
@@ -74,8 +76,8 @@ export default class ResizeObserverController {
         this._onMutation = this._onMutation.bind(this);
         this._resolveScheduled = this._resolveScheduled.bind(this);
 
-        // Function that will be invoked to re-run the
-        // update cycle if continuous cycles are enabled.
+        // Function that will be invoked to re-run the update cycle if continuous
+        // cycles are enabled.
         this._continuousCycleHandler = debounce(this.runUpdates, 100);
     }
 
@@ -109,21 +111,21 @@ export default class ResizeObserverController {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} useContinuous - Whether to enable or disable
-     *      continuous updates. Note that the value won't be applied
-     *      if MutationObserver is not supported.
+     * @param {Boolean} useContinuous - Whether to enable or disable continuous
+     *      updates. Note that the value won't be applied if MutationObserver is
+     *      not supported.
      */
     set continuousUpdates(useContinuous) {
-        // The state of continuous updates should not be modified
-        // if MutationObserver is not supported.
+        // The state of continuous updates should not be modified if
+        // MutationObserver is not supported.
         if (!mutationsSupported) {
             return;
         }
 
         this._isCycleContinuous = useContinuous;
 
-        // Immediately start the update cycle in order not to
-        // wait for a possible event that will initiate it.
+        // Immediately start the update cycle in order not to wait for a possible
+        // event that will initiate it.
         if (this._listenersEnabled && useContinuous) {
             this.runUpdates();
         }
@@ -175,12 +177,12 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Updates every observer from observers list and
-     * notifies them of queued entries.
+     * Updates every observer from observers list and notifies them of queued
+     * entries.
      *
      * @private
-     * @returns {Boolean} Returns "true" if any observer
-     *      has detected changes in dimensions of its' elements.
+     * @returns {Boolean} Returns "true" if any observer has detected changes in
+     *      dimensions of its' elements.
      */
     _updateObservers() {
         let hasChanges = false;
@@ -199,9 +201,8 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Starts the update cycle which runs either
-     * until it detects changes in the dimensions of
-     * elements or the idle timeout is reached.
+     * Starts the update cycle which runs either until it detects changes in the
+     * dimensions of elements or the idle timeout is reached.
      */
     runUpdates() {
         this._cycleStartTime = now();
@@ -214,8 +215,7 @@ export default class ResizeObserverController {
      * Schedules the update of observers.
      */
     scheduleUpdate() {
-        // Schedule new update if it
-        // hasn't been scheduled already.
+        // Schedule new update if it hasn't been scheduled already.
         if (!this._isUpdateScheduled) {
             this._isUpdateScheduled = true;
 
@@ -224,8 +224,8 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Invokes the update of observers. It may re-run the
-     * cycle if changes in observers have been detected.
+     * Invokes the update of observers. It may re-run the active update cycle if
+     * it detects changes in observers.
      *
      * @private
      */
@@ -234,19 +234,18 @@ export default class ResizeObserverController {
 
         this._isUpdateScheduled = false;
 
-        // Do nothing if cycle wasn't started,
-        // i.e. a single update was requested.
+        // Do nothing if cycle wasn't started, i.e. a single update was requested.
         if (!this._isCycleActive) {
             return;
         }
 
-        // Re-start cycle so that we can catch future changes,
-        // e.g. when there are active CSS transitions.
+        // Re-start cycle so that we can catch future changes, e.g. when there
+        // are active CSS transitions.
         if (hasChanges) {
             this.runUpdates();
         } else if (this._hasRemainingTime()) {
-            // Keep running updates if idle timeout isn't reached yet.
-            // This way we make it possible to adjust to delayed transitions.
+            // Keep running updates if idle timeout isn't reached yet. This way
+            // we make it possible to adjust to delayed transitions.
             this.scheduleUpdate();
         } else {
             // Finish update cycle.
@@ -267,9 +266,8 @@ export default class ResizeObserverController {
     }
 
     /**
-     * Callback which is invoked when update cycle
-     * is finished. It may start a new cycle if continuous
-     * updates are enabled.
+     * Callback which is invoked when update cycle is finished. It may start a
+     * new cycle if continuous updates are enabled.
      *
      * @private
      */
@@ -295,13 +293,13 @@ export default class ResizeObserverController {
 
         this._listenersEnabled = true;
 
-        // Repeatable cycle is used here because the resize event may
-        // lead to continuous changes, e.g. when width or height of an element
-        // are controlled by CSS transitions.
+        // Repeatable cycle is used here because the resize event may lead to
+        // continuous changes, e.g. when width or height of an element are
+        // controlled by CSS transitions.
         window.addEventListener('resize', this.runUpdates);
 
-        // Subscribe to DOM mutations if it's possible as they may lead to
-        // changes in the dimensions of elements.
+        // Subscribe to DOM mutations if it's possible as they may lead to changes
+        // in the dimensions of elements.
         if (mutationsSupported) {
             this._mutationsObserver = new MutationObserver(this._onMutation);
 
@@ -313,8 +311,8 @@ export default class ResizeObserverController {
             });
         }
 
-        // Don't wait for a possible event that might trigger the
-        // update of observers and manually initiate the update cycle.
+        // Don't wait for a possible event that might trigger the update of
+        // observers and manually initiate the update cycle.
         if (this._isCycleContinuous) {
             this.runUpdates();
         }
@@ -348,14 +346,13 @@ export default class ResizeObserverController {
      * @param {Array<MutationRecord>} entries - An array of mutation records.
      */
     _onMutation(entries) {
-        // Check if at least one entry
-        // contains attributes changes.
+        // Check if at least one entry contains attributes changes.
         const attrsChanged = entries.some(entry => {
             return entry.type === 'attributes';
         });
 
-        // It's expected that animations may start only
-        // after some attribute changes its' value.
+        // It's expected that animations may start only after some attribute
+        // changes its' value.
         attrsChanged ?
             this.runUpdates() :
             this.scheduleUpdate();
