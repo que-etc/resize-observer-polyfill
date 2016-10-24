@@ -1,11 +1,12 @@
-/* eslint-disable max-nested-callbacks, no-shadow, no-new, no-empty-function, require-jsdoc */
-
+/* eslint-disable max-nested-callbacks, no-shadow, require-jsdoc */
+import {createAsyncSpy, wait} from './helpers';
 import {ResizeObserver, ResizeObserverEntry} from './source';
 
 let observer = null,
     elements = {},
     styles;
 
+// eslint-disable-next-line no-empty-function
 const emptyFn = () => {};
 const css = `
     #root {
@@ -28,23 +29,6 @@ const css = `
 
     #target2 {
         background: #fbbc05;
-    }
-
-    #target1.animate {
-        animation-duration: 0.5s;
-        animation-name: animateWidth;
-        animation-iteration-count: infinite;
-        animation-direction: alternate;
-    }
-
-    @keyframes animateWidth {
-        from {
-            width: 200px;
-        }
-
-        to {
-            width: 700px;
-        }
     }
 `;
 const template = `
@@ -94,16 +78,6 @@ function removeElements() {
     elements = {};
 }
 
-function runSequence(callbacks, done) {
-    const next = callbacks.shift();
-
-    if (next) {
-        next(() => runSequence(callbacks, done));
-    } else if (done) {
-        done();
-    }
-}
-
 describe('ResizeObserver', () => {
     beforeEach(() => {
         appendStyles();
@@ -124,7 +98,8 @@ describe('ResizeObserver', () => {
     });
 
     describe('constructor', () => {
-        it('throws an error if no arguments were provided', () => {
+        /* eslint-disable no-new */
+        it('throws an error if no arguments are provided', () => {
             expect(() => {
                 new ResizeObserver();
             }).toThrowError(/1 argument required/i);
@@ -139,10 +114,12 @@ describe('ResizeObserver', () => {
                 new ResizeObserver({});
             }).toThrowError(/function/i);
         });
+
+        /* eslint-enable no-new */
     });
 
     describe('observe', () => {
-        it('throws an error if no arguments were provided', () => {
+        it('throws an error if no arguments are provided', () => {
             observer = new ResizeObserver(emptyFn);
 
             expect(() => {
@@ -192,10 +169,8 @@ describe('ResizeObserver', () => {
 
                 expect(instance).toBe(observer);
 
-                /* eslint-disable no-invalid-this */
+                // eslint-disable-next-line no-invalid-this
                 expect(this).toBe(observer);
-
-                /* eslint-enable no-invalid-this */
 
                 done();
             });
@@ -203,144 +178,130 @@ describe('ResizeObserver', () => {
             observer.observe(elements.target1);
         });
 
-        it('handles already observed elements', done => {
-            const spy = jasmine.createSpy();
+        it('preserves initial order', done => {
+            const spy = createAsyncSpy();
+
+            observer = new ResizeObserver(spy);
+
+            observer.observe(elements.target2);
+            observer.observe(elements.target1);
+
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(2);
+
+                expect(entries[0].target).toBe(elements.target2);
+                expect(entries[1].target).toBe(elements.target1);
+            }).then(async () => {
+                elements.target1.style.height = '400px';
+                elements.target2.style.height = '100px';
+
+                const entries = await spy.nextCall();
+
+                expect(entries.length).toBe(2);
+
+                expect(entries[0].target).toBe(elements.target2);
+                expect(entries[1].target).toBe(elements.target1);
+            }).then(done);
+        });
+
+        it('doesn\'t notify already observed elements', done => {
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    done();
-                }, timeout);
-            }, done => {
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
+            }).then(async () => {
                 observer.observe(elements.target1);
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }], done);
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(done);
         });
 
         it('handles elements that are not yet in the DOM', done => {
             elements.root.removeChild(elements.container);
             elements.container.removeChild(elements.target1);
 
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    expect(spy).not.toHaveBeenCalled();
-
-                    done();
-                }, timeout);
-            }, done => {
+            wait(timeout).then(() => {
+                expect(spy).not.toHaveBeenCalled();
+            }).then(async () => {
                 elements.container.appendChild(elements.target1);
 
-                setTimeout(() => {
-                    expect(spy).not.toHaveBeenCalled();
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).not.toHaveBeenCalled();
+            }).then(async () => {
                 elements.root.appendChild(elements.container);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+            }).then(done);
         });
 
-        it('triggers when element is removed from DOM', done => {
-            const spy = jasmine.createSpy();
+        it('triggers when an element is removed from DOM', done => {
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
             observer.observe(elements.target2);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(spy).toHaveBeenCalledTimes(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries.length).toBe(2);
 
-                    expect(entries.length).toBe(2);
-
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[1].target).toBe(elements.target2);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].target).toBe(elements.target1);
+                expect(entries[1].target).toBe(elements.target2);
+            }).then(async () => {
                 elements.container.removeChild(elements.target1);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(0);
-                    expect(entries[0].contentRect.height).toBe(0);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(0);
-                    expect(entries[0].contentRect.bottom).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(0);
+                expect(entries[0].contentRect.height).toBe(0);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(0);
+                expect(entries[0].contentRect.bottom).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.root.removeChild(elements.container);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target2);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target2);
-
-                    expect(entries[0].contentRect.width).toBe(0);
-                    expect(entries[0].contentRect.height).toBe(0);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(0);
-                    expect(entries[0].contentRect.bottom).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(0);
+                expect(entries[0].contentRect.height).toBe(0);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(0);
+                expect(entries[0].contentRect.bottom).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles resizing of the documentElement', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
             const docElement = document.documentElement;
             const styles = window.getComputedStyle(docElement);
 
@@ -348,57 +309,43 @@ describe('ResizeObserver', () => {
 
             observer.observe(document.documentElement);
 
-            runSequence([done => {
+            spy.nextCall().then(entries => {
                 const width = parseFloat(styles.width);
                 const height = parseFloat(styles.height);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries[0].target).toBe(docElement);
 
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(docElement);
-
-                    expect(entries[0].contentRect.width).toBe(width);
-                    expect(entries[0].contentRect.height).toBe(height);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(width);
-                    expect(entries[0].contentRect.bottom).toBe(height);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(width);
+                expect(entries[0].contentRect.height).toBe(height);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(width);
+                expect(entries[0].contentRect.bottom).toBe(height);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 document.body.removeChild(elements.root);
 
                 const width = parseFloat(styles.width);
                 const height = parseFloat(styles.height);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(docElement);
 
-                    expect(entries[0].target).toBe(docElement);
-
-                    expect(entries[0].contentRect.width).toBe(width);
-                    expect(entries[0].contentRect.height).toBe(height);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(width);
-                    expect(entries[0].contentRect.bottom).toBe(height);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(width);
+                expect(entries[0].contentRect.height).toBe(height);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(width);
+                expect(entries[0].contentRect.bottom).toBe(height);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles hidden elements', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
@@ -407,67 +354,49 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    expect(spy).not.toHaveBeenCalled();
-
-                    done();
-                }, timeout);
-            }, done => {
+            wait(timeout).then(() => {
+                expect(spy).not.toHaveBeenCalled();
+            }).then(async () => {
                 elements.target1.style.display = 'block';
 
-                setTimeout(() => {
-                    expect(spy).not.toHaveBeenCalled();
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).not.toHaveBeenCalled();
+            }).then(async () => {
                 elements.root.style.display = 'block';
                 elements.target1.style.position = 'fixed';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.root.style.display = 'none';
                 elements.target1.style.padding = '10px';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(0);
-                    expect(entries[0].contentRect.height).toBe(0);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(0);
-                    expect(entries[0].contentRect.bottom).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(0);
+                expect(entries[0].contentRect.height).toBe(0);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(0);
+                expect(entries[0].contentRect.bottom).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles empty elements', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             elements.target1.style.width = '0px';
             elements.target1.style.height = '0px';
@@ -478,25 +407,17 @@ describe('ResizeObserver', () => {
             observer.observe(elements.target1);
             observer.observe(elements.target2);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target2);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target2);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.target1.style.width = '200px';
                 elements.target1.style.height = '200px';
 
@@ -504,33 +425,27 @@ describe('ResizeObserver', () => {
                 elements.target2.style.height = '0px';
                 elements.target2.padding = '10px';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(2);
 
-                    expect(entries.length).toBe(2);
+                expect(entries[0].target).toBe(elements.target1);
+                expect(entries[1].target).toBe(elements.target2);
 
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[1].target).toBe(elements.target2);
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
 
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-
-                    expect(entries[1].contentRect.width).toBe(0);
-                    expect(entries[1].contentRect.height).toBe(0);
-                    expect(entries[1].contentRect.top).toBe(0);
-                    expect(entries[1].contentRect.right).toBe(0);
-                    expect(entries[1].contentRect.bottom).toBe(0);
-                    expect(entries[1].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[1].contentRect.width).toEqual(0);
+                expect(entries[1].contentRect.height).toBe(0);
+                expect(entries[1].contentRect.top).toBe(0);
+                expect(entries[1].contentRect.right).toBe(0);
+                expect(entries[1].contentRect.bottom).toBe(0);
+                expect(entries[1].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles paddings', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             elements.target1.style.padding = '2px 4px 6px 8px';
 
@@ -538,101 +453,75 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(2);
-                    expect(entries[0].contentRect.right).toBe(208);
-                    expect(entries[0].contentRect.bottom).toBe(202);
-                    expect(entries[0].contentRect.left).toBe(8);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(2);
+                expect(entries[0].contentRect.right).toBe(208);
+                expect(entries[0].contentRect.bottom).toBe(202);
+                expect(entries[0].contentRect.left).toBe(8);
+            }).then(async () => {
                 elements.target1.style.padding = '3px 6px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(async () => {
                 elements.target1.style.boxSizing = 'border-box';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(188);
-                    expect(entries[0].contentRect.height).toBe(194);
-                    expect(entries[0].contentRect.top).toBe(3);
-                    expect(entries[0].contentRect.right).toBe(194);
-                    expect(entries[0].contentRect.bottom).toBe(197);
-                    expect(entries[0].contentRect.left).toBe(6);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(188);
+                expect(entries[0].contentRect.height).toBe(194);
+                expect(entries[0].contentRect.top).toBe(3);
+                expect(entries[0].contentRect.right).toBe(194);
+                expect(entries[0].contentRect.bottom).toBe(197);
+                expect(entries[0].contentRect.left).toBe(6);
+            }).then(async () => {
                 elements.target1.style.padding = '0px 6px';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                expect(spy).toHaveBeenCalledTimes(3);
 
-                    expect(entries.length).toBe(1);
+                expect(entries.length).toBe(1);
 
-                    expect(entries[0].target).toBe(elements.target1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].contentRect.width).toBe(188);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(194);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(6);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(188);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(194);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(6);
+            }).then(async () => {
                 elements.target1.style.padding = '0px';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(4);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles borders', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             elements.target1.style.border = '10px solid black';
 
@@ -640,103 +529,75 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.target1.style.border = '5px solid black';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(async () => {
                 elements.target1.style.boxSizing = 'border-box';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(190);
-                    expect(entries[0].contentRect.height).toBe(190);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(190);
-                    expect(entries[0].contentRect.bottom).toBe(190);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(190);
+                expect(entries[0].contentRect.height).toBe(190);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(190);
+                expect(entries[0].contentRect.bottom).toBe(190);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.target1.style.borderTop = '';
                 elements.target1.style.borderBottom = '';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(190);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(190);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(190);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(190);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.target1.style.borderLeft = '';
                 elements.target1.style.borderRight = '';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(4);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
-        it('ignores positions', done => {
-            const spy = jasmine.createSpy();
+        it('doesn\'t notify when position changes', done => {
+            const spy = createAsyncSpy();
 
             elements.target1.style.position = 'relative';
             elements.target1.style.top = '7px';
@@ -747,39 +608,29 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(2);
+                expect(entries[0].contentRect.right).toBe(203);
+                expect(entries[0].contentRect.bottom).toBe(202);
+                expect(entries[0].contentRect.left).toBe(3);
+            }).then(async () => {
+                elements.target1.style.left = '10px';
+                elements.target1.style.top = '20px';
 
-                    expect(entries[0].target).toBe(elements.target1);
+                await wait(timeout);
 
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(2);
-                    expect(entries[0].contentRect.right).toBe(203);
-                    expect(entries[0].contentRect.bottom).toBe(202);
-                    expect(entries[0].contentRect.left).toBe(3);
-
-                    done();
-                }, timeout);
-            }, done => {
-                elements.target1.style.left = '0px';
-                elements.target1.style.top = '0px';
-
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    done();
-                });
-            }], done);
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(done);
         });
 
         it('handles scroll bars size', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
@@ -791,11 +642,7 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.root);
 
-            setTimeout(() => {
-                const entries = spy.calls.mostRecent().args[0];
-
-                expect(spy).toHaveBeenCalledTimes(1);
-
+            spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.root);
 
@@ -807,51 +654,37 @@ describe('ResizeObserver', () => {
                     elements.root.clientWidth === elements.root.offsetWidth &&
                     elements.root.clientHeight === elements.root.offsetHeight
                 ) {
-                    done();
-
-                    return;
+                    return Promise.resolve();
                 }
 
-                runSequence([done => {
+                return (async () => {
                     const width = elements.root.clientWidth;
 
                     elements.target1.style.width = width + 'px';
                     elements.target2.style.width = width + 'px';
 
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                    const entries = await spy.nextCall();
 
-                        expect(spy).toHaveBeenCalledTimes(2);
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.root);
 
-                        expect(entries.length).toBe(1);
-                        expect(entries[0].target).toBe(elements.root);
-
-                        expect(entries[0].contentRect.height).toBe(250);
-
-                        done();
-                    }, timeout);
-                }, done => {
+                    expect(entries[0].contentRect.height).toBe(250);
+                })().then(async () => {
                     elements.target1.style.height = '125px';
                     elements.target2.style.height = '125px';
 
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                    const entries = await spy.nextCall();
 
-                        expect(spy).toHaveBeenCalledTimes(3);
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.root);
 
-                        expect(entries.length).toBe(1);
-                        expect(entries[0].target).toBe(elements.root);
-
-                        expect(entries[0].contentRect.width).toBe(100);
-
-                        done();
-                    }, timeout);
-                }], done);
-            }, timeout);
+                    expect(entries[0].contentRect.width).toBe(100);
+                });
+            }).then(done);
         });
 
         it('handles non-replaced inline elements', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
@@ -860,97 +693,67 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    expect(spy).not.toHaveBeenCalled();
-
-                    done();
-                }, timeout);
-            }, done => {
+            wait(timeout).then(() => {
+                expect(spy).not.toHaveBeenCalled();
+            }).then(async () => {
                 elements.target1.style.position = 'absolute';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(10);
-                    expect(entries[0].contentRect.left).toBe(10);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(10);
+                expect(entries[0].contentRect.left).toBe(10);
+            }).then(async () => {
                 elements.target1.style.position = 'static';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(2);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(0);
-                    expect(entries[0].contentRect.height).toBe(0);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(0);
-                    expect(entries[0].contentRect.bottom).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(0);
+                expect(entries[0].contentRect.height).toBe(0);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(0);
+                expect(entries[0].contentRect.bottom).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 elements.target1.style.width = '150px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(2);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).toHaveBeenCalledTimes(2);
+            }).then(async () => {
                 elements.target1.style.display = 'block';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(3);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(150);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(10);
-                    expect(entries[0].contentRect.left).toBe(10);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(150);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(10);
+                expect(entries[0].contentRect.left).toBe(10);
+            }).then(async () => {
                 elements.target1.style.display = 'inline';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(4);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBe(0);
-                    expect(entries[0].contentRect.height).toBe(0);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(0);
-                    expect(entries[0].contentRect.bottom).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(0);
+                expect(entries[0].contentRect.height).toBe(0);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(0);
+                expect(entries[0].contentRect.bottom).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         it('handles replaced inline elements', done => {
@@ -961,72 +764,52 @@ describe('ResizeObserver', () => {
             `
             );
 
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
             const replaced = document.getElementById('replaced-inline');
 
             observer = new ResizeObserver(spy);
 
             observer.observe(replaced);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(replaced);
 
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(replaced);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(30);
-                    expect(entries[0].contentRect.top).toBe(5);
-                    expect(entries[0].contentRect.right).toBe(206);
-                    expect(entries[0].contentRect.bottom).toBe(35);
-                    expect(entries[0].contentRect.left).toBe(6);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(30);
+                expect(entries[0].contentRect.top).toBe(5);
+                expect(entries[0].contentRect.right).toBe(206);
+                expect(entries[0].contentRect.bottom).toBe(35);
+                expect(entries[0].contentRect.left).toBe(6);
+            }).then(async () => {
                 replaced.style.width = '190px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(2);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(replaced);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(replaced);
-
-                    expect(entries[0].contentRect.width).toBe(190);
-                    expect(entries[0].contentRect.height).toBe(30);
-                    expect(entries[0].contentRect.top).toBe(5);
-                    expect(entries[0].contentRect.right).toBe(196);
-                    expect(entries[0].contentRect.bottom).toBe(35);
-                    expect(entries[0].contentRect.left).toBe(6);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(190);
+                expect(entries[0].contentRect.height).toBe(30);
+                expect(entries[0].contentRect.top).toBe(5);
+                expect(entries[0].contentRect.right).toBe(196);
+                expect(entries[0].contentRect.bottom).toBe(35);
+                expect(entries[0].contentRect.left).toBe(6);
+            }).then(async () => {
                 replaced.style.boxSizing = 'border-box';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(3);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(replaced);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(replaced);
-
-                    expect(entries[0].contentRect.width).toBe(174);
-                    expect(entries[0].contentRect.height).toBe(16);
-                    expect(entries[0].contentRect.top).toBe(5);
-                    expect(entries[0].contentRect.right).toBe(180);
-                    expect(entries[0].contentRect.bottom).toBe(21);
-                    expect(entries[0].contentRect.left).toBe(6);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(174);
+                expect(entries[0].contentRect.height).toBe(16);
+                expect(entries[0].contentRect.top).toBe(5);
+                expect(entries[0].contentRect.right).toBe(180);
+                expect(entries[0].contentRect.bottom).toBe(21);
+                expect(entries[0].contentRect.left).toBe(6);
+            }).then(done);
         });
 
         it('handles fractional dimensions', done => {
@@ -1035,99 +818,71 @@ describe('ResizeObserver', () => {
             elements.target1.style.padding = '6.3px 3.3px';
             elements.target1.style.border = '11px solid black';
 
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBeCloseTo(200.5, 1);
-                    expect(entries[0].contentRect.height).toBeCloseTo(200.5, 1);
-                    expect(entries[0].contentRect.top).toBeCloseTo(6.3, 1);
-                    expect(entries[0].contentRect.right).toBeCloseTo(203.8, 1);
-                    expect(entries[0].contentRect.bottom).toBeCloseTo(206.8, 1);
-                    expect(entries[0].contentRect.left).toBeCloseTo(3.3, 1);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBeCloseTo(200.5, 1);
+                expect(entries[0].contentRect.height).toBeCloseTo(200.5, 1);
+                expect(entries[0].contentRect.top).toBeCloseTo(6.3, 1);
+                expect(entries[0].contentRect.right).toBeCloseTo(203.8, 1);
+                expect(entries[0].contentRect.bottom).toBeCloseTo(206.8, 1);
+                expect(entries[0].contentRect.left).toBeCloseTo(3.3, 1);
+            }).then(async () => {
                 elements.target1.style.padding = '7.8px 3.8px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(async () => {
                 elements.target1.style.boxSizing = 'border-box';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(2);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBeCloseTo(170.9, 1);
-                    expect(entries[0].contentRect.height).toBeCloseTo(162.9, 1);
-                    expect(entries[0].contentRect.top).toBeCloseTo(7.8, 1);
-                    expect(entries[0].contentRect.right).toBeCloseTo(174.7, 1);
-                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.7, 1);
-                    expect(entries[0].contentRect.left).toBeCloseTo(3.8, 1);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBeCloseTo(170.9, 1);
+                expect(entries[0].contentRect.height).toBeCloseTo(162.9, 1);
+                expect(entries[0].contentRect.top).toBeCloseTo(7.8, 1);
+                expect(entries[0].contentRect.right).toBeCloseTo(174.7, 1);
+                expect(entries[0].contentRect.bottom).toBeCloseTo(170.7, 1);
+                expect(entries[0].contentRect.left).toBeCloseTo(3.8, 1);
+            }).then(async () => {
                 elements.target1.style.padding = '7.9px 3.9px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(3);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBeCloseTo(170.7, 1);
-                    expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
-                    expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
-                    expect(entries[0].contentRect.right).toBeCloseTo(174.6, 1);
-                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
-                    expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBeCloseTo(170.7, 1);
+                expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
+                expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
+                expect(entries[0].contentRect.right).toBeCloseTo(174.6, 1);
+                expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
+                expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
+            }).then(async () => {
                 elements.target1.style.width = '200px';
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(4);
+                const entries = await spy.nextCall();
 
-                    const entries = spy.calls.mostRecent().args[0];
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-
-                    expect(entries[0].contentRect.width).toBeCloseTo(170.2, 1);
-                    expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
-                    expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
-                    expect(entries[0].contentRect.right).toBeCloseTo(174.1, 1);
-                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
-                    expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBeCloseTo(170.2, 1);
+                expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
+                expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
+                expect(entries[0].contentRect.right).toBeCloseTo(174.1, 1);
+                expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
+                expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
+            }).then(done);
         });
 
         it('handles svg elements', done => {
@@ -1145,7 +900,7 @@ describe('ResizeObserver', () => {
                 </svg>
             `);
 
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
             const svgRoot = document.getElementById('svg-root');
             const svgRect = document.getElementById('svg-rect');
 
@@ -1153,132 +908,96 @@ describe('ResizeObserver', () => {
 
             observer.observe(svgRect);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
+                expect(entries[0].target).toBe(svgRect);
 
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(svgRect);
-
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(150);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(200);
-                    expect(entries[0].contentRect.bottom).toBe(150);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(200);
+                expect(entries[0].contentRect.height).toBe(150);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(200);
+                expect(entries[0].contentRect.bottom).toBe(150);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 svgRect.setAttribute('width', 250);
                 svgRect.setAttribute('height', 200);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(svgRect);
 
-                    expect(entries[0].target).toBe(svgRect);
-
-                    expect(entries[0].contentRect.width).toBe(250);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(250);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].contentRect.width).toBe(250);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(250);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(async () => {
                 observer.observe(svgRoot);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(3);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(svgRoot);
 
-                    expect(entries[0].target).toBe(svgRoot);
-
-                    expect(entries[0].contentRect.width).toBe(250);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.right).toBe(250);
-                    expect(entries[0].contentRect.bottom).toBe(200);
-                    expect(entries[0].contentRect.left).toBe(0);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].contentRect.width).toBe(250);
+                expect(entries[0].contentRect.height).toBe(200);
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.right).toBe(250);
+                expect(entries[0].contentRect.bottom).toBe(200);
+                expect(entries[0].contentRect.left).toBe(0);
+            }).then(done);
         });
 
         if (typeof document.body.style.transform !== 'undefined') {
-            it('handles transformations', done => {
-                const spy = jasmine.createSpy();
+            it('doesn\'t notify of transformations', done => {
+                const spy = createAsyncSpy();
 
                 observer = new ResizeObserver(spy);
 
                 observer.observe(elements.target1);
 
-                runSequence([done => {
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
 
-                        expect(spy).toHaveBeenCalledTimes(1);
-
-                        expect(entries.length).toBe(1);
-                        expect(entries[0].target).toBe(elements.target1);
-
-                        expect(entries[0].contentRect.width).toBe(200);
-                        expect(entries[0].contentRect.height).toBe(200);
-                        expect(entries[0].contentRect.top).toBe(0);
-                        expect(entries[0].contentRect.left).toBe(0);
-
-                        done();
-                    }, timeout);
-                }, done => {
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
                     elements.container.style.transform = 'scale(0.5)';
                     elements.target2.style.transform = 'scale(0.5)';
 
                     observer.observe(elements.target2);
 
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                    const entries = await spy.nextCall();
 
-                        expect(spy).toHaveBeenCalledTimes(2);
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target2);
 
-                        expect(entries.length).toBe(1);
-                        expect(entries[0].target).toBe(elements.target2);
-
-                        expect(entries[0].contentRect.width).toBe(200);
-                        expect(entries[0].contentRect.height).toBe(200);
-                        expect(entries[0].contentRect.top).toBe(0);
-                        expect(entries[0].contentRect.left).toBe(0);
-
-                        done();
-                    }, timeout);
-                }, done => {
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
                     elements.container.style.transform = '';
                     elements.target2.style.transform = '';
 
-                    setTimeout(() => {
-                        expect(spy).toHaveBeenCalledTimes(2);
+                    await wait(timeout);
 
-                        done();
-                    }, timeout);
-                }], done);
+                    expect(spy).toHaveBeenCalledTimes(2);
+                }).then(done);
             });
         }
 
         if (typeof document.body.style.transition !== 'undefined') {
             it('handles transitions', done => {
-                const spy = jasmine.createSpy();
+                const spy = createAsyncSpy();
 
                 elements.target1.style.transition = 'width 1s, height 0.5s';
 
@@ -1286,38 +1005,28 @@ describe('ResizeObserver', () => {
 
                 observer.observe(elements.target1);
 
-                runSequence([done => {
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
-
-                        expect(spy).toHaveBeenCalledTimes(1);
-
-                        expect(entries[0].target).toBe(elements.target1);
-                        expect(entries[0].contentRect.width).toBe(200);
-                        expect(entries[0].contentRect.height).toBe(200);
-
-                        done();
-                    }, timeout);
-                }, done => {
+                spy.nextCall().then(entries => {
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                }).then(async () => {
                     elements.target1.style.width = '600px';
                     elements.target1.style.height = '350px';
 
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                    await wait(1100);
 
-                        expect(spy.calls.count()).toBeGreaterThan(2);
+                    const entries = spy.calls.mostRecent().args[0];
 
-                        expect(entries[0].target).toBe(elements.target1);
-                        expect(entries[0].contentRect.width).toBe(600);
-                        expect(entries[0].contentRect.height).toBe(350);
+                    expect(spy.calls.count()).toBeGreaterThan(2);
 
-                        done();
-                    }, 1100);
-                }], done);
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[0].contentRect.width).toBe(600);
+                    expect(entries[0].contentRect.height).toBe(350);
+                }).then(done);
             });
 
             it('handles changes caused by delayed transitions in nearby or descendant elements', done => {
-                const spy = jasmine.createSpy();
+                const spy = createAsyncSpy();
 
                 elements.container.style.minHeight = '600px';
                 elements.target1.style.transition = 'width 0.5s, height 0.5s';
@@ -1329,78 +1038,26 @@ describe('ResizeObserver', () => {
 
                 observer.observe(elements.container);
 
-                runSequence([done => {
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
-
-                        expect(spy).toHaveBeenCalledTimes(1);
-
-                        expect(entries[0].target).toBe(elements.container);
-                        expect(entries[0].contentRect.width).toBe(600);
-                        expect(entries[0].contentRect.height).toBe(600);
-
-                        done();
-                    }, timeout);
-                }, done => {
+                spy.nextCall().then(entries => {
+                    expect(entries[0].target).toBe(elements.container);
+                    expect(entries[0].contentRect.width).toBe(600);
+                    expect(entries[0].contentRect.height).toBe(600);
+                }).then(async () => {
                     elements.target1.style.width = '700px';
                     elements.target1.style.height = '350px';
 
                     elements.target2.style.width = '700px';
                     elements.target2.style.height = '350px';
 
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
+                    await wait(550);
 
-                        expect(spy.calls.count()).toBeGreaterThan(2);
+                    const entries = spy.calls.mostRecent().args[0];
 
-                        expect(entries[0].target).toBe(elements.container);
-                        expect(entries[0].contentRect.width).toBe(700);
-                        expect(entries[0].contentRect.height).toBe(700);
-
-                        done();
-                    }, 600);
-                }], done);
+                    expect(entries[0].target).toBe(elements.container);
+                    expect(entries[0].contentRect.width).toBe(700);
+                    expect(entries[0].contentRect.height).toBe(700);
+                }).then(done);
             });
-        }
-
-        if (typeof document.body.style.animation !== 'undefined') {
-            it('handles long-running/infinite animations', done => {
-                const spy = jasmine.createSpy();
-
-                observer = new ResizeObserver(spy);
-
-                observer.observe(elements.container);
-
-                ResizeObserver.idleTimeout = 550;
-
-                runSequence([done => {
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
-
-                        expect(spy).toHaveBeenCalledTimes(1);
-
-                        expect(entries[0].target).toBe(elements.container);
-                        expect(entries[0].contentRect.width).toBe(600);
-
-                        done();
-                    }, timeout);
-                }, done => {
-                    setTimeout(() => {
-                        elements.target1.className = 'animate';
-                    }, 540);
-
-                    setTimeout(() => {
-                        const entries = spy.calls.mostRecent().args[0];
-
-                        expect(spy.calls.count()).toBeGreaterThan(2);
-
-                        expect(entries[0].target).toBe(elements.container);
-                        expect(entries[0].contentRect.width).toBe(elements.container.clientWidth);
-
-                        done();
-                    }, 8600);
-                }], done);
-            }, 9200);
         }
     });
 
@@ -1434,172 +1091,98 @@ describe('ResizeObserver', () => {
         });
 
         it('stops observing single element', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
             observer.observe(elements.target2);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(2);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    expect(entries.length).toBe(2);
-
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[1].target).toBe(elements.target2);
-
-                    done();
-                }, timeout);
-            }, done => {
-                elements.target1.style.width = '600px';
-
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(2);
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[0].contentRect.width).toBe(600);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].target).toBe(elements.target1);
+                expect(entries[1].target).toBe(elements.target2);
+            }).then(async () => {
                 observer.unobserve(elements.target1);
 
                 elements.target1.style.width = '50px';
                 elements.target2.style.width = '50px';
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(3);
-
-                    expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target2);
-                    expect(entries[0].contentRect.width).toBe(50);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target2);
+                expect(entries[0].contentRect.width).toBe(50);
+            }).then(done);
         });
 
         it('handles elements that are not observed', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.unobserve(elements.target1);
 
-            setTimeout(() => {
+            wait(timeout).then(() => {
                 expect(spy).not.toHaveBeenCalled();
-
-                done();
-            }, timeout);
+            }).then(done);
         });
     });
 
     describe('disconnect', () => {
         it('stops observing all elements', done => {
-            const spy = jasmine.createSpy();
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
             observer.observe(elements.target2);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(2);
 
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    expect(entries.length).toBe(2);
-
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[1].target).toBe(elements.target2);
-
-                    done();
-                }, timeout);
-            }, done => {
+                expect(entries[0].target).toBe(elements.target1);
+                expect(entries[1].target).toBe(elements.target2);
+            }).then(() => {
                 observer.disconnect();
 
                 elements.target1.style.width = '600px';
                 elements.target2.style.width = '600px';
 
-                observer.disconnect();
-
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(done);
         });
 
-        it('can resume observations', done => {
-            const spy = jasmine.createSpy();
+        it('allows to resume observations', done => {
+            const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
 
             observer.observe(elements.target1);
             observer.observe(elements.target2);
 
-            runSequence([done => {
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(1);
-                    expect(entries.length).toBe(2);
-
-                    done();
-                }, timeout);
-            }, done => {
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(2);
+            }).then(async () => {
                 elements.target1.style.width = '600px';
                 elements.target2.style.width = '600px';
 
                 observer.disconnect();
 
-                setTimeout(() => {
-                    expect(spy).toHaveBeenCalledTimes(1);
+                await wait(timeout);
 
-                    done();
-                }, timeout);
-            }, done => {
+                expect(spy).toHaveBeenCalledTimes(1);
+            }).then(async () => {
                 observer.observe(elements.target1);
 
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
+                const entries = await spy.nextCall();
 
-                    expect(spy).toHaveBeenCalledTimes(2);
+                expect(entries.length).toBe(1);
 
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[0].contentRect.width).toBe(600);
-
-                    done();
-                }, timeout);
-            }, done => {
-                elements.target1.style.width = '200px';
-
-                setTimeout(() => {
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(spy).toHaveBeenCalledTimes(3);
-
-                    expect(entries.length).toBe(1);
-
-                    expect(entries[0].target).toBe(elements.target1);
-                    expect(entries[0].contentRect.width).toBe(200);
-
-                    done();
-                }, timeout);
-            }], done);
+                expect(entries[0].target).toBe(elements.target1);
+                expect(entries[0].contentRect.width).toBe(600);
+            }).then(done);
         });
     });
 });

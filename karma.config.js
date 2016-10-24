@@ -3,6 +3,7 @@ module.exports = function (config) {
         singleRun: true,
         frameworks: ['jasmine'],
         files: [
+            'node_modules/babel-polyfill/dist/polyfill.js',
             'tests/**/*.spec.js'
         ],
         plugins: [

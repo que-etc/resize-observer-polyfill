@@ -26,6 +26,13 @@ const base = {
 const builds = {
     test: _.merge({}, base, {
         devtool: 'inline-source-map',
+        module: {
+            loaders: [{
+                query: {
+                    presets: ['latest']
+                }
+            }]
+        },
         output: {
             library: false
         }

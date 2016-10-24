@@ -1,8 +1,7 @@
+/* eslint-disable max-nested-callbacks, require-jsdoc */
 import {ResizeObserver} from './source';
 
 const NEW_VALUE = Date.now();
-
-let entry = null;
 
 /**
  * Checks whether the specified property is present in provided object
@@ -50,35 +49,40 @@ function isReadOnlyAttr(target, prop) {
     return target[prop] === NEW_VALUE;
 }
 
-describe('ResizeObserverEntry', () => {
-    beforeEach(done => {
-        const observer = new ResizeObserver((entries) => {
-            entry = entries[0];
-
+function getEntry() {
+    return new Promise(resolve => {
+        const observer = new ResizeObserver(entries => {
             observer.disconnect();
-            done();
+
+            resolve(entries[0]);
         });
 
         observer.observe(document.body);
     });
+}
 
+describe('ResizeObserverEntry', () => {
     describe('constructor', () => {
-        it('properties are readonly and not enumerable', () => {
-            expect(isReadOnlyAttr(entry, 'target')).toBe(true);
-            expect(isReadOnlyAttr(entry, 'contentRect')).toBe(true);
+        it('properties are readonly and not enumerable', done => {
+            getEntry().then(entry => {
+                expect(isReadOnlyAttr(entry, 'target')).toBe(true);
+                expect(isReadOnlyAttr(entry, 'contentRect')).toBe(true);
+            }).then(done);
         });
 
-        it('content rectangle is an instance of the ClientRect', () => {
-            const rectKeys = ['width', 'height', 'top', 'right', 'bottom', 'left'];
-            const contentRect = entry.contentRect;
+        it('content rectangle is an instance of the ClientRect', done => {
+            getEntry().then(entry => {
+                const rectKeys = ['width', 'height', 'top', 'right', 'bottom', 'left'];
+                const contentRect = entry.contentRect;
 
-            if (window.ClientRect) {
-                expect(contentRect instanceof ClientRect).toBe(true);
-            }
+                if (window.ClientRect) {
+                    expect(contentRect instanceof ClientRect).toBe(true);
+                }
 
-            for (const key of rectKeys) {
-                expect(isReadOnlyAttr(contentRect, key)).toBe(true);
-            }
+                for (const key of rectKeys) {
+                    expect(isReadOnlyAttr(contentRect, key)).toBe(true);
+                }
+            }).then(done);
         });
     });
 });
