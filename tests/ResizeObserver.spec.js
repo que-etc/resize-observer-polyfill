@@ -201,7 +201,7 @@ describe('ResizeObserver', () => {
 
                 expect(entries[0].target).toBe(elements.target2);
                 expect(entries[1].target).toBe(elements.target1);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('doesn\'t notify already observed elements', done => {
@@ -220,7 +220,7 @@ describe('ResizeObserver', () => {
                 await wait(timeout);
 
                 expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles elements that are not yet in the DOM', done => {
@@ -251,7 +251,7 @@ describe('ResizeObserver', () => {
 
                 expect(entries[0].contentRect.width).toBe(200);
                 expect(entries[0].contentRect.height).toBe(200);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('triggers when an element is removed from DOM', done => {
@@ -297,7 +297,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(0);
                 expect(entries[0].contentRect.bottom).toBe(0);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles resizing of the documentElement', done => {
@@ -341,7 +341,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(width);
                 expect(entries[0].contentRect.bottom).toBe(height);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles hidden elements', done => {
@@ -392,7 +392,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(0);
                 expect(entries[0].contentRect.bottom).toBe(0);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles empty elements', done => {
@@ -441,7 +441,7 @@ describe('ResizeObserver', () => {
                 expect(entries[1].contentRect.right).toBe(0);
                 expect(entries[1].contentRect.bottom).toBe(0);
                 expect(entries[1].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles paddings', done => {
@@ -517,7 +517,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(200);
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles borders', done => {
@@ -593,7 +593,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(200);
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('doesn\'t notify when position changes', done => {
@@ -626,7 +626,7 @@ describe('ResizeObserver', () => {
                 await wait(timeout);
 
                 expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles scroll bars size', done => {
@@ -680,7 +680,7 @@ describe('ResizeObserver', () => {
 
                     expect(entries[0].contentRect.width).toBe(100);
                 });
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles non-replaced inline elements', done => {
@@ -753,7 +753,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(0);
                 expect(entries[0].contentRect.bottom).toBe(0);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles replaced inline elements', done => {
@@ -809,7 +809,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(180);
                 expect(entries[0].contentRect.bottom).toBe(21);
                 expect(entries[0].contentRect.left).toBe(6);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles fractional dimensions', done => {
@@ -882,7 +882,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBeCloseTo(174.1, 1);
                 expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
                 expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles svg elements', done => {
@@ -950,7 +950,7 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.right).toBe(250);
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         if (typeof document.body.style.transform !== 'undefined') {
@@ -991,7 +991,7 @@ describe('ResizeObserver', () => {
                     await wait(timeout);
 
                     expect(spy).toHaveBeenCalledTimes(2);
-                }).then(done);
+                }).then(done).catch(done.fail);
             });
         }
 
@@ -1022,7 +1022,7 @@ describe('ResizeObserver', () => {
                     expect(entries[0].target).toBe(elements.target1);
                     expect(entries[0].contentRect.width).toBe(600);
                     expect(entries[0].contentRect.height).toBe(350);
-                }).then(done);
+                }).then(done).catch(done.fail);
             });
 
             it('handles changes caused by delayed transitions in nearby or descendant elements', done => {
@@ -1056,7 +1056,7 @@ describe('ResizeObserver', () => {
                     expect(entries[0].target).toBe(elements.container);
                     expect(entries[0].contentRect.width).toBe(700);
                     expect(entries[0].contentRect.height).toBe(700);
-                }).then(done);
+                }).then(done).catch(done.fail);
             });
         }
     });
@@ -1114,7 +1114,7 @@ describe('ResizeObserver', () => {
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target2);
                 expect(entries[0].contentRect.width).toBe(50);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('handles elements that are not observed', done => {
@@ -1126,7 +1126,7 @@ describe('ResizeObserver', () => {
 
             wait(timeout).then(() => {
                 expect(spy).not.toHaveBeenCalled();
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
     });
 
@@ -1151,7 +1151,7 @@ describe('ResizeObserver', () => {
                 elements.target2.style.width = '600px';
 
                 expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
 
         it('allows to resume observations', done => {
@@ -1182,7 +1182,7 @@ describe('ResizeObserver', () => {
 
                 expect(entries[0].target).toBe(elements.target1);
                 expect(entries[0].contentRect.width).toBe(600);
-            }).then(done);
+            }).then(done).catch(done.fail);
         });
     });
 });
