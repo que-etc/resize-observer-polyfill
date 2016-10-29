@@ -1,3 +1,5 @@
+const babel = require('rollup-plugin-babel');
+
 module.exports = function (config) {
     config.set({
         singleRun: true,
@@ -7,7 +9,7 @@ module.exports = function (config) {
             'tests/**/*.spec.js'
         ],
         plugins: [
-            'karma-webpack',
+            'karma-rollup-plugin',
             'karma-jasmine',
             'karma-sourcemap-loader',
             'karma-chrome-launcher',
@@ -30,10 +32,25 @@ module.exports = function (config) {
             }
         },
         preprocessors: {
-            'tests/**.spec.js': ['webpack', 'sourcemap'],
-            'src/**/*.js': ['webpack']
+            'tests/*.js': ['rollup', 'sourcemap'],
+            'src/**/*.js': ['rollup']
         },
-        webpack: require('./dev/builds').test,
-        webpackMiddleware: {noInfo: true}
+        rollupPreprocessor: {
+            plugins: [
+                babel({
+                    presets: [
+                        ['latest', {
+                            es2015: {
+                                loose: true,
+                                modules: false
+                            }
+                        }]
+                    ],
+                    plugins: ['external-helpers']
+                })
+            ],
+            format: 'iife',
+            sourceMap: 'inline'
+        }
     });
 };

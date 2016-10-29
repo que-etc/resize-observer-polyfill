@@ -1,29 +1,62 @@
 const gulp = require('gulp');
-const webpack = require('webpack');
-const gutil = require('gulp-util');
+const _ = require('lodash');
 const eslint = require('gulp-eslint');
-const builds = require('./dev/builds');
+const rollup = require('rollup').rollup;
+const babel = require('rollup-plugin-babel');
+const uglify = require('rollup-plugin-uglify');
 const Server = require('karma').Server;
 
-/* eslint-disable require-jsdoc */
-function createWebpackCallback(callback) {
-    return (err, stats) => {
-        if (err) {
-            throw new gutil.PluginError('webpack', err);
-        }
-
-        gutil.log('[webpack]', stats.toString());
-
-        callback();
+gulp.task('build', () => {
+    const baseConfig = {
+        format: 'umd',
+        moduleName: 'ResizeObserver',
+        plugins: [
+            babel({
+                presets: [
+                    ['es2015', {
+                        modules: false,
+                        loose: true
+                    }]
+                ],
+                plugins: [
+                    ['external-helpers']
+                ]
+            })
+        ]
     };
-}
 
-gulp.task('build', ['build:min'], callback => {
-    webpack(builds.production, createWebpackCallback(callback));
-});
+    const tasks = [{
+        entry: 'index.js',
+        dest: 'dist/ResizeObserver.js'
+    }, {
+        entry: 'index.global.js',
+        dest: 'dist/ResizeObserver.global.js'
+    }, {
+        entry: 'index.js',
+        dest: 'dist/ResizeObserver.min.js',
+        sourceMap: true,
+        plugins: [...baseConfig.plugins, uglify({
+            mangle: {
+                except: ['ResizeObserver', 'ResizeObserverEntry']
+            }
+        })]
+    }, {
+        entry: 'index.global.js',
+        dest: 'dist/ResizeObserver.global.min.js',
+        sourceMap: true,
+        plugins: [...baseConfig.plugins, uglify({
+            mangle: {
+                except: ['ResizeObserver', 'ResizeObserverEntry']
+            }
+        })]
+    }].map(config => {
+        const taskConfig = _.merge({}, baseConfig, config);
 
-gulp.task('build:min', callback => {
-    webpack(builds.prodMin, createWebpackCallback(callback));
+        return rollup(taskConfig)
+            .then(bundle => bundle.write(taskConfig));
+    });
+
+    return Promise.all(tasks);
 });
 
 gulp.task('test:lint', () => {
