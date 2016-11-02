@@ -23,13 +23,14 @@
     ],
     "homepage": "https://github.com/que-etc/resize-observer-polyfill",
     "devDependencies": {
-        "resize-observer-polyfill": "^1.2.0",
         "babel-core": "^6.14.0",
         "babel-loader": "^6.2.5",
+        "babel-plugin-add-module-exports": "^0.2.1",
         "babel-preset-es2015": "^6.14.0",
-        "webpack": "^1.13.2",
         "gulp": "^3.9.1",
         "gulp-util": "^3.0.7",
-        "randomcolor": "^0.4.4"
+        "randomcolor": "^0.4.4",
+        "resize-observer-polyfill": "^1.2.0",
+        "webpack": "^1.13.2"
     }
 }
