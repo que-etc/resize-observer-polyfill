@@ -124,8 +124,6 @@ export default class ResizeObserverController {
     /**
      * Invokes the update of observers. It will continue running updates insofar
      * it detects changes or if continuous updates are enabled.
-     *
-     * @private
      */
     refresh() {
         const hasChanges = this._updateObservers();

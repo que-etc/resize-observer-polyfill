@@ -371,8 +371,6 @@ var ResizeObserverController = function () {
     /**
      * Invokes the update of observers. It will continue running updates insofar
      * it detects changes or if continuous updates are enabled.
-     *
-     * @private
      */
     ResizeObserverController.prototype.refresh = function refresh() {
         var hasChanges = this._updateObservers();
