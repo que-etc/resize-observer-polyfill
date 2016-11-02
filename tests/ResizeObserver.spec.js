@@ -41,7 +41,7 @@ const template = `
 `;
 
 const timeout = 150;
-const defaultIdleTimeout = ResizeObserver.idleTimeout;
+const defaultUpdatesState = ResizeObserver.continuousUpdates;
 
 function appendStyles() {
     styles = document.createElement('style');
@@ -89,7 +89,7 @@ describe('ResizeObserver', () => {
             observer.disconnect();
         }
 
-        ResizeObserver.idleTimeout = defaultIdleTimeout;
+        ResizeObserver.continuousUpdates = defaultUpdatesState;
 
         observer = null;
 
@@ -1013,7 +1013,7 @@ describe('ResizeObserver', () => {
                     elements.target1.style.width = '600px';
                     elements.target1.style.height = '350px';
 
-                    await wait(1100);
+                    await wait(1050);
 
                     const entries = spy.calls.mostRecent().args[0];
 
@@ -1032,7 +1032,7 @@ describe('ResizeObserver', () => {
                 elements.target1.style.transition = 'width 0.5s, height 0.5s';
                 elements.target2.style.transition = 'width 0.5s, height 0.5s';
 
-                ResizeObserver.idleTimeout = 540;
+                ResizeObserver.continuousUpdates = true;
 
                 observer = new ResizeObserver(spy);
 

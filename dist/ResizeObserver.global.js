@@ -4,12 +4,6 @@
   (global.ResizeObserver = factory());
 }(this, (function () { 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-    return typeof obj;
-} : function (obj) {
-    return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-};
-
 var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -58,7 +52,6 @@ var possibleConstructorReturn = function (self, call) {
     return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
-
 /**
  * A collection of shims that provides minimal
  * support of WeakMap and Map classes.
@@ -66,8 +59,7 @@ var possibleConstructorReturn = function (self, call) {
  * These implementations are not meant to be used outside of
  * ResizeObserver modules as they cover only a limited range
  * of use cases.
- */
-/* eslint-disable require-jsdoc */
+ *//* eslint-disable require-jsdoc */
 var hasNativeCollections = typeof window.WeakMap === 'function' && typeof window.Map === 'function';
 
 var WeakMap = function () {
@@ -196,31 +188,13 @@ var Map = function () {
 }();
 
 /**
- * A shim for performance.now method which falls back
- * to Date.now if the first one is not supported.
- *
- * @returns {Timestamp}
- */
-var now = (function () {
-    if (window.performance && typeof window.performance.now === 'function') {
-        return function () {
-            return window.performance.now();
-        };
-    }
-
-    return function () {
-        return Date.now();
-    };
-})();
-
-/**
  * A shim for requestAnimationFrame which falls back
  * to setTimeout if the first one is not supported.
  *
  * @returns {Number} Requests' identifier.
  */
-var requestAnimFrame = (function () {
-    if (window.requestAnimationFrame && typeof window.requestAnimationFrame === 'function') {
+var reqAnimFrame = (function () {
+    if (typeof window.requestAnimationFrame === 'function') {
         return window.requestAnimationFrame;
     }
 
@@ -231,78 +205,105 @@ var requestAnimFrame = (function () {
     };
 })();
 
-var mutationsSupported = typeof window.MutationObserver === 'function';
-
 /**
- * Creates a wrapper function which ensures only one invocation of provided
- * callback during the specified delay.
+ * Creates a wrapper function that ensures that provided callback will
+ * be invoked only once during the specified delay period. It caches the last
+ * call and re-invokes it after pending activation is resolved.
  *
- * @param {Function} callback - Function to be invoked.
+ * @param {Function} callback - Function to be invoked after the delay period.
  * @param {Number} [delay = 0] - Delay after which to invoke callback.
+ * @param {Boolean} [afterRAF = false] - Whether function needs to be invoked as
+ *      a requestAnimationFrame callback.
  * @returns {Function}
  */
-function debounce(callback) {
+var throttle = function (callback) {
     var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var afterRAF = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-    var timeoutID = false;
+    var leadCall = null,
+        edgeCall = null;
 
-    return function () {
-        var _this = this;
+    /**
+     * Invokes the original callback function and schedules a new invocation if
+     * the wrapper was called during current request.
+     */
+    function invokeCallback() {
+        // Invoke original function.
+        callback.apply.apply(callback, leadCall);
 
+        leadCall = null;
+
+        // Schedule new invocation if there was a call during delay period.
+        if (edgeCall) {
+            proxy.apply.apply(proxy, edgeCall);
+
+            edgeCall = null;
+        }
+    }
+
+    /**
+     * Callback that will be invoked after the specified delay period. It will
+     * delegate invocation of the original function to the requestAnimationFrame
+     * if "afterRAF" parameter is set to "true".
+     */
+    function timeoutCallback() {
+        afterRAF ? reqAnimFrame(invokeCallback) : invokeCallback();
+    }
+
+    /**
+     * Schedules invocation of the initial function.
+     */
+    function proxy() {
         for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
             args[_key] = arguments[_key];
         }
 
-        if (timeoutID !== false) {
-            clearTimeout(timeoutID);
+        // eslint-disable-next-line no-invalid-this
+        var callData = [this, args];
+
+        // Cache current call to be re-invoked later if there is already a
+        // pending call.
+        if (leadCall) {
+            edgeCall = callData;
+        } else {
+            leadCall = callData;
+
+            // Schedule new invocation.
+            setTimeout(timeoutCallback, delay);
         }
+    }
 
-        timeoutID = setTimeout(function () {
-            timeoutID = false;
+    return proxy;
+};
 
-            // eslint-disable-next-line no-invalid-this
-            callback.apply(_this, args);
-        }, delay);
-    };
-}
+// Define whether the MutationObserver is supported.
+var mutationsSupported = typeof window.MutationObserver === 'function';
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
- * It's meant to decide when and for how long it's necessary to run updates by
- * listening to the windows "resize" event along with a tracking of DOM mutations
+ * It decides when and for how long it's necessary to run updates by listening
+ * to the windows "resize" event along with a tracking of DOM mutations
  * (nodes removal, changes of attributes, etc.).
  *
  * Transitions and animations are handled by running a repeatable update cycle
- * either until the dimensions of observed elements are changing or the timeout
- * is reached (default timeout is 50 milliseconds). Timeout value can be manually
- * increased if transitions have a delay.
+ * until the dimensions of observed elements are changing.
  *
- * Continuous update cycle will be used automatically in case if MutationObserver
+ * Continuous update cycle will be used automatically in case MutationObserver
  * is not supported.
  */
 var ResizeObserverController = function () {
     /**
      * Creates a new instance of ResizeObserverController.
      *
-     * @param {Number} [idleTimeout = 0] - Idle timeout value.
      * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous
      *      update cycle.
      */
     function ResizeObserverController() {
-        var idleTimeout = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 50;
-        var continuousUpdates = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+        var continuousUpdates = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
         classCallCheck(this, ResizeObserverController);
 
-        this._idleTimeout = idleTimeout;
+        // Continuous updates must be enabled if MutationObserver is not supported.
         this._isCycleContinuous = !mutationsSupported || continuousUpdates;
-
-        this._cycleStartTime = 0;
-
-        // Indicates whether the update cycle is currently running.
-        this._isCycleActive = false;
-
-        // Indicates whether the update of observers is scheduled.
-        this._isUpdateScheduled = false;
 
         // Indicates whether DOM listeners have been added.
         this._listenersEnabled = false;
@@ -313,14 +314,12 @@ var ResizeObserverController = function () {
         // A list of connected observers.
         this._observers = [];
 
-        // Fix value of "this" binding for the following methods.
-        this.runUpdates = this.runUpdates.bind(this);
-        this._onMutation = this._onMutation.bind(this);
-        this._resolveScheduled = this._resolveScheduled.bind(this);
+        // Make sure that the "refresh" method is invoked as a RAF callback and
+        // that it happens only once during the period of 30 milliseconds.
+        this.refresh = throttle(this.refresh.bind(this), 30, true);
 
-        // Function that will be invoked to re-run the update cycle if continuous
-        // cycles are enabled.
-        this._continuousCycleHandler = debounce(this.runUpdates, 100);
+        // Additionally postpone invocation of the continuous updates.
+        this._continuousUpdateHandler = throttle(this.refresh, 70);
     }
 
     /**
@@ -345,9 +344,10 @@ var ResizeObserverController = function () {
      * @param {ResizeObserver} observer - Observer to be removed.
      */
     ResizeObserverController.prototype.disconnect = function disconnect(observer) {
-        var observers = this._observers,
-            index = observers.indexOf(observer);
+        var observers = this._observers;
+        var index = observers.indexOf(observer);
 
+        // Remove observer if it's present in registry.
         if (~index) {
             observers.splice(index, 1);
         }
@@ -359,13 +359,32 @@ var ResizeObserverController = function () {
     };
 
     /**
-     * Tells whether provided observer is connected to controller.
+     * Tells whether the provided observer is connected to controller.
      *
      * @param {ResizeObserver} observer - Observer to be checked.
      * @returns {Boolean}
      */
     ResizeObserverController.prototype.isConnected = function isConnected(observer) {
         return !!~this._observers.indexOf(observer);
+    };
+
+    /**
+     * Invokes the update of observers. It will continue running updates insofar
+     * it detects changes or if continuous updates are enabled.
+     *
+     * @private
+     */
+    ResizeObserverController.prototype.refresh = function refresh() {
+        var hasChanges = this._updateObservers();
+
+        // Continue running updates if changes have been detected as there might
+        // be future ones caused by CSS transitions.
+        if (hasChanges) {
+            this.refresh();
+        } else if (this._isCycleContinuous && this._listenersEnabled) {
+            // Automatically repeat cycle if it's necessary.
+            this._continuousUpdateHandler();
+        }
     };
 
     /**
@@ -393,8 +412,11 @@ var ResizeObserverController = function () {
 
             var observer = _ref;
 
+            // Collect active observations.
             observer.gatherActive();
 
+            // Broadcast active observations and set the flag that changes have
+            // been detected.
             if (observer.hasActive()) {
                 hasChanges = true;
 
@@ -403,86 +425,6 @@ var ResizeObserverController = function () {
         }
 
         return hasChanges;
-    };
-
-    /**
-     * Starts the update cycle which runs either until it detects changes in the
-     * dimensions of elements or the idle timeout is reached.
-     */
-    ResizeObserverController.prototype.runUpdates = function runUpdates() {
-        this._cycleStartTime = now();
-        this._isCycleActive = true;
-
-        this.scheduleUpdate();
-    };
-
-    /**
-     * Schedules the update of observers.
-     */
-    ResizeObserverController.prototype.scheduleUpdate = function scheduleUpdate() {
-        // Schedule new update if it hasn't been scheduled already.
-        if (!this._isUpdateScheduled) {
-            this._isUpdateScheduled = true;
-
-            requestAnimFrame(this._resolveScheduled);
-        }
-    };
-
-    /**
-     * Invokes the update of observers. It may re-run the active update cycle if
-     * it detects changes in observers.
-     *
-     * @private
-     */
-    ResizeObserverController.prototype._resolveScheduled = function _resolveScheduled() {
-        var hasChanges = this._updateObservers();
-
-        this._isUpdateScheduled = false;
-
-        // Do nothing if cycle wasn't started, i.e. a single update was requested.
-        if (!this._isCycleActive) {
-            return;
-        }
-
-        // Re-start cycle so that we can catch future changes, e.g. when there
-        // are active CSS transitions.
-        if (hasChanges) {
-            this.runUpdates();
-        } else if (this._hasRemainingTime()) {
-            // Keep running updates if idle timeout isn't reached yet. This way
-            // we make it possible to adjust to delayed transitions.
-            this.scheduleUpdate();
-        } else {
-            // Finish update cycle.
-            this._endUpdates();
-        }
-    };
-
-    /**
-     * Tells whether the update cycle has time remaining.
-     *
-     * @private
-     * @returns {Boolean}
-     */
-    ResizeObserverController.prototype._hasRemainingTime = function _hasRemainingTime() {
-        var timePassed = now() - this._cycleStartTime;
-
-        return this._idleTimeout - timePassed > 0;
-    };
-
-    /**
-     * Callback which is invoked when update cycle is finished. It may start a
-     * new cycle if continuous updates are enabled.
-     *
-     * @private
-     */
-    ResizeObserverController.prototype._endUpdates = function _endUpdates() {
-        this._isCycleActive = false;
-
-        // Automatically repeat cycle if it's necessary.
-        if (this._isCycleContinuous && this._listenersEnabled) {
-            this._continuousCycleHandler();
-        }
     };
 
     /**
@@ -496,17 +438,12 @@ var ResizeObserverController = function () {
             return;
         }
 
-        this._listenersEnabled = true;
+        window.addEventListener('resize', this.refresh);
 
-        // Repeatable cycle is used here because the resize event may lead to
-        // continuous changes, e.g. when width or height of an element are
-        // controlled by CSS transitions.
-        window.addEventListener('resize', this.runUpdates);
-
-        // Subscribe to DOM mutations if it's possible as they may lead to changes
-        // in the dimensions of elements.
+        // Subscribe to DOM mutations if it's possible as they may lead to
+        // changes in the dimensions of elements.
         if (mutationsSupported) {
-            this._mutationsObserver = new MutationObserver(this._onMutation);
+            this._mutationsObserver = new MutationObserver(this.refresh);
 
             this._mutationsObserver.observe(document, {
                 attributes: true,
@@ -516,10 +453,12 @@ var ResizeObserverController = function () {
             });
         }
 
+        this._listenersEnabled = true;
+
         // Don't wait for a possible event that might trigger the update of
-        // observers and manually initiate the update cycle.
+        // observers and manually initiate the update process.
         if (this._isCycleContinuous) {
-            this.runUpdates();
+            this.refresh();
         }
     };
 
@@ -534,7 +473,7 @@ var ResizeObserverController = function () {
             return;
         }
 
-        window.removeEventListener('resize', this.runUpdates);
+        window.removeEventListener('resize', this.refresh);
 
         if (this._mutationsObserver) {
             this._mutationsObserver.disconnect();
@@ -544,44 +483,7 @@ var ResizeObserverController = function () {
         this._listenersEnabled = false;
     };
 
-    /**
-     * DOM mutations handler.
-     *
-     * @private
-     * @param {Array<MutationRecord>} entries - An array of mutation records.
-     */
-    ResizeObserverController.prototype._onMutation = function _onMutation(entries) {
-        // Check if at least one entry contains attributes changes.
-        var attrsChanged = entries.some(function (entry) {
-            return entry.type === 'attributes';
-        });
-
-        // It's expected that animations may start only after some attribute
-        // changes its' value.
-        attrsChanged ? this.runUpdates() : this.scheduleUpdate();
-    };
-
     createClass(ResizeObserverController, [{
-        key: 'idleTimeout',
-
-        /**
-         * Returns current idle timeout value.
-         *
-         * @returns {Number}
-         */
-        get: function get() {
-            return this._idleTimeout;
-        },
-
-        /**
-         * Sets up new idle timeout value.
-         *
-         * @param {Number} value - New timeout value.
-         */
-        set: function set(value) {
-            this._idleTimeout = value;
-        }
-    }, {
         key: 'continuousUpdates',
 
         /**
@@ -610,9 +512,9 @@ var ResizeObserverController = function () {
             this._isCycleContinuous = useContinuous;
 
             // Immediately start the update cycle in order not to wait for a possible
-            // event that will initiate it.
+            // event that might initiate it.
             if (this._listenersEnabled && useContinuous) {
-                this.runUpdates();
+                this.refresh();
             }
         }
     }]);
@@ -808,10 +710,9 @@ function getHTMLElementContentRect(target) {
     var horizScrollbar = Math.round(height + vertPad) - clientHeight;
 
     // Chrome has a rather weird rounding of "client" properties.
-    // E.g. for an element whose content width is 314.2px it sometimes gives the
+    // E.g. for an element with content width of 314.2px it sometimes gives the
     // client width of 315px and for the width of 314.7px it may give 314px.
-    // And it doesn't happen all the time. This kind of difference needs to be
-    // ignored.
+    // And it doesn't happen all the time. Such difference needs to be ignored.
     if (Math.abs(vertScrollbar) !== 1) {
         width -= vertScrollbar;
     }
@@ -870,7 +771,7 @@ var ResizeObservation = function () {
     /**
      * Creates an instance of ResizeObservation.
      *
-     * @param {Element} target - Element whose content rectangle needs to be observed.
+     * @param {Element} target - Element to be observed.
      */
     function ResizeObservation(target) {
         classCallCheck(this, ResizeObservation);
@@ -920,11 +821,11 @@ var ResizeObservation = function () {
 }();
 
 /**
- * Defines properties for the provided target object.
+ * Defines properties of the provided target object.
  *
  * @param {Object} target - Object for which to define properties.
  * @param {Object} props - Properties to be defined.
- * @param {Object} [descr = {}] - Descriptor of the properties.
+ * @param {Object} [descr = {}] - Properties descriptor.
  * @returns {Object} Target object.
  */
 function defineProperties(target, props) {
@@ -970,9 +871,8 @@ function ResizeObserverEntry(target, rectData) {
 
     // Content rectangle needs to be an instance of ClientRect if it's
     // available.
-    var rectInterface = window.ClientRect ? ClientRect.prototype : Object.prototype;
-
-    var contentRect = Object.create(rectInterface);
+    var rectInterface = window.ClientRect || Object;
+    var contentRect = Object.create(rectInterface.prototype);
 
     // According to the specification following properties are not writable
     // and are also not enumerable in the native implementation.
@@ -991,8 +891,8 @@ var ResizeObserver$2 = function () {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback function which will be invoked when
-     *      one of the observed elements changes its' content rectangle.
+     * @param {Function} callback - Callback function that is invoked when one
+     *      of the observed elements changes it's content rectangle.
      * @param {ResizeObsreverController} controller - Controller instance which
      *      is responsible for the updates of observer.
      * @param {ResizeObserver} publicObserver - Reference to the public
@@ -1044,9 +944,8 @@ var ResizeObserver$2 = function () {
             return;
         }
 
-        var observation = new ResizeObservation(target);
-
-        targets.set(target, observation);
+        // Register new ResizeObservation instance.
+        targets.set(target, new ResizeObservation(target));
 
         // Add observer to controller if it hasn't been connected yet.
         if (!this._controller.isConnected(this)) {
@@ -1054,7 +953,7 @@ var ResizeObserver$2 = function () {
         }
 
         // Update observations.
-        this._controller.runUpdates();
+        this._controller.refresh();
     };
 
     /**
@@ -1099,6 +998,23 @@ var ResizeObserver$2 = function () {
     };
 
     /**
+     * Clears an array of previously collected active observations and collects
+     * observation instances which associated element has changed its' content
+     * rectangle.
+     */
+    ResizeObserver.prototype.gatherActive = function gatherActive() {
+        this.clearActive();
+
+        var activeTargets = this._activeTargets;
+
+        this._targets.forEach(function (observation) {
+            if (observation.isActive()) {
+                activeTargets.push(observation);
+            }
+        });
+    };
+
+    /**
      * Invokes initial callback function with a list of ResizeObserverEntry
      * instances collected from active resize observations.
      */
@@ -1127,29 +1043,12 @@ var ResizeObserver$2 = function () {
     };
 
     /**
-     * Tells whether the observer has pending observations.
+     * Tells whether observer has pending observations.
      *
      * @returns {Boolean}
      */
     ResizeObserver.prototype.hasActive = function hasActive() {
         return !!this._activeTargets.length;
-    };
-
-    /**
-     * Clears an array of previously collected active observations and collects
-     * observation instances which associated element has changed its' content
-     * rectangle.
-     */
-    ResizeObserver.prototype.gatherActive = function gatherActive() {
-        this.clearActive();
-
-        var activeTargets = this._activeTargets;
-
-        this._targets.forEach(function (observation) {
-            if (observation.isActive()) {
-                activeTargets.push(observation);
-            }
-        });
     };
 
     return ResizeObserver;
@@ -1165,17 +1064,16 @@ var observers = new WeakMap();
  * ResizeObservers' "Proxy" class which is meant to hide private properties and
  * methods from public instances.
  *
- * Additionally it implements "idleTimeout" and "continuousUpdates" static property
- * accessors to give control over the behavior of the ResizeObserverController
- * instance. Changes made to these properties affect all future and existing
- * observers.
+ * Additionally implements the "continuousUpdates" static property accessor to
+ * give control over the behavior of the ResizeObserverController instance.
+ * Changes made to this property affect all future and existing observers.
  */
- var ResizeObserver = function () {
+var ResizeObserver = function () {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback that will be invoked when dimensions
-     *      of one of the observed elements have been changed.
+     * @param {Function} callback - Callback that is invoked when dimensions of
+     *      one of the observed elements change.
      */
     function ResizeObserver(callback) {
         classCallCheck(this, ResizeObserver);
@@ -1184,41 +1082,14 @@ var observers = new WeakMap();
             throw new TypeError('1 argument required, but only 0 present.');
         }
 
+        // Create a new instance of the internal ResizeObserver.
         var observer = new ResizeObserver$2(callback, controller, this);
 
-        // Register an internal observer.
+        // Register internal observer.
         observers.set(this, observer);
     }
 
     createClass(ResizeObserver, null, [{
-        key: 'idleTimeout',
-
-        /**
-         * Extracts controllers' idle timeout value.
-         *
-         * @returns {Number}
-         */
-        get: function get() {
-            return controller.idleTimeout;
-        },
-
-        /**
-         * Sets up new idle timeout.
-         *
-         * @param {Number} value - New timeout value.
-         */
-        set: function set(value) {
-            if (typeof value !== 'number') {
-                throw new TypeError('type of "idleTimeout" value must be number.');
-            }
-
-            if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) < 0) {
-                throw new TypeError('"idleTimeout" value must be greater than 0.');
-            }
-
-            controller.idleTimeout = value;
-        }
-     }, {
         key: 'continuousUpdates',
 
         /**
@@ -1243,7 +1114,6 @@ var observers = new WeakMap();
             controller.continuousUpdates = value;
         }
     }]);
-
     return ResizeObserver;
 }();
 

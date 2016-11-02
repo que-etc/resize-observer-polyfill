@@ -9,10 +9,9 @@ export function createAsyncSpy() {
     const origSpy = jasmine.createSpy(...arguments);
     const queue = [];
 
-    const asyncSpy = function () {
+    const asyncSpy = function (...args) {
         // eslint-disable-next-line no-invalid-this
-        const result = origSpy.apply(this, arguments);
-        const args = origSpy.calls.mostRecent().args;
+        const result = origSpy.apply(this, args);
 
         for (const resolve of queue) {
             resolve(args[0]);

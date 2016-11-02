@@ -5,10 +5,7 @@
  * @returns {Number} Requests' identifier.
  */
 export default (() => {
-    if (
-        window.requestAnimationFrame &&
-        typeof window.requestAnimationFrame === 'function'
-    ) {
+    if (typeof window.requestAnimationFrame === 'function') {
         return window.requestAnimationFrame;
     }
 

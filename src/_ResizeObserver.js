@@ -6,8 +6,8 @@ export default class ResizeObserver {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback function which will be invoked when
-     *      one of the observed elements changes its' content rectangle.
+     * @param {Function} callback - Callback function that is invoked when one
+     *      of the observed elements changes it's content rectangle.
      * @param {ResizeObsreverController} controller - Controller instance which
      *      is responsible for the updates of observer.
      * @param {ResizeObserver} publicObserver - Reference to the public
@@ -57,9 +57,8 @@ export default class ResizeObserver {
             return;
         }
 
-        const observation = new ResizeObservation(target);
-
-        targets.set(target, observation);
+        // Register new ResizeObservation instance.
+        targets.set(target, new ResizeObservation(target));
 
         // Add observer to controller if it hasn't been connected yet.
         if (!this._controller.isConnected(this)) {
@@ -67,7 +66,7 @@ export default class ResizeObserver {
         }
 
         // Update observations.
-        this._controller.runUpdates();
+        this._controller.refresh();
     }
 
     /**
@@ -112,6 +111,23 @@ export default class ResizeObserver {
     }
 
     /**
+     * Clears an array of previously collected active observations and collects
+     * observation instances which associated element has changed its' content
+     * rectangle.
+     */
+    gatherActive() {
+        this.clearActive();
+
+        const activeTargets = this._activeTargets;
+
+        this._targets.forEach(observation => {
+            if (observation.isActive()) {
+                activeTargets.push(observation);
+            }
+        });
+    }
+
+    /**
      * Invokes initial callback function with a list of ResizeObserverEntry
      * instances collected from active resize observations.
      */
@@ -143,28 +159,11 @@ export default class ResizeObserver {
     }
 
     /**
-     * Tells whether the observer has pending observations.
+     * Tells whether observer has pending observations.
      *
      * @returns {Boolean}
      */
     hasActive() {
         return !!this._activeTargets.length;
-    }
-
-    /**
-     * Clears an array of previously collected active observations and collects
-     * observation instances which associated element has changed its' content
-     * rectangle.
-     */
-    gatherActive() {
-        this.clearActive();
-
-        const activeTargets = this._activeTargets;
-
-        this._targets.forEach(observation => {
-            if (observation.isActive()) {
-                activeTargets.push(observation);
-            }
-        });
     }
 }

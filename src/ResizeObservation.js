@@ -170,10 +170,9 @@ function getHTMLElementContentRect(target) {
     const horizScrollbar = Math.round(height + vertPad) - clientHeight;
 
     // Chrome has a rather weird rounding of "client" properties.
-    // E.g. for an element whose content width is 314.2px it sometimes gives the
+    // E.g. for an element with content width of 314.2px it sometimes gives the
     // client width of 315px and for the width of 314.7px it may give 314px.
-    // And it doesn't happen all the time. This kind of difference needs to be
-    // ignored.
+    // And it doesn't happen all the time. Such difference needs to be ignored.
     if (Math.abs(vertScrollbar) !== 1) {
         width -= vertScrollbar;
     }
@@ -232,7 +231,7 @@ export default class ResizeObservation {
     /**
      * Creates an instance of ResizeObservation.
      *
-     * @param {Element} target - Element whose content rectangle needs to be observed.
+     * @param {Element} target - Element to be observed.
      */
     constructor(target) {
         this.target = target;

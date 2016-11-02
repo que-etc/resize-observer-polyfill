@@ -1,9 +1,9 @@
 /**
- * Defines properties for the provided target object.
+ * Defines properties of the provided target object.
  *
  * @param {Object} target - Object for which to define properties.
  * @param {Object} props - Properties to be defined.
- * @param {Object} [descr = {}] - Descriptor of the properties.
+ * @param {Object} [descr = {}] - Properties descriptor.
  * @returns {Object} Target object.
  */
 function defineProperties(target, props, descr = {}) {
@@ -32,11 +32,8 @@ export default class ResizeObserverEntry {
     constructor(target, rectData) {
         // Content rectangle needs to be an instance of ClientRect if it's
         // available.
-        const rectInterface = window.ClientRect ?
-            ClientRect.prototype :
-            Object.prototype;
-
-        const contentRect = Object.create(rectInterface);
+        const rectInterface = window.ClientRect || Object;
+        const contentRect = Object.create(rectInterface.prototype);
 
         // According to the specification following properties are not writable
         // and are also not enumerable in the native implementation.
