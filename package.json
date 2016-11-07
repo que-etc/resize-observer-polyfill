@@ -16,11 +16,14 @@
     "bugs": {
         "url": "https://github.com/que-etc/resize-observer-polyfill/issues"
     },
+    "types": "index.d.ts",
     "files": [
         "src/",
         "dist/",
         "index.js",
-        "index.global.js"
+        "index.d.ts",
+        "index.global.js",
+        "index.global.d.ts"
     ],
     "keywords": [
         "ResizeObserver",
@@ -50,8 +53,8 @@
         "karma-ie-launcher": "^1.0.0",
         "karma-jasmine": "^1.0.2",
         "karma-jasmine-html-reporter": "^0.2.1",
-        "karma-sourcemap-loader": "^0.3.7",
         "karma-rollup-plugin": "^0.2.4",
+        "karma-sourcemap-loader": "^0.3.7",
         "karma-spec-reporter": "0.0.26",
         "lodash": "^4.13.1",
         "rollup": "^0.36.3",
