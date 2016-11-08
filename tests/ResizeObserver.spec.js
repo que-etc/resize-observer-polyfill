@@ -1049,7 +1049,7 @@ describe('ResizeObserver', () => {
                     elements.target2.style.width = '700px';
                     elements.target2.style.height = '350px';
 
-                    await wait(550);
+                    await wait(570);
 
                     const entries = spy.calls.mostRecent().args[0];
 

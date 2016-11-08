@@ -6,7 +6,7 @@ ResizeObserver Polyfill
 
 A polyfill for the Resize Observer API.
 
-Implementation is based on the MutationObserver (no polling unless DOM changes) with a fall back to a continuous dirty checking cycle if the latter one is not supported. Handles non-delayed CSS transitions/animations and can optionally observe resizing of a `<textarea>` element along with changes caused by the `:hover` pseudo-class.
+Implementation is based on the MutationObserver (no polling unless DOM changes) with a fall back to a continuous dirty checking cycle if the first one is not supported. Handles non-delayed CSS transitions/animations and can optionally observe resizing of a `<textarea>` element along with changes caused by the `:hover` pseudo-class.
 
 Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. Doesn't contain any publicly available methods except for those described in spec. The size is _3.0kb_ when minified and gzipped.
 
@@ -46,8 +46,6 @@ Polyfill has been tested and known to work in the following browsers:
 ### Local export
 It's recommended to use this library in the form of the [ponyfill](https://github.com/sindresorhus/ponyfill), which doesn't inflict modifications of the global object.
 
-With ES6 modules:
-
 ```javascript
 import ResizeObserver from 'resize-observer-polyfill';
 
@@ -64,7 +62,9 @@ const ro = new ResizeObserver((entries, observer) => {
 ro.observe(document.body);
 ```
 
-As a pre-built ES5 [UMD](https://github.com/umdjs/umd) version if ES6 is not your thing: `resize-observer-polyfill/dist/ResizeObserver`.
+Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) module and it will be dynamically substituted by the ES6 version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) or `module` fields, e.g. for [Rollup](https://github.com/rollup/rollup).
+
+In case you want to specify which version to use, you can either take `resize-observer-polyfill/index` for ES6 modules or `resize-observer-polyfill/dist/ResizeObserver` for UMD.
 
 ### Global export
 Use following versions if you want polyfill to extend global object.
@@ -87,7 +87,7 @@ You can also take minified bundles: `ResizeObserver.min.js` or `ResizeObserver.g
 
 ### continuousUpdates
 
-By default things like resizing of a `<textarea>` element,  changes caused by the CSS `:hover` pseudo-class and delayed CSS transitions are not tracked. To handle them you can set `ResizeObserver.continuousUpdtaes = true` which in turn will start a continuous update cycle which runs every `100` milliseconds (as a RAF callback, of course). Keep in mind that this is going to affect the performance.
+By default things like resizing of a `<textarea>` element,  changes caused by the CSS `:hover` pseudo-class and delayed CSS transitions are not tracked. To handle them you can set `ResizeObserver.continuousUpdates = true` which in turn will start a continuous update cycle which runs every `100` milliseconds (as a RAF callback, of course). Keep in mind that this is going to affect the performance.
 
 **NOTE:** changes made to this property affect all existing and future instances of ResizeObserver.
 

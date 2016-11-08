@@ -1,9 +1,11 @@
 {
     "name": "resize-observer-polyfill",
     "author": "Denis Rul <que.etc@bgmail.com>",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "A polyfill for the Resize Observer API",
-    "main": "index.js",
+    "main": "dist/ResizeObserver.js",
+    "jsnext:main": "index.js",
+    "module": "index.js",
     "scripts": {
         "test": "gulp test:lint && karma start karma.config.js --browsers Firefox",
         "gulp": "gulp"
