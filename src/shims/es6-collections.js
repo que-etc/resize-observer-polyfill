@@ -6,15 +6,16 @@
  * ResizeObserver modules as they cover only a limited range
  * of use cases.
  */
+import global from './global';
 
 /* eslint-disable require-jsdoc */
 const hasNativeCollections =
-    typeof window.WeakMap === 'function' &&
-    typeof window.Map === 'function';
+    typeof global.WeakMap === 'function' &&
+    typeof global.Map === 'function';
 
 const WeakMap = (() => {
     if (hasNativeCollections) {
-        return window.WeakMap;
+        return global.WeakMap;
     }
 
     function getIndex(arr, key) {
@@ -71,7 +72,7 @@ const WeakMap = (() => {
 
 const Map = (() => {
     if (hasNativeCollections) {
-        return window.Map;
+        return global.Map;
     }
 
     return class extends WeakMap {

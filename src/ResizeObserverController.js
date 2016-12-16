@@ -1,7 +1,8 @@
-import throttle from './throttle';
+import throttle from './utils/throttle';
+import global from './shims/global';
 
 // Define whether the MutationObserver is supported.
-const mutationsSupported = typeof window.MutationObserver === 'function';
+const mutationsSupported = typeof global.MutationObserver === 'function';
 
 /**
  * Controller class which handles updates of ResizeObserver instances.

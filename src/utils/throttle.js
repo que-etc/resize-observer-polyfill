@@ -1,4 +1,4 @@
-import reqAnimFrame from './shims/requestAnimationFrame';
+import requestAnimFrame from '../shims/requestAnimationFrame';
 
 /**
  * Creates a wrapper function that ensures that provided callback will
@@ -39,7 +39,7 @@ export default function (callback, delay = 0, afterRAF = false) {
      * if "afterRAF" parameter is set to "true".
      */
     function timeoutCallback() {
-        afterRAF ? reqAnimFrame(invokeCallback) : invokeCallback();
+        afterRAF ? requestAnimFrame(invokeCallback) : invokeCallback();
     }
 
     /**

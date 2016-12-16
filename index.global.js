@@ -1,12 +1,13 @@
 /**
  * @deprecated Global version of the polyfill is deprecated and will be removed in the next major release.
  */
+import global from './src/shims/global';
 import ResizeObserver from './src/ResizeObserver';
 
-if (typeof window.ResizeObserver !== 'function') {
+if (typeof global.ResizeObserver !== 'function') {
     // ResizeObserver host property is not enumerable
     // in the native implementation.
-    Object.defineProperty(window, 'ResizeObserver', {
+    Object.defineProperty(global, 'ResizeObserver', {
         value: ResizeObserver,
         writable: true,
         configurable: true
@@ -15,4 +16,4 @@ if (typeof window.ResizeObserver !== 'function') {
 
 // Still export the constructor as for me it seems
 // awkward when a module doesn't export anything.
-export default window.ResizeObserver;
+export default global.ResizeObserver;

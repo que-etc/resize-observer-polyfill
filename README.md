@@ -68,7 +68,7 @@ import ResizeObserver from 'resize-observer-polyfill';
 window.ResizeObserver = ResizeObserver;
 ```
 
-Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) module and it will be dynamically substituted by the ES6 version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) or `module` fields, e.g. for [Rollup](https://github.com/rollup/rollup) or [Webpack 2](https://webpack.js.org/).
+Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) module and it will be dynamically substituted by the ES6 version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) field, e.g. for [Rollup](https://github.com/rollup/rollup).
 
 **Note**: global versions (`index.global` and `dist/ResizeObserver.global`) are deprecated and will be removed in the next major release.
 

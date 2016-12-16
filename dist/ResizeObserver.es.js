@@ -1,3 +1,28 @@
+/**
+ * Exports global object for the current environment.
+ */
+var global$1 = (function () {
+    if (typeof self != 'undefined' && self.Math === Math) {
+        return self;
+    }
+
+    if (typeof window != 'undefined' && window.Math === Math) {
+        return window;
+    }
+
+    if (typeof global != 'undefined' && global.Math === Math) {
+        return global;
+    }
+
+    // eslint-disable-next-line no-new-func
+    return Function('return this')();
+})();
+
+/**
+ * Detects whether window and document objects are available in current environment.
+ */
+var isBrowser = global$1.window === global$1 && typeof document != 'undefined';
+
 var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -53,12 +78,13 @@ var possibleConstructorReturn = function (self, call) {
  * These implementations are not meant to be used outside of
  * ResizeObserver modules as they cover only a limited range
  * of use cases.
- *//* eslint-disable require-jsdoc */
-var hasNativeCollections = typeof window.WeakMap === 'function' && typeof window.Map === 'function';
+ */
+/* eslint-disable require-jsdoc */
+var hasNativeCollections = typeof global$1.WeakMap === 'function' && typeof global$1.Map === 'function';
 
 var WeakMap = function () {
     if (hasNativeCollections) {
-        return window.WeakMap;
+        return global$1.WeakMap;
     }
 
     function getIndex(arr, key) {
@@ -119,7 +145,7 @@ var WeakMap = function () {
 
 var Map = function () {
     if (hasNativeCollections) {
-        return window.Map;
+        return global$1.Map;
     }
 
     return function (_WeakMap) {
@@ -187,9 +213,9 @@ var Map = function () {
  *
  * @returns {Number} Requests' identifier.
  */
-var reqAnimFrame = (function () {
-    if (typeof window.requestAnimationFrame === 'function') {
-        return window.requestAnimationFrame;
+var requestAnimFrame = (function () {
+    if (typeof global$1.requestAnimationFrame === 'function') {
+        return global$1.requestAnimationFrame;
     }
 
     return function (callback) {
@@ -241,7 +267,7 @@ var throttle = function (callback) {
      * if "afterRAF" parameter is set to "true".
      */
     function timeoutCallback() {
-        afterRAF ? reqAnimFrame(invokeCallback) : invokeCallback();
+        afterRAF ? requestAnimFrame(invokeCallback) : invokeCallback();
     }
 
     /**
@@ -271,7 +297,7 @@ var throttle = function (callback) {
 };
 
 // Define whether the MutationObserver is supported.
-var mutationsSupported = typeof window.MutationObserver === 'function';
+var mutationsSupported = typeof global$1.MutationObserver === 'function';
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
@@ -879,7 +905,7 @@ function ResizeObserverEntry(target, rectData) {
     }, { configurable: true });
 };
 
-var ResizeObserver$3 = function () {
+var ResizeObserver$2 = function () {
     /**
      * Creates a new instance of ResizeObserver.
      *
@@ -1046,83 +1072,110 @@ var ResizeObserver$3 = function () {
     return ResizeObserver;
 }();
 
-// Controller that will be assigned to all instances of ResizeObserver.
-var controller = new ResizeObserverController();
-
-// Registry of the internal observers.
-var observers = new WeakMap();
-
-/**
- * ResizeObservers' "Proxy" class which is meant to hide private properties and
- * methods from public instances.
- *
- * Additionally implements the "continuousUpdates" static property accessor to
- * give control over the behavior of the ResizeObserverController instance.
- * Changes made to this property affect all future and existing observers.
- */
-var ResizeObserver$2 = function () {
-    /**
-     * Creates a new instance of ResizeObserver.
-     *
-     * @param {Function} callback - Callback that is invoked when dimensions of
-     *      one of the observed elements change.
-     */
-    function ResizeObserver(callback) {
-        classCallCheck(this, ResizeObserver);
-
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
-
-        // Create a new instance of the internal ResizeObserver.
-        var observer = new ResizeObserver$3(callback, controller, this);
-
-        // Register internal observer.
-        observers.set(this, observer);
-    }
-
-    createClass(ResizeObserver, null, [{
-        key: 'continuousUpdates',
-
-        /**
-         * Tells whether continuous updates are enabled.
-         *
-         * @returns {Boolean}
-         */
-        get: function get() {
-            return controller.continuousUpdates;
-        },
-
-        /**
-         * Enables or disables continuous updates.
-         *
-         * @param {Boolean} value - Whether to enable or disable continuous updates.
-         */
-        set: function set(value) {
-            if (typeof value !== 'boolean') {
-                throw new TypeError('type of "continuousUpdates" value must be boolean.');
+var ResizeObserverPolyfill = (function () {
+    if (!isBrowser) {
+        /* eslint-disable */
+        var _ResizeObserver2 = function () {
+            function _ResizeObserver2() {
+                classCallCheck(this, _ResizeObserver2);
             }
 
-            controller.continuousUpdates = value;
+            _ResizeObserver2.prototype.observe = function observe() {};
+
+            _ResizeObserver2.prototype.unobserve = function unobserve() {};
+
+            _ResizeObserver2.prototype.disconnect = function disconnect() {};
+
+            return _ResizeObserver2;
+        }();
+        /* eslint-enable */
+        _ResizeObserver2.continuousUpdates = false;
+
+        return _ResizeObserver2;
+    }
+
+    // Controller that will be assigned to all instances of ResizeObserver.
+    var controller = new ResizeObserverController();
+
+    // Registry of the internal observers.
+    var observers = new WeakMap();
+
+    /**
+     * ResizeObservers' "Proxy" class which is meant to hide private properties and
+     * methods from public instances.
+     *
+     * Additionally implements the "continuousUpdates" static property accessor to
+     * give control over the behavior of the ResizeObserverController instance.
+     * Changes made to this property affect all future and existing observers.
+     */
+    var ResizeObserver = function () {
+        /**
+         * Creates a new instance of ResizeObserver.
+         *
+         * @param {Function} callback - Callback that is invoked when dimensions of
+         *      one of the observed elements change.
+         */
+        function ResizeObserver(callback) {
+            classCallCheck(this, ResizeObserver);
+
+            if (!arguments.length) {
+                throw new TypeError('1 argument required, but only 0 present.');
+            }
+
+            // Create a new instance of the internal ResizeObserver.
+            var observer = new ResizeObserver$2(callback, controller, this);
+
+            // Register internal observer.
+            observers.set(this, observer);
         }
-    }]);
+
+        createClass(ResizeObserver, null, [{
+            key: 'continuousUpdates',
+
+            /**
+             * Tells whether continuous updates are enabled.
+             *
+             * @returns {Boolean}
+             */
+            get: function get() {
+                return controller.continuousUpdates;
+            },
+
+            /**
+             * Enables or disables continuous updates.
+             *
+             * @param {Boolean} value - Whether to enable or disable continuous updates.
+             */
+            set: function set(value) {
+                if (typeof value !== 'boolean') {
+                    throw new TypeError('type of "continuousUpdates" value must be boolean.');
+                }
+
+                controller.continuousUpdates = value;
+            }
+        }]);
+        return ResizeObserver;
+    }();
+
+    // Expose public methods of ResizeObserver.
+    ['observe', 'unobserve', 'disconnect'].forEach(function (method) {
+        ResizeObserver.prototype[method] = function () {
+            if (isBrowser) {
+                var _observers$get;
+
+                (_observers$get = observers.get(this))[method].apply(_observers$get, arguments);
+            }
+        };
+    });
+
     return ResizeObserver;
-}();
+})();
 
-// Expose public methods of ResizeObserver.
-['observe', 'unobserve', 'disconnect'].forEach(function (method) {
-    ResizeObserver$2.prototype[method] = function () {
-        var _observers$get;
-
-        return (_observers$get = observers.get(this))[method].apply(_observers$get, arguments);
-    };
-});
-
-var ResizeObserver = ResizeObserver$2;
+var ResizeObserver = ResizeObserverPolyfill;
 
 // Export existing implementation if it's available.
-if (typeof window.ResizeObserver === 'function') {
-    ResizeObserver = window.ResizeObserver;
+if (typeof global$1.ResizeObserver === 'function') {
+    ResizeObserver = global$1.ResizeObserver;
 }
 
 var ResizeObserver$1 = ResizeObserver;
