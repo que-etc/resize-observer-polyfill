@@ -2,7 +2,7 @@ const babel = require('rollup-plugin-babel');
 
 module.exports = function (config) {
     const browsers = [
-        // 'IE',,
+        // 'IE',
         // 'IE10',
         // 'Chrome',
         'Firefox'
