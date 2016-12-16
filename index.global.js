@@ -1,3 +1,6 @@
+/**
+ * @deprecated Global version of the polyfill is deprecated and will be removed in the next major release.
+ */
 import ResizeObserver from './src/ResizeObserver';
 
 if (typeof window.ResizeObserver !== 'function') {

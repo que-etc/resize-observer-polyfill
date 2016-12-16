@@ -1,6 +1,17 @@
 const babel = require('rollup-plugin-babel');
 
 module.exports = function (config) {
+    const browsers = [
+        // 'IE',,
+        // 'IE10',
+        // 'Chrome',
+        'Firefox'
+    ];
+
+    if (config.mode === 'custom') {
+        browsers.splice(0);
+    }
+
     config.set({
         singleRun: true,
         frameworks: ['jasmine'],
@@ -19,12 +30,10 @@ module.exports = function (config) {
             'karma-jasmine-html-reporter'
         ],
         reporters: ['spec', 'kjhtml'],
-        browsers: [
-            'Chrome',
-            'Firefox',
-            'IE',
-            'IE10'
-        ],
+        browsers,
+        client: {
+            native: config.native === true
+        },
         customLaunchers: {
             IE10: {
                 base: 'IE',

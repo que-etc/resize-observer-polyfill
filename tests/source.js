@@ -4,7 +4,7 @@ import ResizeObserverEntryPolyfill from '../src/ResizeObserverEntry';
 let ResizeObserver = ResizeObserverPolyfill,
     ResizeObserverEntry = ResizeObserverEntryPolyfill;
 
-if (window.__karma__.config.target === 'native') {
+if (window.__karma__.config.native) {
     ResizeObserver = window.ResizeObserver || {};
     ResizeObserverEntry = window.ResizeObserverEntry || {};
 }
