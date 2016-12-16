@@ -7,7 +7,7 @@
     "jsnext:main": "dist/ResizeObserver.es.js",
     "module": "dist/ResizeObserver.es.js",
     "scripts": {
-        "test:lint": "eslint **/*.js --ignore-pattern dist/*",
+        "test:lint": "eslint **/*.js",
         "test:spec": "karma start",
         "test:spec:custom": "karma start --mode custom",
         "test:spec:native": "karma start --mode custom --native",
