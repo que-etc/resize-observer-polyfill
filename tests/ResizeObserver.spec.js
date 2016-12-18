@@ -113,6 +113,10 @@ describe('ResizeObserver', () => {
             expect(() => {
                 new ResizeObserver({});
             }).toThrowError(/function/i);
+
+            expect(() => {
+                new ResizeObserver(emptyFn);
+            }).not.toThrow();
         });
 
         /* eslint-enable no-new */

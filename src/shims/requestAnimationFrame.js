@@ -1,5 +1,3 @@
-import global from './global';
-
 /**
  * A shim for requestAnimationFrame which falls back
  * to setTimeout if the first one is not supported.
@@ -7,8 +5,8 @@ import global from './global';
  * @returns {Number} Requests' identifier.
  */
 export default (() => {
-    if (typeof global.requestAnimationFrame === 'function') {
-        return global.requestAnimationFrame;
+    if (typeof requestAnimationFrame === 'function') {
+        return requestAnimationFrame;
     }
 
     return callback => {

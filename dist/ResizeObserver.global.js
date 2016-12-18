@@ -25,11 +25,6 @@ var global$1 = (function () {
     return Function('return this')();
 })();
 
-/**
- * Detects whether window and document objects are available in current environment.
- */
-var isBrowser = global$1.window === global$1 && typeof document != 'undefined';
-
 var classCallCheck = function (instance, Constructor) {
     if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -215,14 +210,566 @@ var Map = function () {
 }();
 
 /**
+ * Detects whether window and document objects are available in current environment.
+ */
+var isBrowser = global$1.window === global$1 && typeof document != 'undefined';
+
+// Placeholder of an empty content rectangle.
+var emptyRect = createContentRect(0, 0, 0, 0);
+
+/**
+ * Extracts computed styles of provided element.
+ *
+ * @param {Element} target
+ * @returns {CSSStyleDeclaration}
+ */
+function getStyles(target) {
+    return getComputedStyle(target);
+}
+
+/**
+ * Converts provided string defined in q form of '{{value}}px' to number.
+ *
+ * @param {String} value
+ * @returns {Number}
+ */
+function pixelsToNumber(value) {
+    return parseFloat(value) || 0;
+}
+
+/**
+ * Extracts borders size from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @param {...String} positions - Borders positions (top, right, ...)
+ * @returns {Number}
+ */
+function getBordersSize(styles) {
+    for (var _len = arguments.length, positions = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        positions[_key - 1] = arguments[_key];
+    }
+
+    return positions.reduce(function (size, pos) {
+        var value = styles['border-' + pos + '-width'];
+
+        return size + pixelsToNumber(value);
+    }, 0);
+}
+
+/**
+ * Extracts paddings sizes from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @returns {Object} Paddings box.
+ */
+function getPaddings(styles) {
+    var boxKeys = ['top', 'right', 'bottom', 'left'];
+    var paddings = {};
+
+    for (var _iterator = boxKeys, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+        var _ref;
+
+        if (_isArray) {
+            if (_i >= _iterator.length) break;
+            _ref = _iterator[_i++];
+        } else {
+            _i = _iterator.next();
+            if (_i.done) break;
+            _ref = _i.value;
+        }
+
+        var key = _ref;
+
+        var value = styles['padding-' + key];
+
+        paddings[key] = pixelsToNumber(value);
+    }
+
+    return paddings;
+}
+
+/**
+ * Creates content rectangle based on the provided dimensions
+ * and the top/left positions.
+ *
+ * @param {Number} width - Width of rectangle.
+ * @param {Number} height - Height of rectangle.
+ * @param {Number} top - Top position.
+ * @param {Number} left - Left position.
+ * @returns {ClientRect}
+ */
+function createContentRect(width, height, top, left) {
+    return {
+        width: width, height: height, top: top,
+        right: width + left,
+        bottom: height + top,
+        left: left
+    };
+}
+
+/**
+ * Calculates content rectangle of provided SVG element.
+ *
+ * @param {SVGElement} target - Element whose content
+ *      rectangle needs to be calculated.
+ * @returns {ClientRect}
+ */
+function getSVGContentRect(target) {
+    var bbox = target.getBBox();
+
+    return createContentRect(bbox.width, bbox.height, 0, 0);
+}
+
+/**
+ * Calculates content rectangle of a root element.
+ *
+ * @returns {ClientRect}
+ */
+function getDocElementRect() {
+    // Neither scroll[Width/Height] nor offset[Width/Height] can be used to
+    // define content dimensions as they give inconsistent results across
+    // different browsers. E.g. in the Internet Explorer 10 and lower value of
+    // these properties can't be less than the client dimensions (same thing
+    // with the "getBoundingClientRect" method). And Firefox has the same
+    // behavior with its "scroll" properties.
+    var styles = getStyles(document.documentElement);
+
+    var width = pixelsToNumber(styles.width);
+    var height = pixelsToNumber(styles.height);
+
+    return createContentRect(width, height, 0, 0);
+}
+
+/**
+ * Calculates content rectangle of provided HTMLElement.
+ *
+ * @param {HTMLElement} target - Element whose content
+ *      rectangle needs to be calculated.
+ * @returns {ClientRect}
+ */
+function getHTMLElementContentRect(target) {
+    // Client width & height properties can't be
+    // used exclusively as they provide rounded values.
+    var clientWidth = target.clientWidth,
+        clientHeight = target.clientHeight;
+
+    // By this condition we can catch all non-replaced inline, hidden and detached
+    // elements. Though elements with width & height properties less than 0.5 will
+    // be discarded as well.
+    //
+    // Without it we would need to implement separate methods for each of
+    // those cases and it's not possible to perform a precise and performance
+    // effective test for hidden elements. E.g. even jQuerys' ':visible' filter
+    // gives wrong results for elements with width & height less than 0.5.
+
+    if (!clientWidth && !clientHeight) {
+        return emptyRect;
+    }
+
+    var styles = getStyles(target);
+    var paddings = getPaddings(styles);
+    var horizPad = paddings.left + paddings.right;
+    var vertPad = paddings.top + paddings.bottom;
+
+    // Computed styles of width & height are being used because they are the
+    // only dimensions available to JS that contain non-rounded values. It could
+    // be possible to utilize getBoundingClientRect if only its' data wasn't
+    // affected by CSS transformations let alone paddings, borders and scroll bars.
+    var width = pixelsToNumber(styles.width),
+        height = pixelsToNumber(styles.height);
+
+    // Width & height include paddings and borders
+    // when 'border-box' box model is applied (except for IE).
+    if (styles.boxSizing === 'border-box') {
+        // Following conditions are required to handle Internet Explorer which
+        // doesn't include paddings and borders to computed CSS dimensions.
+        //
+        // We can say that if CSS dimensions + paddings are equal to the "client"
+        // properties then it's either IE, and thus we don't need to subtract
+        // anything, or an element merely doesn't have paddings/borders styles.
+        if (Math.round(width + horizPad) !== clientWidth) {
+            width -= getBordersSize(styles, 'left', 'right') + horizPad;
+        }
+
+        if (Math.round(height + vertPad) !== clientHeight) {
+            height -= getBordersSize(styles, 'top', 'bottom') + vertPad;
+        }
+    }
+
+    // In some browsers (only in Firefox, actually) CSS width & height
+    // include scroll bars size which can be removed at this step as scroll bars
+    // are the only difference between rounded dimensions + paddings and "client"
+    // properties, though that is not always true in Chrome.
+    var vertScrollbar = Math.round(width + horizPad) - clientWidth;
+    var horizScrollbar = Math.round(height + vertPad) - clientHeight;
+
+    // Chrome has a rather weird rounding of "client" properties.
+    // E.g. for an element with content width of 314.2px it sometimes gives the
+    // client width of 315px and for the width of 314.7px it may give 314px.
+    // And it doesn't happen all the time. Such difference needs to be ignored.
+    if (Math.abs(vertScrollbar) !== 1) {
+        width -= vertScrollbar;
+    }
+
+    if (Math.abs(horizScrollbar) !== 1) {
+        height -= horizScrollbar;
+    }
+
+    return createContentRect(width, height, paddings.top, paddings.left);
+}
+
+/**
+ * Checks whether provided element is an instance of SVGElement.
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {Boolean}
+ */
+function isSVGElement(target) {
+    return target instanceof SVGElement;
+}
+
+/**
+ * Checks whether provided element is a document element (root element of a document).
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {Boolean}
+ */
+function isDocumentElement(target) {
+    return target === document.documentElement;
+}
+
+/**
+ * Calculates an appropriate content rectangle for provided html or svg element.
+ *
+ * @param {Element} target - Element whose content rectangle
+ *      needs to be calculated.
+ * @returns {ClientRect}
+ */
+function getContentRect(target) {
+    // Return empty rectangle if running in a non-browser environment.
+    if (!isBrowser) {
+        return emptyRect;
+    }
+
+    if (isSVGElement(target)) {
+        return getSVGContentRect(target);
+    }
+
+    if (isDocumentElement(target)) {
+        return getDocElementRect();
+    }
+
+    return getHTMLElementContentRect(target);
+}
+
+/**
+ * Class that is responsible for computations of the content rectangle of
+ * provided DOM element and for keeping track of its' changes.
+ */
+var ResizeObservation = function () {
+    /**
+     * Creates an instance of ResizeObservation.
+     *
+     * @param {Element} target - Element to be observed.
+     */
+    function ResizeObservation(target) {
+        classCallCheck(this, ResizeObservation);
+
+        this.target = target;
+
+        // Keeps reference to the last observed content rectangle.
+        this._contentRect = emptyRect;
+
+        // Broadcasted width of content rectangle.
+        this.broadcastWidth = 0;
+
+        // Broadcasted height of content rectangle.
+        this.broadcastHeight = 0;
+    }
+
+    /**
+     * Updates 'broadcastWidth' and 'broadcastHeight' properties with a data
+     * from the corresponding properties of the last observed content rectangle.
+     *
+     * @returns {ClientRect} Last observed content rectangle.
+     */
+    ResizeObservation.prototype.broadcastRect = function broadcastRect() {
+        var rect = this._contentRect;
+
+        this.broadcastWidth = rect.width;
+        this.broadcastHeight = rect.height;
+
+        return rect;
+    };
+
+    /**
+     * Updates content rectangle and tells whether its' width or height properties
+     * have changed since the last broadcast.
+     *
+     * @returns {Boolean}
+     */
+    ResizeObservation.prototype.isActive = function isActive() {
+        var rect = getContentRect(this.target);
+
+        this._contentRect = rect;
+
+        return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
+    };
+
+    return ResizeObservation;
+}();
+
+/**
+ * Defines properties of the provided target object.
+ *
+ * @param {Object} target - Object for which to define properties.
+ * @param {Object} props - Properties to be defined.
+ * @param {Object} [descr = {}] - Properties descriptor.
+ * @returns {Object} Target object.
+ */
+function defineProperties(target, props) {
+    var descr = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+    var descriptor = {
+        configurable: descr.configurable || false,
+        writable: descr.writable || false,
+        enumerable: descr.enumerable || false
+    };
+
+    for (var _iterator = Object.keys(props), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+        var _ref;
+
+        if (_isArray) {
+            if (_i >= _iterator.length) break;
+            _ref = _iterator[_i++];
+        } else {
+            _i = _iterator.next();
+            if (_i.done) break;
+            _ref = _i.value;
+        }
+
+        var key = _ref;
+
+        descriptor.value = props[key];
+
+        Object.defineProperty(target, key, descriptor);
+    }
+
+    return target;
+}
+
+var ResizeObserverEntry =
+/**
+ * Creates an instance of ResizeObserverEntry.
+ *
+ * @param {Element} target - Element that is being observed.
+ * @param {ClientRect} rectData - Data of the elements' content rectangle.
+ */
+function ResizeObserverEntry(target, rectData) {
+    classCallCheck(this, ResizeObserverEntry);
+
+    // Content rectangle needs to be an instance of ClientRect if it's
+    // available.
+    var rectInterface = global$1.ClientRect || Object;
+    var contentRect = Object.create(rectInterface.prototype);
+
+    // According to the specification following properties are not writable
+    // and are also not enumerable in the native implementation.
+    //
+    // Property accessors are not being used as they'd require to define a
+    // private WeakMap storage which may cause memory leaks in browsers that
+    // don't support this type of collections.
+    defineProperties(contentRect, rectData, { configurable: true });
+
+    defineProperties(this, {
+        target: target, contentRect: contentRect
+    }, { configurable: true });
+};
+
+var ResizeObserver$2 = function () {
+    /**
+     * Creates a new instance of ResizeObserver.
+     *
+     * @param {Function} callback - Callback function that is invoked when one
+     *      of the observed elements changes it's content rectangle.
+     * @param {ResizeObsreverController} controller - Controller instance which
+     *      is responsible for the updates of observer.
+     * @param {ResizeObserver} publicObserver - Reference to the public
+     *      ResizeObserver instance which will be passed to callback function.
+     */
+    function ResizeObserver(callback, controller, publicObserver) {
+        classCallCheck(this, ResizeObserver);
+
+        if (typeof callback !== 'function') {
+            throw new TypeError('The callback provided as parameter 1 is not a function.');
+        }
+
+        // Reference to the callback function.
+        this._callback = callback;
+
+        // Registry of ResizeObservation instances.
+        this._targets = new Map();
+
+        // Collection of resize observations that have detected changes in
+        // dimensions of elements.
+        this._activeTargets = [];
+
+        // Reference to the associated ResizeObserverController.
+        this._controller = controller;
+
+        // Public ResizeObserver instance which will be passed to callback function.
+        this._publicObserver = publicObserver;
+    }
+
+    /**
+     * Starts observing provided element.
+     *
+     * @param {Element} target - Element to be observed.
+     */
+    ResizeObserver.prototype.observe = function observe(target) {
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
+        }
+
+        // Do nothing if current environment doesn't have the Element interface.
+        if (!('Element' in global$1) || !(Element instanceof Object)) {
+            return;
+        }
+
+        if (!(target instanceof Element)) {
+            throw new TypeError('parameter 1 is not of type "Element".');
+        }
+
+        var targets = this._targets;
+
+        // Do nothing if element is already being observed.
+        if (targets.has(target)) {
+            return;
+        }
+
+        // Register new ResizeObservation instance.
+        targets.set(target, new ResizeObservation(target));
+
+        // Add observer to controller if it hasn't been connected yet.
+        if (!this._controller.isConnected(this)) {
+            this._controller.connect(this);
+        }
+
+        // Update observations.
+        this._controller.refresh();
+    };
+
+    /**
+     * Stops observing provided element.
+     *
+     * @param {Element} target - Element to stop observing.
+     */
+    ResizeObserver.prototype.unobserve = function unobserve(target) {
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
+        }
+
+        // Do nothing if current environment doesn't have the Element interface.
+        if (!('Element' in global$1) || !(Element instanceof Object)) {
+            return;
+        }
+
+        if (!(target instanceof Element)) {
+            throw new TypeError('parameter 1 is not of type "Element".');
+        }
+
+        var targets = this._targets;
+
+        // Do nothing if element is not being observed.
+        if (!targets.has(target)) {
+            return;
+        }
+
+        // Remove element and associated with it ResizeObsrvation instance from
+        // registry.
+        targets.delete(target);
+
+        // Set back the initial state if there is nothing to observe.
+        if (!targets.size) {
+            this.disconnect();
+        }
+    };
+
+    /**
+     * Stops observing all elements and clears the observations list.
+     */
+    ResizeObserver.prototype.disconnect = function disconnect() {
+        this.clearActive();
+        this._targets.clear();
+        this._controller.disconnect(this);
+    };
+
+    /**
+     * Clears an array of previously collected active observations and collects
+     * observation instances which associated element has changed its' content
+     * rectangle.
+     */
+    ResizeObserver.prototype.gatherActive = function gatherActive() {
+        this.clearActive();
+
+        var activeTargets = this._activeTargets;
+
+        this._targets.forEach(function (observation) {
+            if (observation.isActive()) {
+                activeTargets.push(observation);
+            }
+        });
+    };
+
+    /**
+     * Invokes initial callback function with a list of ResizeObserverEntry
+     * instances collected from active resize observations.
+     */
+    ResizeObserver.prototype.broadcastActive = function broadcastActive() {
+        // Do nothing if observer doesn't have active observations.
+        if (!this.hasActive()) {
+            return;
+        }
+
+        var observer = this._publicObserver;
+
+        // Create ResizeObserverEntry instance for every active observation.
+        var entries = this._activeTargets.map(function (observation) {
+            return new ResizeObserverEntry(observation.target, observation.broadcastRect());
+        });
+
+        this.clearActive();
+        this._callback.call(observer, entries, observer);
+    };
+
+    /**
+     * Clears the collection of pending/active observations.
+     */
+    ResizeObserver.prototype.clearActive = function clearActive() {
+        this._activeTargets.splice(0);
+    };
+
+    /**
+     * Tells whether observer has pending observations.
+     *
+     * @returns {Boolean}
+     */
+    ResizeObserver.prototype.hasActive = function hasActive() {
+        return !!this._activeTargets.length;
+    };
+
+    return ResizeObserver;
+}();
+
+/**
  * A shim for requestAnimationFrame which falls back
  * to setTimeout if the first one is not supported.
  *
  * @returns {Number} Requests' identifier.
  */
 var requestAnimFrame = (function () {
-    if (typeof global$1.requestAnimationFrame === 'function') {
-        return global$1.requestAnimationFrame;
+    if (typeof requestAnimationFrame === 'function') {
+        return requestAnimationFrame;
     }
 
     return function (callback) {
@@ -304,7 +851,7 @@ var throttle = function (callback) {
 };
 
 // Define whether the MutationObserver is supported.
-var mutationsSupported = typeof global$1.MutationObserver === 'function';
+var mutationsSupported = typeof MutationObserver === 'function';
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
@@ -458,8 +1005,9 @@ var ResizeObserverController = function () {
      * @private
      */
     ResizeObserverController.prototype._addListeners = function _addListeners() {
-        // Do nothing if listeners have been already added.
-        if (this._listenersEnabled) {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already added.
+        if (!isBrowser || this._listenersEnabled) {
             return;
         }
 
@@ -493,8 +1041,9 @@ var ResizeObserverController = function () {
      * @private
      */
     ResizeObserverController.prototype._removeListeners = function _removeListeners() {
-        // Do nothing if listeners have been already removed.
-        if (!this._listenersEnabled) {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already removed.
+        if (!isBrowser || !this._listenersEnabled) {
             return;
         }
 
@@ -546,638 +1095,77 @@ var ResizeObserverController = function () {
     return ResizeObserverController;
 }();
 
-// Placeholder of an empty content rectangle.
-var emptyRect = createContentRect(0, 0, 0, 0);
+// Controller that will be assigned to all instances of ResizeObserver.
+var controller = new ResizeObserverController();
+
+// Registry of the internal observers.
+var observers = new WeakMap();
 
 /**
- * Extracts computed styles of provided element.
+ * ResizeObservers' "Proxy" class which is meant to hide private properties and
+ * methods from public instances.
  *
- * @param {Element} target
- * @returns {CSSStyleDeclaration}
+ * Additionally implements the "continuousUpdates" static property accessor to
+ * give control over the behavior of the ResizeObserverController instance.
+ * Changes made to this property affect all future and existing observers.
  */
-function getStyles(target) {
-    return window.getComputedStyle(target);
-}
-
-/**
- * Converts provided string defined in q form of '{{value}}px' to number.
- *
- * @param {String} value
- * @returns {Number}
- */
-function pixelsToNumber(value) {
-    return parseFloat(value) || 0;
-}
-
-/**
- * Extracts borders size from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @param {...String} positions - Borders positions (top, right, ...)
- * @returns {Number}
- */
-function getBordersSize(styles) {
-    for (var _len = arguments.length, positions = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        positions[_key - 1] = arguments[_key];
-    }
-
-    return positions.reduce(function (size, pos) {
-        var value = styles['border-' + pos + '-width'];
-
-        return size + pixelsToNumber(value);
-    }, 0);
-}
-
-/**
- * Extracts paddings sizes from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @returns {Object} Paddings box.
- */
-function getPaddings(styles) {
-    var boxKeys = ['top', 'right', 'bottom', 'left'];
-    var paddings = {};
-
-    for (var _iterator = boxKeys, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-        var _ref;
-
-        if (_isArray) {
-            if (_i >= _iterator.length) break;
-            _ref = _iterator[_i++];
-        } else {
-            _i = _iterator.next();
-            if (_i.done) break;
-            _ref = _i.value;
-        }
-
-        var key = _ref;
-
-        var value = styles['padding-' + key];
-
-        paddings[key] = pixelsToNumber(value);
-    }
-
-    return paddings;
-}
-
-/**
- * Creates content rectangle based on the provided dimensions
- * and the top/left positions.
- *
- * @param {Number} width - Width of rectangle.
- * @param {Number} height - Height of rectangle.
- * @param {Number} top - Top position.
- * @param {Number} left - Left position.
- * @returns {ClientRect}
- */
-function createContentRect(width, height, top, left) {
-    return {
-        width: width, height: height, top: top,
-        right: width + left,
-        bottom: height + top,
-        left: left
-    };
-}
-
-/**
- * Calculates content rectangle of provided SVG element.
- *
- * @param {SVGElement} target - Element whose content
- *      rectangle needs to be calculated.
- * @returns {ClientRect}
- */
-function getSVGContentRect(target) {
-    var bbox = target.getBBox();
-
-    return createContentRect(bbox.width, bbox.height, 0, 0);
-}
-
-/**
- * Calculates content rectangle of a root element.
- *
- * @returns {ClientRect}
- */
-function getDocElementRect() {
-    // Neither scroll[Width/Height] nor offset[Width/Height] can be used to
-    // define content dimensions as they give inconsistent results across
-    // different browsers. E.g. in the Internet Explorer 10 and lower value of
-    // these properties can't be less than the client dimensions (same thing
-    // with the "getBoundingClientRect" method). And Firefox has the same
-    // behavior with its "scroll" properties.
-    var styles = getStyles(document.documentElement);
-
-    var width = pixelsToNumber(styles.width);
-    var height = pixelsToNumber(styles.height);
-
-    return createContentRect(width, height, 0, 0);
-}
-
-/**
- * Calculates content rectangle of provided HTMLElement.
- *
- * @param {HTMLElement} target - Element whose content
- *      rectangle needs to be calculated.
- * @returns {ClientRect}
- */
-function getHTMLElementContentRect(target) {
-    // Client width & height properties can't be
-    // used exclusively as they provide rounded values.
-    var clientWidth = target.clientWidth;
-    var clientHeight = target.clientHeight;
-
-    // By this condition we can catch all non-replaced inline, hidden and detached
-    // elements. Though elements with width & height properties less than 0.5 will
-    // be discarded as well.
-    //
-    // Without it we would need to implement separate methods for each of
-    // those cases and it's not possible to perform a precise and performance
-    // effective test for hidden elements. E.g. even jQuerys' ':visible' filter
-    // gives wrong results for elements with width & height less than 0.5.
-    if (!clientWidth && !clientHeight) {
-        return emptyRect;
-    }
-
-    var styles = getStyles(target);
-    var paddings = getPaddings(styles);
-    var horizPad = paddings.left + paddings.right;
-    var vertPad = paddings.top + paddings.bottom;
-
-    // Computed styles of width & height are being used because they are the
-    // only dimensions available to JS that contain non-rounded values. It could
-    // be possible to utilize getBoundingClientRect if only its' data wasn't
-    // affected by CSS transformations let alone paddings, borders and scroll bars.
-    var width = pixelsToNumber(styles.width),
-        height = pixelsToNumber(styles.height);
-
-    // Width & height include paddings and borders
-    // when 'border-box' box model is applied (except for IE).
-    if (styles.boxSizing === 'border-box') {
-        // Following conditions are required to handle Internet Explorer which
-        // doesn't include paddings and borders to computed CSS dimensions.
-        //
-        // We can say that if CSS dimensions + paddings are equal to the "client"
-        // properties then it's either IE, and thus we don't need to subtract
-        // anything, or an element merely doesn't have paddings/borders styles.
-        if (Math.round(width + horizPad) !== clientWidth) {
-            width -= getBordersSize(styles, 'left', 'right') + horizPad;
-        }
-
-        if (Math.round(height + vertPad) !== clientHeight) {
-            height -= getBordersSize(styles, 'top', 'bottom') + vertPad;
-        }
-    }
-
-    // In some browsers (only in Firefox, actually) CSS width & height
-    // include scroll bars size which can be removed at this step as scroll bars
-    // are the only difference between rounded dimensions + paddings and "client"
-    // properties, though that is not always true in Chrome.
-    var vertScrollbar = Math.round(width + horizPad) - clientWidth;
-    var horizScrollbar = Math.round(height + vertPad) - clientHeight;
-
-    // Chrome has a rather weird rounding of "client" properties.
-    // E.g. for an element with content width of 314.2px it sometimes gives the
-    // client width of 315px and for the width of 314.7px it may give 314px.
-    // And it doesn't happen all the time. Such difference needs to be ignored.
-    if (Math.abs(vertScrollbar) !== 1) {
-        width -= vertScrollbar;
-    }
-
-    if (Math.abs(horizScrollbar) !== 1) {
-        height -= horizScrollbar;
-    }
-
-    return createContentRect(width, height, paddings.top, paddings.left);
-}
-
-/**
- * Checks whether provided element is an instance of SVGElement.
- *
- * @param {Element} target - Element to be checked.
- * @returns {Boolean}
- */
-function isSVGElement(target) {
-    return target instanceof window.SVGElement;
-}
-
-/**
- * Checks whether provided element is a document element (root element of a document).
- *
- * @param {Element} target - Element to be checked.
- * @returns {Boolean}
- */
-function isDocumentElement(target) {
-    return target === document.documentElement;
-}
-
-/**
- * Calculates an appropriate content rectangle for provided html or svg element.
- *
- * @param {Element} target - Element whose content rectangle
- *      needs to be calculated.
- * @returns {ClientRect}
- */
-function getContentRect(target) {
-    if (isSVGElement(target)) {
-        return getSVGContentRect(target);
-    }
-
-    if (isDocumentElement(target)) {
-        return getDocElementRect();
-    }
-
-    return getHTMLElementContentRect(target);
-}
-
-/**
- * Class that is responsible for computations of the content rectangle of
- * provided DOM element and for keeping track of its' changes.
- */
-var ResizeObservation = function () {
-    /**
-     * Creates an instance of ResizeObservation.
-     *
-     * @param {Element} target - Element to be observed.
-     */
-    function ResizeObservation(target) {
-        classCallCheck(this, ResizeObservation);
-
-        this.target = target;
-
-        // Keeps reference to the last observed content rectangle.
-        this._contentRect = emptyRect;
-
-        // Broadcasted width of content rectangle.
-        this.broadcastWidth = 0;
-
-        // Broadcasted height of content rectangle.
-        this.broadcastHeight = 0;
-    }
-
-    /**
-     * Updates 'broadcastWidth' and 'broadcastHeight' properties with a data
-     * from the corresponding properties of the last observed content rectangle.
-     *
-     * @returns {ClientRect} Last observed content rectangle.
-     */
-    ResizeObservation.prototype.broadcastRect = function broadcastRect() {
-        var rect = this._contentRect;
-
-        this.broadcastWidth = rect.width;
-        this.broadcastHeight = rect.height;
-
-        return rect;
-    };
-
-    /**
-     * Updates content rectangle and tells whether its' width or height properties
-     * have changed since the last broadcast.
-     *
-     * @returns {Boolean}
-     */
-    ResizeObservation.prototype.isActive = function isActive() {
-        var rect = getContentRect(this.target);
-
-        this._contentRect = rect;
-
-        return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
-    };
-
-    return ResizeObservation;
-}();
-
-/**
- * Defines properties of the provided target object.
- *
- * @param {Object} target - Object for which to define properties.
- * @param {Object} props - Properties to be defined.
- * @param {Object} [descr = {}] - Properties descriptor.
- * @returns {Object} Target object.
- */
-function defineProperties(target, props) {
-    var descr = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-    var descriptor = {
-        configurable: descr.configurable || false,
-        writable: descr.writable || false,
-        enumerable: descr.enumerable || false
-    };
-
-    for (var _iterator = Object.keys(props), _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
-        var _ref;
-
-        if (_isArray) {
-            if (_i >= _iterator.length) break;
-            _ref = _iterator[_i++];
-        } else {
-            _i = _iterator.next();
-            if (_i.done) break;
-            _ref = _i.value;
-        }
-
-        var key = _ref;
-
-        descriptor.value = props[key];
-
-        Object.defineProperty(target, key, descriptor);
-    }
-
-    return target;
-}
-
-var ResizeObserverEntry =
-/**
- * Creates an instance of ResizeObserverEntry.
- *
- * @param {Element} target - Element that is being observed.
- * @param {ClientRect} rectData - Data of the elements' content rectangle.
- */
-function ResizeObserverEntry(target, rectData) {
-    classCallCheck(this, ResizeObserverEntry);
-
-    // Content rectangle needs to be an instance of ClientRect if it's
-    // available.
-    var rectInterface = window.ClientRect || Object;
-    var contentRect = Object.create(rectInterface.prototype);
-
-    // According to the specification following properties are not writable
-    // and are also not enumerable in the native implementation.
-    //
-    // Property accessors are not being used as they'd require to define a
-    // private WeakMap storage which may cause memory leaks in browsers that
-    // don't support this type of collections.
-    defineProperties(contentRect, rectData, { configurable: true });
-
-    defineProperties(this, {
-        target: target, contentRect: contentRect
-    }, { configurable: true });
-};
-
-var ResizeObserver$1 = function () {
+var ResizeObserver = function () {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback function that is invoked when one
-     *      of the observed elements changes it's content rectangle.
-     * @param {ResizeObsreverController} controller - Controller instance which
-     *      is responsible for the updates of observer.
-     * @param {ResizeObserver} publicObserver - Reference to the public
-     *      ResizeObserver instance which will be passed to callback function.
+     * @param {Function} callback - Callback that is invoked when dimensions of
+     *      one of the observed elements change.
      */
-    function ResizeObserver(callback, controller, publicObserver) {
+    function ResizeObserver(callback) {
         classCallCheck(this, ResizeObserver);
 
-        if (typeof callback !== 'function') {
-            throw new TypeError('The callback provided as parameter 1 is not a function.');
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
         }
 
-        // Reference to the callback function.
-        this._callback = callback;
+        // Create a new instance of the internal ResizeObserver.
+        var observer = new ResizeObserver$2(callback, controller, this);
 
-        // Registry of ResizeObservation instances.
-        this._targets = new Map();
-
-        // Collection of resize observations that have detected changes in
-        // dimensions of elements.
-        this._activeTargets = [];
-
-        // Reference to the associated ResizeObserverController.
-        this._controller = controller;
-
-        // Public ResizeObserver instance which will be passed to callback function.
-        this._publicObserver = publicObserver;
+        // Register internal observer.
+        observers.set(this, observer);
     }
 
-    /**
-     * Starts observing provided element.
-     *
-     * @param {Element} target - Element to be observed.
-     */
-    ResizeObserver.prototype.observe = function observe(target) {
-        //  Throw the same errors as in a native implementation.
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
+    createClass(ResizeObserver, null, [{
+        key: 'continuousUpdates',
 
-        if (!(target instanceof Element)) {
-            throw new TypeError('parameter 1 is not of type "Element".');
-        }
+        /**
+         * Tells whether continuous updates are enabled.
+         *
+         * @returns {Boolean}
+         */
+        get: function get() {
+            return controller.continuousUpdates;
+        },
 
-        var targets = this._targets;
-
-        // Do nothing if element is already being observed.
-        if (targets.has(target)) {
-            return;
-        }
-
-        // Register new ResizeObservation instance.
-        targets.set(target, new ResizeObservation(target));
-
-        // Add observer to controller if it hasn't been connected yet.
-        if (!this._controller.isConnected(this)) {
-            this._controller.connect(this);
-        }
-
-        // Update observations.
-        this._controller.refresh();
-    };
-
-    /**
-     * Stops observing provided element.
-     *
-     * @param {Element} target - Element to stop observing.
-     */
-    ResizeObserver.prototype.unobserve = function unobserve(target) {
-        //  Throw the same errors as in a native implementation.
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
-
-        if (!(target instanceof Element)) {
-            throw new TypeError('parameter 1 is not of type "Element".');
-        }
-
-        var targets = this._targets;
-
-        // Do nothing if element is not being observed.
-        if (!targets.has(target)) {
-            return;
-        }
-
-        // Remove element and associated with it ResizeObsrvation instance from
-        // registry.
-        targets.delete(target);
-
-        // Set back the initial state if there is nothing to observe.
-        if (!targets.size) {
-            this.disconnect();
-        }
-    };
-
-    /**
-     * Stops observing all elements and clears the observations list.
-     */
-    ResizeObserver.prototype.disconnect = function disconnect() {
-        this.clearActive();
-        this._targets.clear();
-        this._controller.disconnect(this);
-    };
-
-    /**
-     * Clears an array of previously collected active observations and collects
-     * observation instances which associated element has changed its' content
-     * rectangle.
-     */
-    ResizeObserver.prototype.gatherActive = function gatherActive() {
-        this.clearActive();
-
-        var activeTargets = this._activeTargets;
-
-        this._targets.forEach(function (observation) {
-            if (observation.isActive()) {
-                activeTargets.push(observation);
+        /**
+         * Enables or disables continuous updates.
+         *
+         * @param {Boolean} value - Whether to enable or disable continuous updates.
+         */
+        set: function set(value) {
+            if (typeof value !== 'boolean') {
+                throw new TypeError('type of "continuousUpdates" value must be boolean.');
             }
-        });
-    };
 
-    /**
-     * Invokes initial callback function with a list of ResizeObserverEntry
-     * instances collected from active resize observations.
-     */
-    ResizeObserver.prototype.broadcastActive = function broadcastActive() {
-        // Do nothing if observer doesn't have active observations.
-        if (!this.hasActive()) {
-            return;
+            controller.continuousUpdates = value;
         }
-
-        var observer = this._publicObserver;
-
-        // Create ResizeObserverEntry instance for every active observation.
-        var entries = this._activeTargets.map(function (observation) {
-            return new ResizeObserverEntry(observation.target, observation.broadcastRect());
-        });
-
-        this.clearActive();
-        this._callback.call(observer, entries, observer);
-    };
-
-    /**
-     * Clears the collection of pending/active observations.
-     */
-    ResizeObserver.prototype.clearActive = function clearActive() {
-        this._activeTargets.splice(0);
-    };
-
-    /**
-     * Tells whether observer has pending observations.
-     *
-     * @returns {Boolean}
-     */
-    ResizeObserver.prototype.hasActive = function hasActive() {
-        return !!this._activeTargets.length;
-    };
-
+    }]);
     return ResizeObserver;
 }();
 
-var ResizeObserver = (function () {
-    if (!isBrowser) {
-        /* eslint-disable */
-        var _ResizeObserver2 = function () {
-            function _ResizeObserver2() {
-                classCallCheck(this, _ResizeObserver2);
-            }
+// Expose public methods of ResizeObserver.
+['observe', 'unobserve', 'disconnect'].forEach(function (method) {
+    ResizeObserver.prototype[method] = function () {
+        var _observers$get;
 
-            _ResizeObserver2.prototype.observe = function observe() {};
-
-            _ResizeObserver2.prototype.unobserve = function unobserve() {};
-
-            _ResizeObserver2.prototype.disconnect = function disconnect() {};
-
-            return _ResizeObserver2;
-        }();
-        /* eslint-enable */
-
-        _ResizeObserver2.continuousUpdates = false;
-
-        return _ResizeObserver2;
-    }
-
-    // Controller that will be assigned to all instances of ResizeObserver.
-    var controller = new ResizeObserverController();
-
-    // Registry of the internal observers.
-    var observers = new WeakMap();
-
-    /**
-     * ResizeObservers' "Proxy" class which is meant to hide private properties and
-     * methods from public instances.
-     *
-     * Additionally implements the "continuousUpdates" static property accessor to
-     * give control over the behavior of the ResizeObserverController instance.
-     * Changes made to this property affect all future and existing observers.
-     */
-    var ResizeObserver = function () {
-        /**
-         * Creates a new instance of ResizeObserver.
-         *
-         * @param {Function} callback - Callback that is invoked when dimensions of
-         *      one of the observed elements change.
-         */
-        function ResizeObserver(callback) {
-            classCallCheck(this, ResizeObserver);
-
-            if (!arguments.length) {
-                throw new TypeError('1 argument required, but only 0 present.');
-            }
-
-            // Create a new instance of the internal ResizeObserver.
-            var observer = new ResizeObserver$1(callback, controller, this);
-
-            // Register internal observer.
-            observers.set(this, observer);
-        }
-
-        createClass(ResizeObserver, null, [{
-            key: 'continuousUpdates',
-
-            /**
-             * Tells whether continuous updates are enabled.
-             *
-             * @returns {Boolean}
-             */
-            get: function get() {
-                return controller.continuousUpdates;
-            },
-
-            /**
-             * Enables or disables continuous updates.
-             *
-             * @param {Boolean} value - Whether to enable or disable continuous updates.
-             */
-            set: function set(value) {
-                if (typeof value !== 'boolean') {
-                    throw new TypeError('type of "continuousUpdates" value must be boolean.');
-                }
-
-                controller.continuousUpdates = value;
-            }
-        }]);
-        return ResizeObserver;
-    }();
-
-    // Expose public methods of ResizeObserver.
-    ['observe', 'unobserve', 'disconnect'].forEach(function (method) {
-        ResizeObserver.prototype[method] = function () {
-            if (isBrowser) {
-                var _observers$get;
-
-                (_observers$get = observers.get(this))[method].apply(_observers$get, arguments);
-            }
-        };
-    });
-
-    return ResizeObserver;
-})();
+        return (_observers$get = observers.get(this))[method].apply(_observers$get, arguments);
+    };
+});
 
 /**
  * @deprecated Global version of the polyfill is deprecated and will be removed in the next major release.

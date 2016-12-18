@@ -1,3 +1,5 @@
+import isBrowser from './utils/isBrowser';
+
 // Placeholder of an empty content rectangle.
 const emptyRect = createContentRect(0, 0, 0, 0);
 
@@ -8,7 +10,7 @@ const emptyRect = createContentRect(0, 0, 0, 0);
  * @returns {CSSStyleDeclaration}
  */
 function getStyles(target) {
-    return window.getComputedStyle(target);
+    return getComputedStyle(target);
 }
 
 /**
@@ -117,8 +119,7 @@ function getDocElementRect() {
 function getHTMLElementContentRect(target) {
     // Client width & height properties can't be
     // used exclusively as they provide rounded values.
-    const clientWidth = target.clientWidth;
-    const clientHeight = target.clientHeight;
+    const {clientWidth, clientHeight} = target;
 
     // By this condition we can catch all non-replaced inline, hidden and detached
     // elements. Though elements with width & height properties less than 0.5 will
@@ -191,7 +192,7 @@ function getHTMLElementContentRect(target) {
  * @returns {Boolean}
  */
 function isSVGElement(target) {
-    return target instanceof window.SVGElement;
+    return target instanceof SVGElement;
 }
 
 /**
@@ -212,6 +213,11 @@ function isDocumentElement(target) {
  * @returns {ClientRect}
  */
 function getContentRect(target) {
+    // Return empty rectangle if running in a non-browser environment.
+    if (!isBrowser) {
+        return emptyRect;
+    }
+
     if (isSVGElement(target)) {
         return getSVGContentRect(target);
     }

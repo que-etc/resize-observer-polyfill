@@ -1,3 +1,4 @@
+import global from './shims/global';
 import {Map} from './shims/es6-collections';
 import ResizeObservation from './ResizeObservation';
 import ResizeObserverEntry from './ResizeObserverEntry';
@@ -41,9 +42,13 @@ export default class ResizeObserver {
      * @param {Element} target - Element to be observed.
      */
     observe(target) {
-        //  Throw the same errors as in a native implementation.
         if (!arguments.length) {
             throw new TypeError('1 argument required, but only 0 present.');
+        }
+
+        // Do nothing if current environment doesn't have the Element interface.
+        if (!('Element' in global) || !(Element instanceof Object)) {
+            return;
         }
 
         if (!(target instanceof Element)) {
@@ -75,9 +80,13 @@ export default class ResizeObserver {
      * @param {Element} target - Element to stop observing.
      */
     unobserve(target) {
-        //  Throw the same errors as in a native implementation.
         if (!arguments.length) {
             throw new TypeError('1 argument required, but only 0 present.');
+        }
+
+        // Do nothing if current environment doesn't have the Element interface.
+        if (!('Element' in global) || !(Element instanceof Object)) {
+            return;
         }
 
         if (!(target instanceof Element)) {

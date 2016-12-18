@@ -1,3 +1,5 @@
+import global from './shims/global';
+
 /**
  * Defines properties of the provided target object.
  *
@@ -32,7 +34,7 @@ export default class ResizeObserverEntry {
     constructor(target, rectData) {
         // Content rectangle needs to be an instance of ClientRect if it's
         // available.
-        const rectInterface = window.ClientRect || Object;
+        const rectInterface = global.ClientRect || Object;
         const contentRect = Object.create(rectInterface.prototype);
 
         // According to the specification following properties are not writable

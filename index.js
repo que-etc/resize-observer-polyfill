@@ -1,11 +1,11 @@
 import global from './src/shims/global';
-import ResizeObserverPolyfill from './src/ResizeObserver';
+import ResizeObserver from './src/ResizeObserver';
 
-let ResizeObserver = ResizeObserverPolyfill;
+export default (function () {
+    // Export existing implementation if it's available.
+    if (typeof global.ResizeObserver === 'function') {
+        return global.ResizeObserver;
+    }
 
-// Export existing implementation if it's available.
-if (typeof global.ResizeObserver === 'function') {
-    ResizeObserver = global.ResizeObserver;
-}
-
-export default ResizeObserver;
+    return ResizeObserver;
+})();

@@ -1,8 +1,8 @@
 import throttle from './utils/throttle';
-import global from './shims/global';
+import isBrowser from './utils/isBrowser';
 
 // Define whether the MutationObserver is supported.
-const mutationsSupported = typeof global.MutationObserver === 'function';
+const mutationsSupported = typeof MutationObserver === 'function';
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
@@ -172,8 +172,9 @@ export default class ResizeObserverController {
      * @private
      */
     _addListeners() {
-        // Do nothing if listeners have been already added.
-        if (this._listenersEnabled) {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already added.
+        if (!isBrowser || this._listenersEnabled) {
             return;
         }
 
@@ -207,8 +208,9 @@ export default class ResizeObserverController {
      * @private
      */
     _removeListeners() {
-        // Do nothing if listeners have been already removed.
-        if (!this._listenersEnabled) {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already removed.
+        if (!isBrowser || !this._listenersEnabled) {
             return;
         }
 
