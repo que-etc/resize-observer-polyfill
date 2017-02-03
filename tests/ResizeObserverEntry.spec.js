@@ -8,8 +8,8 @@ const NEW_VALUE = Date.now();
  * and that it's neither enumerable nor writable.
  *
  * @param {Object} target
- * @param {String} prop
- * @returns {Boolean}
+ * @param {string} prop
+ * @returns {boolean}
  */
 function isReadOnlyAttr(target, prop) {
     if (!(prop in target)) {
@@ -73,7 +73,7 @@ describe('ResizeObserverEntry', () => {
         it('content rectangle is an instance of the ClientRect', done => {
             getEntry().then(entry => {
                 const rectKeys = ['width', 'height', 'top', 'right', 'bottom', 'left'];
-                const contentRect = entry.contentRect;
+                const {contentRect} = entry;
 
                 if (window.ClientRect) {
                     expect(contentRect instanceof ClientRect).toBe(true);

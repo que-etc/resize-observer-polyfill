@@ -9,20 +9,16 @@
 import global from './global';
 
 /* eslint-disable require-jsdoc */
-const hasNativeCollections =
-    typeof global.WeakMap === 'function' &&
-    typeof global.Map === 'function';
-
-const WeakMap = (() => {
-    if (hasNativeCollections) {
-        return global.WeakMap;
+export const Map = (() => {
+    if (typeof global.Map === 'function') {
+        return global.Map;
     }
 
     function getIndex(arr, key) {
         let result = -1;
 
         arr.some((entry, index) => {
-            let matches = entry[0] === key;
+            const matches = entry[0] === key;
 
             if (matches) {
                 result = index;
@@ -39,14 +35,19 @@ const WeakMap = (() => {
             this.__entries__ = [];
         }
 
-        get(key) {
-            let index = getIndex(this.__entries__, key);
+        get size() {
+            return this.__entries__.length;
+        }
 
-            return this.__entries__[index][1];
+        get(key) {
+            const index = getIndex(this.__entries__, key);
+            const entry = this.__entries__[index];
+
+            return entry && entry[1];
         }
 
         set(key, value) {
-            let index = getIndex(this.__entries__, key);
+            const index = getIndex(this.__entries__, key);
 
             if (~index) {
                 this.__entries__[index][1] = value;
@@ -56,8 +57,8 @@ const WeakMap = (() => {
         }
 
         delete(key) {
-            let entries = this.__entries__,
-                index = getIndex(entries, key);
+            const entries = this.__entries__;
+            const index = getIndex(entries, key);
 
             if (~index) {
                 entries.splice(index, 1);
@@ -67,21 +68,9 @@ const WeakMap = (() => {
         has(key) {
             return !!~getIndex(this.__entries__, key);
         }
-    };
-})();
-
-const Map = (() => {
-    if (hasNativeCollections) {
-        return global.Map;
-    }
-
-    return class extends WeakMap {
-        get size() {
-            return this.__entries__.length;
-        }
 
         clear() {
-            this.__entries__.splice(0, this.__entries__.length);
+            this.__entries__.splice(0);
         }
 
         entries() {
@@ -103,5 +92,3 @@ const Map = (() => {
         }
     };
 })();
-
-export {Map, WeakMap};

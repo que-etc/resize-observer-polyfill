@@ -1,16 +1,17 @@
-import {WeakMap} from './shims/es6-collections';
-import _ResizeObserver from './_ResizeObserver';
+import {Map} from './shims/es6-collections';
 import ResizeObserverController from './ResizeObserverController';
+import ResizeObserverSPI from './ResizeObserverSPI';
 
 // Controller that will be assigned to all instances of ResizeObserver.
 const controller = new ResizeObserverController();
 
-// Registry of the internal observers.
-const observers = new WeakMap();
+// Registry of internal observers.
+const observers = typeof WeakMap === 'function' ? new WeakMap() : new Map();
 
 /**
- * ResizeObservers' "Proxy" class which is meant to hide private properties and
- * methods from public instances.
+ * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
+ * providing only those methods that are define in the spec.
+ *
  *
  * Additionally implements the "continuousUpdates" static property accessor to
  * give control over the behavior of the ResizeObserverController instance.
@@ -28,8 +29,8 @@ class ResizeObserver {
             throw new TypeError('1 argument required, but only 0 present.');
         }
 
-        // Create a new instance of the internal ResizeObserver.
-        const observer = new _ResizeObserver(callback, controller, this);
+        // Create a new instance of an internal ResizeObserver.
+        const observer = new ResizeObserverSPI(callback, controller, this);
 
         // Register internal observer.
         observers.set(this, observer);
@@ -38,7 +39,7 @@ class ResizeObserver {
     /**
      * Tells whether continuous updates are enabled.
      *
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     static get continuousUpdates() {
         return controller.continuousUpdates;
@@ -47,7 +48,7 @@ class ResizeObserver {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} value - Whether to enable or disable continuous updates.
+     * @param {boolean} value - Whether to enable or disable continuous updates.
      */
     static set continuousUpdates(value) {
         if (typeof value !== 'boolean') {

@@ -21,7 +21,8 @@ export default {
                         loose: true,
                         modules: false
                     }
-                }]
+                }],
+                'stage-2'
             ],
             plugins: ['external-helpers']
         })

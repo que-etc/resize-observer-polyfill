@@ -1,5 +1,5 @@
-import throttle from './utils/throttle';
 import isBrowser from './utils/isBrowser';
+import throttle from './utils/throttle';
 
 // Define whether the MutationObserver is supported.
 const mutationsSupported = typeof MutationObserver === 'function';
@@ -18,23 +18,41 @@ const mutationsSupported = typeof MutationObserver === 'function';
  */
 export default class ResizeObserverController {
     /**
+     * Tells whether the continuous update cycle is being used.
+     *
+     * @type {boolean}
+     */
+    _isCycleContinuous;
+
+    /**
+     * Indicates whether DOM listeners have been added.
+     *
+     * @type {boolean}
+     */
+    _listenersEnabled = false;
+
+    /**
+     * Keeps reference to the instance of MutationObserver.
+     *
+     * @type {MutationObserver}
+     */
+    _mutationsObserver;
+
+    /**
+     * A list of connected observers.
+     *
+     * @type {ResizeObserver[]}
+     */
+    _observers = [];
+
+    /**
      * Creates a new instance of ResizeObserverController.
      *
-     * @param {Boolean} [continuousUpdates = false] - Whether to use a continuous
-     *      update cycle.
+     * @param {boolean} [continuousUpdates = false] - Whether to use continuous
+     *      updates.
      */
     constructor(continuousUpdates = false) {
-        // Continuous updates must be enabled if MutationObserver is not supported.
         this._isCycleContinuous = !mutationsSupported || continuousUpdates;
-
-        // Indicates whether DOM listeners have been added.
-        this._listenersEnabled = false;
-
-        // Keeps reference to the instance of MutationObserver.
-        this._mutationsObserver = null;
-
-        // A list of connected observers.
-        this._observers = [];
 
         // Make sure that the "refresh" method is invoked as a RAF callback and
         // that it happens only once during the period of 30 milliseconds.
@@ -47,7 +65,7 @@ export default class ResizeObserverController {
     /**
      * Tells whether continuous updates are enabled.
      *
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     get continuousUpdates() {
         return this._isCycleContinuous;
@@ -56,7 +74,7 @@ export default class ResizeObserverController {
     /**
      * Enables or disables continuous updates.
      *
-     * @param {Boolean} useContinuous - Whether to enable or disable continuous
+     * @param {boolean} useContinuous - Whether to enable or disable continuous
      *      updates. Note that the value won't be applied if MutationObserver is
      *      not supported.
      */
@@ -80,6 +98,7 @@ export default class ResizeObserverController {
      * Adds observer to observers list.
      *
      * @param {ResizeObserver} observer - Observer to be added.
+     * @returns {void}
      */
     connect(observer) {
         if (!this.isConnected(observer)) {
@@ -96,6 +115,7 @@ export default class ResizeObserverController {
      * Removes observer from observers list.
      *
      * @param {ResizeObserver} observer - Observer to be removed.
+     * @returns {void}
      */
     disconnect(observer) {
         const observers = this._observers;
@@ -116,7 +136,7 @@ export default class ResizeObserverController {
      * Tells whether the provided observer is connected to controller.
      *
      * @param {ResizeObserver} observer - Observer to be checked.
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     isConnected(observer) {
         return !!~this._observers.indexOf(observer);
@@ -125,6 +145,8 @@ export default class ResizeObserverController {
     /**
      * Invokes the update of observers. It will continue running updates insofar
      * it detects changes or if continuous updates are enabled.
+     *
+     * @returns {void}
      */
     refresh() {
         const hasChanges = this._updateObservers();
@@ -144,7 +166,7 @@ export default class ResizeObserverController {
      * entries.
      *
      * @private
-     * @returns {Boolean} Returns "true" if any observer has detected changes in
+     * @returns {boolean} Returns "true" if any observer has detected changes in
      *      dimensions of its' elements.
      */
     _updateObservers() {
@@ -170,6 +192,7 @@ export default class ResizeObserverController {
      * Initializes DOM listeners.
      *
      * @private
+     * @returns {void}
      */
     _addListeners() {
         // Do nothing if running in a non-browser environment or if listeners
@@ -206,6 +229,7 @@ export default class ResizeObserverController {
      * Removes DOM listeners.
      *
      * @private
+     * @returns {void}
      */
     _removeListeners() {
         // Do nothing if running in a non-browser environment or if listeners

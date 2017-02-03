@@ -1,8 +1,8 @@
 /**
  * @deprecated Global version of the polyfill is deprecated and will be removed in the next major release.
  */
-import global from './src/shims/global';
 import ResizeObserver from './src/ResizeObserver';
+import global from './src/shims/global';
 
 if (typeof global.ResizeObserver !== 'function') {
     // ResizeObserver host property is not enumerable

@@ -1,5 +1,5 @@
 /**
- * Creates an overlay function over the jasmine "Spy" object with the additional
+ * Creates an overlay function for the Jasmine's "Spy" object with the additional
  * "nextCall" method, which in turn creates a promise that will be resolved on
  * the next invocation of the spy function.
  *
@@ -22,13 +22,11 @@ export function createAsyncSpy() {
         return result;
     };
 
-    asyncSpy.nextCall = function () {
-        return new Promise(resolve => {
-            queue.push(resolve);
-        });
-    };
+    asyncSpy.nextCall = () => new Promise(resolve => queue.push(resolve));
 
-    Object.assign(asyncSpy, origSpy);
+    for (const key of Object.keys(origSpy)) {
+        asyncSpy[key] = origSpy[key];
+    }
 
     return asyncSpy;
 }
@@ -36,11 +34,7 @@ export function createAsyncSpy() {
 /**
  * Promise wrapper around the "setTimeout" method.
  *
- * @param {Number} timeout
+ * @param {number} timeout
  * @returns {Promise}
  */
-export function wait(timeout) {
-    return new Promise(resolve => {
-        setTimeout(resolve, timeout);
-    });
-}
+export const wait = timeout => new Promise(resolve => setTimeout(resolve, timeout));

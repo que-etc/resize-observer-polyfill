@@ -1,28 +1,5 @@
+import defineConfigurable from './utils/defineConfigurable';
 import global from './shims/global';
-
-/**
- * Defines properties of the provided target object.
- *
- * @param {Object} target - Object for which to define properties.
- * @param {Object} props - Properties to be defined.
- * @param {Object} [descr = {}] - Properties descriptor.
- * @returns {Object} Target object.
- */
-function defineProperties(target, props, descr = {}) {
-    const descriptor = {
-        configurable: descr.configurable || false,
-        writable: descr.writable || false,
-        enumerable: descr.enumerable || false
-    };
-
-    for (const key of Object.keys(props)) {
-        descriptor.value = props[key];
-
-        Object.defineProperty(target, key, descriptor);
-    }
-
-    return target;
-}
 
 export default class ResizeObserverEntry {
     /**
@@ -43,10 +20,8 @@ export default class ResizeObserverEntry {
         // Property accessors are not being used as they'd require to define a
         // private WeakMap storage which may cause memory leaks in browsers that
         // don't support this type of collections.
-        defineProperties(contentRect, rectData, {configurable: true});
+        defineConfigurable(contentRect, rectData);
 
-        defineProperties(this, {
-            target, contentRect
-        }, {configurable: true});
+        defineConfigurable(this, {target, contentRect});
     }
 }

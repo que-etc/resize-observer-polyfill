@@ -1,22 +1,12 @@
 const babel = require('rollup-plugin-babel');
 
 module.exports = function (config) {
-    const browsers = [
-        // 'IE',
-        // 'IE10',
-        // 'Chrome',
-        'Firefox'
-    ];
-
-    if (config.mode === 'custom') {
-        browsers.splice(0);
-    }
-
     config.set({
         singleRun: true,
         frameworks: ['jasmine'],
         files: [
-            'node_modules/babel-polyfill/dist/polyfill.js',
+            './node_modules/regenerator-runtime/runtime.js',
+            './node_modules/promise-polyfill/promise.js',
             'tests/**/*.spec.js'
         ],
         plugins: [
@@ -30,7 +20,7 @@ module.exports = function (config) {
             'karma-jasmine-html-reporter'
         ],
         reporters: ['spec', 'kjhtml'],
-        browsers,
+        browsers: [],
         client: {
             native: config.native === true
         },
@@ -53,7 +43,8 @@ module.exports = function (config) {
                                 loose: true,
                                 modules: false
                             }
-                        }]
+                        }],
+                        'stage-2'
                     ],
                     plugins: ['external-helpers']
                 })

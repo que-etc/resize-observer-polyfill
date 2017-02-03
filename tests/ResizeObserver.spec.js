@@ -1,6 +1,6 @@
 /* eslint-disable max-nested-callbacks, no-shadow, require-jsdoc */
-import {createAsyncSpy, wait} from './helpers';
 import {ResizeObserver, ResizeObserverEntry} from './source';
+import {createAsyncSpy, wait} from './helpers';
 
 let observer = null,
     elements = {},
@@ -1019,7 +1019,7 @@ describe('ResizeObserver', () => {
 
                     await wait(1050);
 
-                    const entries = spy.calls.mostRecent().args[0];
+                    const [entries] = spy.calls.mostRecent().args;
 
                     expect(spy.calls.count()).toBeGreaterThan(2);
 
@@ -1055,7 +1055,7 @@ describe('ResizeObserver', () => {
 
                     await wait(570);
 
-                    const entries = spy.calls.mostRecent().args[0];
+                    const [entries] = spy.calls.mostRecent().args;
 
                     expect(entries[0].target).toBe(elements.container);
                     expect(entries[0].contentRect.width).toBe(700);

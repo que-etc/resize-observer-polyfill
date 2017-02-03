@@ -16,8 +16,8 @@ function getStyles(target) {
 /**
  * Converts provided string defined in q form of '{{value}}px' to number.
  *
- * @param {String} value
- * @returns {Number}
+ * @param {string} value
+ * @returns {number}
  */
 function pixelsToNumber(value) {
     return parseFloat(value) || 0;
@@ -27,8 +27,8 @@ function pixelsToNumber(value) {
  * Extracts borders size from provided styles.
  *
  * @param {CSSStyleDeclaration} styles
- * @param {...String} positions - Borders positions (top, right, ...)
- * @returns {Number}
+ * @param {...string} positions - Borders positions (top, right, ...)
+ * @returns {number}
  */
 function getBordersSize(styles, ...positions) {
     return positions.reduce((size, pos) => {
@@ -61,10 +61,10 @@ function getPaddings(styles) {
  * Creates content rectangle based on the provided dimensions
  * and the top/left positions.
  *
- * @param {Number} width - Width of rectangle.
- * @param {Number} height - Height of rectangle.
- * @param {Number} top - Top position.
- * @param {Number} left - Left position.
+ * @param {number} width - Width of rectangle.
+ * @param {number} height - Height of rectangle.
+ * @param {number} top - Top position.
+ * @param {number} left - Left position.
  * @returns {ClientRect}
  */
 function createContentRect(width, height, top, left) {
@@ -189,7 +189,7 @@ function getHTMLElementContentRect(target) {
  * Checks whether provided element is an instance of SVGElement.
  *
  * @param {Element} target - Element to be checked.
- * @returns {Boolean}
+ * @returns {boolean}
  */
 function isSVGElement(target) {
     return target instanceof SVGElement;
@@ -199,7 +199,7 @@ function isSVGElement(target) {
  * Checks whether provided element is a document element (root element of a document).
  *
  * @param {Element} target - Element to be checked.
- * @returns {Boolean}
+ * @returns {boolean}
  */
 function isDocumentElement(target) {
     return target === document.documentElement;
@@ -231,9 +231,37 @@ function getContentRect(target) {
 
 /**
  * Class that is responsible for computations of the content rectangle of
- * provided DOM element and for keeping track of its' changes.
+ * provided DOM element and for keeping track of it's changes.
  */
 export default class ResizeObservation {
+    /**
+     * Reference to the last observed content rectangle.
+     *
+     * @type {ClientRect}
+     */
+    _contentRect = emptyRect;
+
+    /**
+     * Broadcasted height of content rectangle.
+     *
+     * @type {number}
+     */
+    broadcastHeight = 0;
+
+    /**
+     * Broadcasted width of content rectangle.
+     *
+     * @type {number}
+     */
+    broadcastWidth = 0;
+
+    /**
+     * Reference to the observed element.
+     *
+     * @type {Element}
+     */
+    target;
+
     /**
      * Creates an instance of ResizeObservation.
      *
@@ -241,15 +269,6 @@ export default class ResizeObservation {
      */
     constructor(target) {
         this.target = target;
-
-        // Keeps reference to the last observed content rectangle.
-        this._contentRect = emptyRect;
-
-        // Broadcasted width of content rectangle.
-        this.broadcastWidth = 0;
-
-        // Broadcasted height of content rectangle.
-        this.broadcastHeight = 0;
     }
 
     /**
@@ -268,10 +287,10 @@ export default class ResizeObservation {
     }
 
     /**
-     * Updates content rectangle and tells whether its' width or height properties
+     * Updates content rectangle and tells whether it's width or height properties
      * have changed since the last broadcast.
      *
-     * @returns {Boolean}
+     * @returns {boolean}
      */
     isActive() {
         const rect = getContentRect(this.target);

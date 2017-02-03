@@ -1,5 +1,5 @@
-import global from './src/shims/global';
 import ResizeObserver from './src/ResizeObserver';
+import global from './src/shims/global';
 
 export default (function () {
     // Export existing implementation if it's available.

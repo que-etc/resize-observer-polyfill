@@ -4,7 +4,7 @@ const jasmine = new Jasmine();
 
 /* eslint-disable camelcase */
 jasmine.loadConfig({
-    spec_dir: 'tests',
+    spec_dir: 'tests/node',
     spec_files: [
         '*.spec.node.js'
     ]

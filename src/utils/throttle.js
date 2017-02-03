@@ -6,8 +6,8 @@ import requestAnimFrame from '../shims/requestAnimationFrame';
  * call and re-invokes it after pending activation is resolved.
  *
  * @param {Function} callback - Function to be invoked after the delay period.
- * @param {Number} [delay = 0] - Delay after which to invoke callback.
- * @param {Boolean} [afterRAF = false] - Whether function needs to be invoked as
+ * @param {number} [delay = 0] - Delay after which to invoke callback.
+ * @param {boolean} [afterRAF = false] - Whether function needs to be invoked as
  *      a requestAnimationFrame callback.
  * @returns {Function}
  */
@@ -18,6 +18,8 @@ export default function (callback, delay = 0, afterRAF = false) {
     /**
      * Invokes the original callback function and schedules a new invocation if
      * the wrapper was called during current request.
+     *
+     * @returns {void}
      */
     function invokeCallback() {
         // Invoke original function.
@@ -37,6 +39,8 @@ export default function (callback, delay = 0, afterRAF = false) {
      * Callback that will be invoked after the specified delay period. It will
      * delegate invocation of the original function to the requestAnimationFrame
      * if "afterRAF" parameter is set to "true".
+     *
+     * @returns {void}
      */
     function timeoutCallback() {
         afterRAF ? requestAnimFrame(invokeCallback) : invokeCallback();
@@ -44,6 +48,8 @@ export default function (callback, delay = 0, afterRAF = false) {
 
     /**
      * Schedules invocation of the initial function.
+     *
+     * @returns {void}
      */
     function proxy(...args) {
         // eslint-disable-next-line no-invalid-this

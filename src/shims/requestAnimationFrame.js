@@ -1,15 +1,13 @@
 /**
- * A shim for requestAnimationFrame which falls back
- * to setTimeout if the first one is not supported.
+ * A shim for the requestAnimationFrame which falls back to the setTimeout if
+ * first one is not supported.
  *
- * @returns {Number} Requests' identifier.
+ * @returns {number} Requests' identifier.
  */
 export default (() => {
     if (typeof requestAnimationFrame === 'function') {
         return requestAnimationFrame;
     }
 
-    return callback => {
-        return setTimeout(() => callback(Date.now()), 1000 / 60);
-    };
+    return callback => setTimeout(() => callback(Date.now()), 1000 / 60);
 })();
