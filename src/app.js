@@ -1,7 +1,6 @@
 // We need to use a polyfill itself here,
 // not its' possible native implementation.
 import ResizeObserver from 'resize-observer-polyfill/src/ResizeObserver';
-
 import randomColor from 'randomcolor';
 
 const hues = [
@@ -74,9 +73,11 @@ function generateElements(container, levels, items = 4) {
 
 generateElements(document.getElementById('container'), 2);
 
+const blocks = document.querySelectorAll('.block');
+
 function populateQueue() {
     index = 0;
-    queue = toArray(document.querySelectorAll('.block'));
+    queue = toArray(blocks);
 
     updateColorData();
 
