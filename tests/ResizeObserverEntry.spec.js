@@ -13,7 +13,7 @@ const NEW_VALUE = Date.now();
  */
 function isReadOnlyAttr(target, prop) {
     if (!(prop in target)) {
-        throw new ReferenceError(`${ prop } is not defined`);
+        return false;
     }
 
     const keys = Object.keys(target);
@@ -70,13 +70,13 @@ describe('ResizeObserverEntry', () => {
             }).then(done);
         });
 
-        it('content rectangle is an instance of the ClientRect', done => {
+        it('content rectangle is an instance of the DOMRectReadOnly', done => {
             getEntry().then(entry => {
-                const rectKeys = ['width', 'height', 'top', 'right', 'bottom', 'left'];
+                const rectKeys = ['x', 'y', 'width', 'height', 'top', 'right', 'bottom', 'left'];
                 const {contentRect} = entry;
 
-                if (window.ClientRect) {
-                    expect(contentRect instanceof ClientRect).toBe(true);
+                if (typeof DOMRectReadOnly === 'function') {
+                    expect(Object.getPrototypeOf(contentRect)).toBe(DOMRectReadOnly.prototype);
                 }
 
                 for (const key of rectKeys) {

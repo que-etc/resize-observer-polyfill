@@ -10,6 +10,7 @@ export default class ResizeObserverSPI {
      *
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-activetargets
      *
+     * @private
      * @type {Array}
      */
     _activeTargets = [];
@@ -18,6 +19,7 @@ export default class ResizeObserverSPI {
      * Reference to the callback function.
      * Spec: https://wicg.github.io/ResizeObserver/#resize-observer-callback
      *
+     * @private
      * @type {Function}
      */
     _callback;
@@ -26,6 +28,7 @@ export default class ResizeObserverSPI {
      * Public ResizeObserver instance which will be passed to the callback
      * function and used as a value of it's "this" binding.
      *
+     * @private
      * @type {ResizeObserver}
      */
     _callbackCtx;
@@ -33,6 +36,7 @@ export default class ResizeObserverSPI {
     /**
      * Reference to the associated ResizeObserverController.
      *
+     * @private
      * @type {ResizeObserverController}
      */
     _controller;
@@ -41,6 +45,7 @@ export default class ResizeObserverSPI {
      * Registry of the ResizeObservation instances.
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-observationtargets
      *
+     * @private
      * @type {Map}
      */
     _observationTargets = new Map();
@@ -50,7 +55,7 @@ export default class ResizeObserverSPI {
      *
      * @param {ResizeObserverCallback} callback - Callback function that is invoked when one
      *      of the observed elements changes it's content dimensions.
-     * @param {ResizeObsreverController} controller - Controller instance which
+     * @param {ResizeObserverController} controller - Controller instance which
      *      is responsible for the updates of observer.
      * @param {ResizeObserver} callbackCtx - Reference to the public
      *      ResizeObserver instance which will be passed to callback function.
@@ -122,11 +127,11 @@ export default class ResizeObserverSPI {
             return;
         }
 
-        const targets = this._observationTargets;
-
         if (!(target instanceof Element)) {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
+
+        const targets = this._observationTargets;
 
         // Do nothing if element is not being observed.
         if (!targets.has(target)) {
@@ -157,7 +162,7 @@ export default class ResizeObserverSPI {
 
     /**
      * Clears an array of previously collected active observations and collects
-     * observation instances which associated element has changed its' content
+     * observation instances which associated element has changed it's content
      * rectangle.
      *
      * @returns {void}
@@ -186,6 +191,8 @@ export default class ResizeObserverSPI {
             return;
         }
 
+        const ctx = this._callbackCtx;
+
         // Create ResizeObserverEntry instance for every active observation.
         const entries = this._activeTargets.map(observation => {
             return new ResizeObserverEntry(
@@ -193,8 +200,6 @@ export default class ResizeObserverSPI {
                 observation.broadcastRect()
             );
         });
-
-        const ctx = this._callbackCtx;
 
         this._callback.call(ctx, entries, ctx);
         this.clearActive();

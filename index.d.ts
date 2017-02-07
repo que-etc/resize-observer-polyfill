@@ -1,3 +1,14 @@
+interface DOMRectReadOnly {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+    readonly top: number;
+    readonly right: number;
+    readonly bottom: number;
+    readonly left: number;
+}
+
 declare global {
     interface ResizeObserverCallback {
         (entries: ResizeObserverEntry[], observer: ResizeObserver): void
@@ -5,7 +16,7 @@ declare global {
 
     interface ResizeObserverEntry {
         readonly target: Element;
-        readonly contentRect: ClientRect;
+        readonly contentRect: DOMRectReadOnly;
     }
 
     interface ResizeObserver {
@@ -18,7 +29,6 @@ declare global {
 declare var ResizeObserver: {
     prototype: ResizeObserver;
     new(callback: ResizeObserverCallback): ResizeObserver;
-    continuousUpdates?: boolean
 }
 
 export default ResizeObserver;

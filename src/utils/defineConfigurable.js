@@ -1,5 +1,5 @@
 /**
- * Defines non-writable/enumerbale properties of the provided target object.
+ * Defines non-writable/enumerable properties of the provided target object.
  *
  * @param {Object} target - Object for which to define properties.
  * @param {Object} props - Properties to be defined.

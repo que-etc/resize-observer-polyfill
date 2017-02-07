@@ -1,10 +1,8 @@
 /**
- * A collection of shims that provides minimal
- * support of WeakMap and Map classes.
+ * A collection of shims that provide minimal functionality of the ES6 collections.
  *
- * These implementations are not meant to be used outside of
- * ResizeObserver modules as they cover only a limited range
- * of use cases.
+ * These implementations are not meant to be used outside of the ResizeObserver
+ * modules as they cover only a limited range of use cases.
  */
 import global from './global';
 
@@ -18,13 +16,13 @@ export const Map = (() => {
         let result = -1;
 
         arr.some((entry, index) => {
-            const matches = entry[0] === key;
-
-            if (matches) {
+            if (entry[0] === key) {
                 result = index;
+
+                return true;
             }
 
-            return matches;
+            return false;
         });
 
         return result;
@@ -71,18 +69,6 @@ export const Map = (() => {
 
         clear() {
             this.__entries__.splice(0);
-        }
-
-        entries() {
-            return this.__entries__.slice();
-        }
-
-        keys() {
-            return this.__entries__.map(entry => entry[0]);
-        }
-
-        values() {
-            return this.__entries__.map(entry => entry[1]);
         }
 
         forEach(callback, ctx = null) {

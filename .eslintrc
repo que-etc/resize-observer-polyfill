@@ -5,6 +5,9 @@
         "ecmaVersion": 2017,
         "sourceType": "module"
     },
+    "globals": {
+        "DOMRectReadOnly": true
+    },
     "env": {
         "browser": true,
         "es6": true,

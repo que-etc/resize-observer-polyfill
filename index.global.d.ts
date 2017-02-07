@@ -4,7 +4,6 @@ declare global {
     var ResizeObserver: {
         prototype: ResizeObserver;
         new(callback: ResizeObserverCallback): ResizeObserver;
-        continuousUpdates?: boolean
     }
 }
 

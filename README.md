@@ -6,9 +6,9 @@ ResizeObserver Polyfill
 
 A polyfill for the Resize Observer API.
 
-Implementation is based on the MutationObserver (no polling unless DOM changes) with a fall back to a continuous dirty checking cycle if the first one is not supported. Doesn't modify observed elements. Handles non-delayed CSS transitions/animations, `<textarea>` resizes and can optionally observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
+Implementation is based on the MutationObserver (no polling unless DOM changes) with a fall back to a continuous dirty checking cycle if the first one is not supported. Doesn't modify observed elements. Handles CSS transitions/animations, `<textarea>` resizes and can possibly observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
 
-Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _3.0kb_ when minified and gzipped.
+Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _2.5kb_ when minified and gzipped.
 
 [Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
 
@@ -50,17 +50,17 @@ import ResizeObserver from 'resize-observer-polyfill';
 
 const ro = new ResizeObserver((entries, observer) => {
     for (const entry of entries) {
-        const cr = entry.contentRect;
+        const {left, top, width, height} = entry.contentRect;
 
         console.log('Element:', entry.target);
-        console.log(`Element's size: ${cr.width}px x ${cr.height}px`);
-        console.log(`Element's paddings: ${cr.top}px ; ${cr.left}px`);
+        console.log(`Element's size: ${ width }px x ${ height }px`);
+        console.log(`Element's paddings: ${ top }px ; ${ left }px`);
     }
 });
 
 ro.observe(document.body);
 ```
-Though you always can extend the global object manually if you need it.
+Though you always can extend the global object if you need it.
 
 ```javascript
 import ResizeObserver from 'resize-observer-polyfill';
@@ -72,15 +72,11 @@ Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) module and it w
 
 **Note**: global versions (`index.global` and `dist/ResizeObserver.global`) are deprecated and will be removed in the next major release.
 
-## Configuration
+## Limitations
 
-`ResizeObserver` class additionally implements following static accessor property:
+* CSS changes caused by dynamic pseudo-classes, e.g. `:hover` and `:focus`, are not tracked. As a workaround you can add a short transition which would trigger the `transitionend` event when an element receives one of the former classes ([example](https://jsfiddle.net/que_etc/7fudzqng/)).
+* Delayed transitions will receive only one notification with the latest dimensions of an element.
 
-### continuousUpdates
-
-By default things like changes caused by the CSS `:hover` pseudo-class and delayed CSS transitions are not tracked. To handle them you can set `ResizeObserver.continuousUpdates = true` which in turn will start a continuous update cycle which runs every `100` milliseconds (as a RAF callback). Keep in mind that this is going to affect the performance.
-
-**NOTE:** changes made to this property affect all existing and future instances of ResizeObserver.
 
 ## Building and testing
 
@@ -100,7 +96,7 @@ Running unit tests:
 npm run test:spec
 ```
 
-To test in a browser that is not present in karmas' config file:
+To test in a browser that is not present in karma's config file:
 ```sh
 npm run test:spec:custom
 ```

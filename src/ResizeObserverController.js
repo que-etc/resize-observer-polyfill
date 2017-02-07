@@ -4,6 +4,12 @@ import throttle from './utils/throttle';
 // Define whether the MutationObserver is supported.
 const mutationsSupported = typeof MutationObserver === 'function';
 
+// Minimum delay before invoking the update of observers.
+const REFRESH_DELAY = 20;
+
+// Delay before iteration of the continuous cycle.
+const CONTINUOUS_HANDLER_DELAY = 80;
+
 /**
  * Controller class which handles updates of ResizeObserver instances.
  * It decides when and for how long it's necessary to run updates by listening
@@ -18,15 +24,17 @@ const mutationsSupported = typeof MutationObserver === 'function';
  */
 export default class ResizeObserverController {
     /**
-     * Tells whether the continuous update cycle is being used.
+     * Continuous updates must be enabled if MutationObserver is not supported.
      *
+     * @private
      * @type {boolean}
      */
-    _isCycleContinuous;
+    _isCycleContinuous = !mutationsSupported;
 
     /**
      * Indicates whether DOM listeners have been added.
      *
+     * @private
      * @type {boolean}
      */
     _listenersEnabled = false;
@@ -34,6 +42,7 @@ export default class ResizeObserverController {
     /**
      * Keeps reference to the instance of MutationObserver.
      *
+     * @private
      * @type {MutationObserver}
      */
     _mutationsObserver;
@@ -41,57 +50,21 @@ export default class ResizeObserverController {
     /**
      * A list of connected observers.
      *
+     * @private
      * @type {ResizeObserver[]}
      */
     _observers = [];
 
     /**
      * Creates a new instance of ResizeObserverController.
-     *
-     * @param {boolean} [continuousUpdates = false] - Whether to use continuous
-     *      updates.
      */
-    constructor(continuousUpdates = false) {
-        this._isCycleContinuous = !mutationsSupported || continuousUpdates;
-
+    constructor() {
         // Make sure that the "refresh" method is invoked as a RAF callback and
-        // that it happens only once during the period of 30 milliseconds.
-        this.refresh = throttle(this.refresh.bind(this), 30, true);
+        // that it happens only once during the provided period.
+        this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
 
         // Additionally postpone invocation of the continuous updates.
-        this._continuousUpdateHandler = throttle(this.refresh, 70);
-    }
-
-    /**
-     * Tells whether continuous updates are enabled.
-     *
-     * @returns {boolean}
-     */
-    get continuousUpdates() {
-        return this._isCycleContinuous;
-    }
-
-    /**
-     * Enables or disables continuous updates.
-     *
-     * @param {boolean} useContinuous - Whether to enable or disable continuous
-     *      updates. Note that the value won't be applied if MutationObserver is
-     *      not supported.
-     */
-    set continuousUpdates(useContinuous) {
-        // The state of continuous updates should not be modified if
-        // MutationObserver is not supported.
-        if (!mutationsSupported) {
-            return;
-        }
-
-        this._isCycleContinuous = useContinuous;
-
-        // Immediately start the update cycle in order not to wait for a possible
-        // event that might initiate it.
-        if (this._listenersEnabled && useContinuous) {
-            this.refresh();
-        }
+        this._continuousUpdateHandler = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
     }
 
     /**
@@ -167,7 +140,7 @@ export default class ResizeObserverController {
      *
      * @private
      * @returns {boolean} Returns "true" if any observer has detected changes in
-     *      dimensions of its' elements.
+     *      dimensions of it's elements.
      */
     _updateObservers() {
         let hasChanges = false;
@@ -202,6 +175,11 @@ export default class ResizeObserverController {
         }
 
         window.addEventListener('resize', this.refresh);
+
+        // Subscription to the "Transitionend" event is used as a workaround for
+        // delayed transitions. This way we can capture at least the final state
+        // of an element.
+        document.addEventListener('transitionend', this.refresh);
 
         // Subscribe to DOM mutations if it's possible as they may lead to
         // changes in the dimensions of elements.
@@ -239,6 +217,7 @@ export default class ResizeObserverController {
         }
 
         window.removeEventListener('resize', this.refresh);
+        document.removeEventListener('transitionend', this.refresh);
 
         if (this._mutationsObserver) {
             this._mutationsObserver.disconnect();

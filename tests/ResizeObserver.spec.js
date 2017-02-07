@@ -41,7 +41,6 @@ const template = `
 `;
 
 const timeout = 150;
-const defaultUpdatesState = ResizeObserver.continuousUpdates;
 
 function appendStyles() {
     styles = document.createElement('style');
@@ -88,8 +87,6 @@ describe('ResizeObserver', () => {
         if (observer) {
             observer.disconnect();
         }
-
-        ResizeObserver.continuousUpdates = defaultUpdatesState;
 
         observer = null;
 
@@ -889,7 +886,7 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
-        it('handles svg elements', done => {
+        it('handles SVGGraphicsElement', done => {
             elements.root.insertAdjacentHTML('beforeend', `
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -957,6 +954,50 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
+        it('doesn\'t trigger on svg elements that don\'t implement the SVGGraphicsElement interface', done => {
+            elements.root.insertAdjacentHTML('beforeend', `
+                <<svg width="600" height="200" viewBox="0 0 600 200"
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <defs>
+                        <radialGradient id="gradient">
+                            <stop offset="0%" stop-color="#8cffa0" />
+                            <stop offset="100%" stop-color="#8ca0ff" />
+                        </radialGradient>
+                    </defs>
+
+                    <circle r="50" cx="180" cy="50" style="fill:url(#gradient)" id="circle" />
+                </svg>
+
+            `);
+
+            const spy = createAsyncSpy();
+            const svgGrad = document.getElementById('gradient');
+            const svgCircle = document.getElementById('circle');
+
+            observer = new ResizeObserver(spy);
+
+            observer.observe(svgGrad);
+
+            wait(timeout).then(() => {
+                expect(spy).not.toHaveBeenCalled();
+
+                observer.observe(svgCircle);
+
+                return spy.nextCall();
+            }).then(entries => {
+                expect(spy).toHaveBeenCalledTimes(1);
+
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(svgCircle);
+
+                expect(entries[0].contentRect.top).toBe(0);
+                expect(entries[0].contentRect.left).toBe(0);
+                expect(entries[0].contentRect.width).toBe(100);
+                expect(entries[0].contentRect.height).toBe(100);
+            }).then(done).catch(done.fail);
+        });
+
         if (typeof document.body.style.transform !== 'undefined') {
             it('doesn\'t notify of transformations', done => {
                 const spy = createAsyncSpy();
@@ -1001,9 +1042,9 @@ describe('ResizeObserver', () => {
 
         if (typeof document.body.style.transition !== 'undefined') {
             it('handles transitions', done => {
-                const spy = createAsyncSpy();
-
                 elements.target1.style.transition = 'width 1s, height 0.5s';
+
+                const spy = createAsyncSpy();
 
                 observer = new ResizeObserver(spy);
 
@@ -1017,9 +1058,10 @@ describe('ResizeObserver', () => {
                     elements.target1.style.width = '600px';
                     elements.target1.style.height = '350px';
 
-                    await wait(1050);
+                    await wait(1100);
 
-                    const [entries] = spy.calls.mostRecent().args;
+                    // eslint-disable-next-line prefer-destructuring
+                    const entries = spy.calls.mostRecent().args[0];
 
                     expect(spy.calls.count()).toBeGreaterThan(2);
 
@@ -1035,8 +1077,6 @@ describe('ResizeObserver', () => {
                 elements.container.style.minHeight = '600px';
                 elements.target1.style.transition = 'width 0.5s, height 0.5s';
                 elements.target2.style.transition = 'width 0.5s, height 0.5s';
-
-                ResizeObserver.continuousUpdates = true;
 
                 observer = new ResizeObserver(spy);
 
@@ -1055,7 +1095,8 @@ describe('ResizeObserver', () => {
 
                     await wait(570);
 
-                    const [entries] = spy.calls.mostRecent().args;
+                    // eslint-disable-next-line prefer-destructuring
+                    const entries = spy.calls.mostRecent().args[0];
 
                     expect(entries[0].target).toBe(elements.container);
                     expect(entries[0].contentRect.width).toBe(700);
@@ -1148,26 +1189,6 @@ describe('ResizeObserver', () => {
 
                 expect(entries[0].target).toBe(elements.target1);
                 expect(entries[1].target).toBe(elements.target2);
-            }).then(() => {
-                observer.disconnect();
-
-                elements.target1.style.width = '600px';
-                elements.target2.style.width = '600px';
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done).catch(done.fail);
-        });
-
-        it('allows to resume observations', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(2);
             }).then(async () => {
                 elements.target1.style.width = '600px';
                 elements.target2.style.width = '600px';
@@ -1177,10 +1198,30 @@ describe('ResizeObserver', () => {
                 await wait(timeout);
 
                 expect(spy).toHaveBeenCalledTimes(1);
+            }).then(done).catch(done.fail);
+        });
+
+        it('doesn\'t destroy observer', done => {
+            const spy = createAsyncSpy();
+
+            observer = new ResizeObserver(spy);
+
+            observer.observe(elements.target1);
+
+            spy.nextCall().then(entries => {
+                expect(entries.length).toBe(1);
             }).then(async () => {
+                elements.target1.style.width = '600px';
+
+                observer.disconnect();
+
+                await wait(timeout);
+
                 observer.observe(elements.target1);
 
                 const entries = await spy.nextCall();
+
+                expect(spy).toHaveBeenCalledTimes(2);
 
                 expect(entries.length).toBe(1);
 
