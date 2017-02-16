@@ -1,4 +1,3 @@
-import babel from 'rollup-plugin-babel';
 import buble from 'rollup-plugin-buble';
 import commonjs from 'rollup-plugin-commonjs';
 import nodeResolve from 'rollup-plugin-node-resolve';
@@ -15,12 +14,7 @@ export default {
         }),
 
         commonjs({
-            include: 'node_modules/**',
-            exclude: 'node_modules/resize-observer-polyfill/**'
-        }),
-
-        babel({
-            presets: ['stage-2']
+            include: 'node_modules/**'
         }),
 
         buble({
@@ -32,7 +26,7 @@ export default {
 
         uglify({
             mangleProperties: {
-                regex: /^_/
+                regex: /_$/
             }
         })
     ]
