@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Exports global object for the current environment.
  */
@@ -224,7 +226,13 @@ var throttle = function (callback, delay, afterRAF) {
 };
 
 // Define whether the MutationObserver is supported.
-var mutationsSupported = typeof MutationObserver === 'function';
+// eslint-disable-next-line no-extra-parens
+var mutationsSupported = typeof MutationObserver === 'function' &&
+// MutationObserver should not be used if running in IE11 as it's
+// implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
+// Unfortunately, there is no other way to check this issue but to use
+// userAgent's information.
+typeof navigator === 'object' && !(navigator.appName === 'Netscape' && navigator.userAgent.match(/Trident\/.*rv:11/));
 
 // Minimum delay before invoking the update of observers.
 var REFRESH_DELAY = 20;
@@ -244,64 +252,61 @@ var CONTINUOUS_HANDLER_DELAY = 80;
  * Continuous update cycle will be used automatically in case MutationObserver
  * is not supported.
  */
-var ResizeObserverController = function() {
+var ResizeObserverController = function () {
     /**
      * Continuous updates must be enabled if MutationObserver is not supported.
      *
-     * @private
-     * @type {boolean}
+     * @private {boolean}
      */
-    this._isCycleContinuous = !mutationsSupported;
+    this.isCycleContinuous_ = !mutationsSupported;
 
     /**
      * Indicates whether DOM listeners have been added.
      *
-     * @private
-     * @type {boolean}
+     * @private {boolean}
      */
-    this._listenersEnabled = false;
+    this.listenersEnabled_ = false;
 
     /**
      * A list of connected observers.
      *
-     * @private
-     * @type {ResizeObserver[]}
+     * @private {Array<ResizeObserverSPI>}
      */
-    this._observers = [];
+    this.observers_ = [];
 
     // Make sure that the "refresh" method is invoked as a RAF callback and
     // that it happens only once during the provided period.
     this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
 
     // Additionally postpone invocation of the continuous updates.
-    this._continuousUpdateHandler = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
+    this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
 };
 
 /**
  * Adds observer to observers list.
  *
- * @param {ResizeObserver} observer - Observer to be added.
+ * @param {ResizeObserverSPI} observer - Observer to be added.
  * @returns {void}
  */
 ResizeObserverController.prototype.connect = function (observer) {
     if (!this.isConnected(observer)) {
-        this._observers.push(observer);
+        this.observers_.push(observer);
     }
 
     // Add listeners if they haven't been added yet.
-    if (!this._listenersEnabled) {
-        this._addListeners();
+    if (!this.listenersEnabled_) {
+        this.addListeners_();
     }
 };
 
 /**
  * Removes observer from observers list.
  *
- * @param {ResizeObserver} observer - Observer to be removed.
+ * @param {ResizeObserverSPI} observer - Observer to be removed.
  * @returns {void}
  */
 ResizeObserverController.prototype.disconnect = function (observer) {
-    var observers = this._observers;
+    var observers = this.observers_;
     var index = observers.indexOf(observer);
 
     // Remove observer if it's present in registry.
@@ -310,19 +315,19 @@ ResizeObserverController.prototype.disconnect = function (observer) {
     }
 
     // Remove listeners if controller has no connected observers.
-    if (!observers.length && this._listenersEnabled) {
-        this._removeListeners();
+    if (!observers.length && this.listenersEnabled_) {
+        this.removeListeners_();
     }
 };
 
 /**
  * Tells whether the provided observer is connected to controller.
  *
- * @param {ResizeObserver} observer - Observer to be checked.
+ * @param {ResizeObserverSPI} observer - Observer to be checked.
  * @returns {boolean}
  */
 ResizeObserverController.prototype.isConnected = function (observer) {
-    return !!~this._observers.indexOf(observer);
+    return !!~this.observers_.indexOf(observer);
 };
 
 /**
@@ -332,15 +337,15 @@ ResizeObserverController.prototype.isConnected = function (observer) {
  * @returns {void}
  */
 ResizeObserverController.prototype.refresh = function () {
-    var hasChanges = this._updateObservers();
+    var hasChanges = this.updateObservers_();
 
     // Continue running updates if changes have been detected as there might
     // be future ones caused by CSS transitions.
     if (hasChanges) {
         this.refresh();
-    } else if (this._isCycleContinuous && this._listenersEnabled) {
+    } else if (this.isCycleContinuous_ && this.listenersEnabled_) {
         // Automatically repeat cycle if it's necessary.
-        this._continuousUpdateHandler();
+        this.continuousUpdateHandler_();
     }
 };
 
@@ -352,16 +357,14 @@ ResizeObserverController.prototype.refresh = function () {
  * @returns {boolean} Returns "true" if any observer has detected changes in
  *  dimensions of it's elements.
  */
-ResizeObserverController.prototype._updateObservers = function () {
-        var this$1 = this;
-
+ResizeObserverController.prototype.updateObservers_ = function () {
     var hasChanges = false;
 
-    for (var i = 0, list = this$1._observers; i < list.length; i += 1) {
+    for (var i = 0, list = this.observers_; i < list.length; i += 1) {
         // Collect active observations.
         var observer = list[i];
 
-            observer.gatherActive();
+        observer.gatherActive();
 
         // Broadcast active observations and set the flag that changes have
         // been detected.
@@ -381,10 +384,10 @@ ResizeObserverController.prototype._updateObservers = function () {
  * @private
  * @returns {void}
  */
-ResizeObserverController.prototype._addListeners = function () {
+ResizeObserverController.prototype.addListeners_ = function () {
     // Do nothing if running in a non-browser environment or if listeners
     // have been already added.
-    if (!isBrowser || this._listenersEnabled) {
+    if (!isBrowser || this.listenersEnabled_) {
         return;
     }
 
@@ -398,9 +401,9 @@ ResizeObserverController.prototype._addListeners = function () {
     // Subscribe to DOM mutations if it's possible as they may lead to
     // changes in the dimensions of elements.
     if (mutationsSupported) {
-        this._mutationsObserver = new MutationObserver(this.refresh);
+        this.mutationsObserver_ = new MutationObserver(this.refresh);
 
-        this._mutationsObserver.observe(document, {
+        this.mutationsObserver_.observe(document, {
             attributes: true,
             childList: true,
             characterData: true,
@@ -408,11 +411,11 @@ ResizeObserverController.prototype._addListeners = function () {
         });
     }
 
-    this._listenersEnabled = true;
+    this.listenersEnabled_ = true;
 
     // Don't wait for a possible event that might trigger the update of
     // observers and manually initiate the update process.
-    if (this._isCycleContinuous) {
+    if (this.isCycleContinuous_) {
         this.refresh();
     }
 };
@@ -423,22 +426,22 @@ ResizeObserverController.prototype._addListeners = function () {
  * @private
  * @returns {void}
  */
-ResizeObserverController.prototype._removeListeners = function () {
+ResizeObserverController.prototype.removeListeners_ = function () {
     // Do nothing if running in a non-browser environment or if listeners
     // have been already removed.
-    if (!isBrowser || !this._listenersEnabled) {
+    if (!isBrowser || !this.listenersEnabled_) {
         return;
     }
 
     window.removeEventListener('resize', this.refresh);
     document.removeEventListener('transitionend', this.refresh);
 
-    if (this._mutationsObserver) {
-        this._mutationsObserver.disconnect();
+    if (this.mutationsObserver_) {
+        this.mutationsObserver_.disconnect();
     }
 
-    this._mutationsObserver = null;
-    this._listenersEnabled = false;
+    this.mutationsObserver_ = null;
+    this.listenersEnabled_ = false;
 };
 
 /**
@@ -469,7 +472,7 @@ var emptyRect = createRectInit(0, 0, 0, 0);
 /**
  * Converts provided string to a number.
  *
- * @param {string} value
+ * @param {number|string} value
  * @returns {number}
  */
 function toFloat(value) {
@@ -731,10 +734,9 @@ var ResizeObservation = function(target) {
     /**
      * Reference to the last observed content rectangle.
      *
-     * @private
-     * @type {DOMRectInit}
+     * @private {DOMRectInit}
      */
-    this._contentRect = createRectInit(0, 0, 0, 0);
+    this.contentRect_ = createRectInit(0, 0, 0, 0);
 };
 
 /**
@@ -746,7 +748,7 @@ var ResizeObservation = function(target) {
 ResizeObservation.prototype.isActive = function () {
     var rect = getContentRect(this.target);
 
-    this._contentRect = rect;
+    this.contentRect_ = rect;
 
     return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
 };
@@ -758,7 +760,7 @@ ResizeObservation.prototype.isActive = function () {
  * @returns {DOMRectInit} Last observed content rectangle.
  */
 ResizeObservation.prototype.broadcastRect = function () {
-    var rect = this._contentRect;
+    var rect = this.contentRect_;
 
     this.broadcastWidth = rect.width;
     this.broadcastHeight = rect.height;
@@ -789,45 +791,40 @@ var ResizeObserverSPI = function(callback, controller, callbackCtx) {
      *
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-activetargets
      *
-     * @private
-     * @type {Array}
+     * @private {Array<ResizeObservation>}
      */
-    this._activeTargets = [];
+    this.activeTargets_ = [];
 
     /**
      * Registry of the ResizeObservation instances.
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-observationtargets
      *
-     * @private
-     * @type {Map}
+     * @private {Map<Element, ResizeObservation>}
      */
-    this._observationTargets = new Map();
+    this.observationTargets_ = new Map();
 
     /**
      * Reference to the callback function.
      * Spec: https://wicg.github.io/ResizeObserver/#resize-observer-callback
      *
-     * @private
-     * @type {Function}
+     * @private {ResizeObserverCallback}
      */
-    this._callback = callback;
+    this.callback_ = callback;
 
     /**
      * Reference to the associated ResizeObserverController.
      *
-     * @private
-     * @type {ResizeObserverController}
+     * @private {ResizeObserverController}
      */
-    this._controller = controller;
+    this.controller_ = controller;
 
     /**
      * Public ResizeObserver instance which will be passed to the callback
      * function and used as a value of it's "this" binding.
      *
-     * @private
-     * @type {ResizeObserver}
+     * @private {ResizeObserver}
      */
-    this._callbackCtx = callbackCtx;
+    this.callbackCtx_ = callbackCtx;
 };
 
 /**
@@ -851,7 +848,7 @@ ResizeObserverSPI.prototype.observe = function (target) {
         throw new TypeError('parameter 1 is not of type "Element".');
     }
 
-    var targets = this._observationTargets;
+    var targets = this.observationTargets_;
 
     // Do nothing if element is already being observed.
     if (targets.has(target)) {
@@ -862,12 +859,12 @@ ResizeObserverSPI.prototype.observe = function (target) {
     targets.set(target, new ResizeObservation(target));
 
     // Add observer to controller if it hasn't been connected yet.
-    if (!this._controller.isConnected(this)) {
-        this._controller.connect(this);
+    if (!this.controller_.isConnected(this)) {
+        this.controller_.connect(this);
     }
 
     // Force the update of observations.
-    this._controller.refresh();
+    this.controller_.refresh();
 };
 
 /**
@@ -891,7 +888,7 @@ ResizeObserverSPI.prototype.unobserve = function (target) {
         throw new TypeError('parameter 1 is not of type "Element".');
     }
 
-    var targets = this._observationTargets;
+    var targets = this.observationTargets_;
 
     // Do nothing if element is not being observed.
     if (!targets.has(target)) {
@@ -916,8 +913,8 @@ ResizeObserverSPI.prototype.unobserve = function (target) {
  */
 ResizeObserverSPI.prototype.disconnect = function () {
     this.clearActive();
-    this._observationTargets.clear();
-    this._controller.disconnect(this);
+    this.observationTargets_.clear();
+    this.controller_.disconnect(this);
 };
 
 /**
@@ -930,9 +927,9 @@ ResizeObserverSPI.prototype.disconnect = function () {
 ResizeObserverSPI.prototype.gatherActive = function () {
     this.clearActive();
 
-    var activeTargets = this._activeTargets;
+    var activeTargets = this.activeTargets_;
 
-    this._observationTargets.forEach(function (observation) {
+    this.observationTargets_.forEach(function (observation) {
         if (observation.isActive()) {
             activeTargets.push(observation);
         }
@@ -951,14 +948,14 @@ ResizeObserverSPI.prototype.broadcastActive = function () {
         return;
     }
 
-    var ctx = this._callbackCtx;
+    var ctx = this.callbackCtx_;
 
     // Create ResizeObserverEntry instance for every active observation.
-    var entries = this._activeTargets.map(function (observation) {
+    var entries = this.activeTargets_.map(function (observation) {
         return new ResizeObserverEntry(observation.target, observation.broadcastRect());
     });
 
-    this._callback.call(ctx, entries, ctx);
+    this.callback_.call(ctx, entries, ctx);
     this.clearActive();
 };
 
@@ -968,7 +965,7 @@ ResizeObserverSPI.prototype.broadcastActive = function () {
  * @returns {void}
  */
 ResizeObserverSPI.prototype.clearActive = function () {
-    this._activeTargets.splice(0);
+    this.activeTargets_.splice(0);
 };
 
 /**
@@ -977,7 +974,7 @@ ResizeObserverSPI.prototype.clearActive = function () {
  * @returns {boolean}
  */
 ResizeObserverSPI.prototype.hasActive = function () {
-    return !!this._activeTargets.length;
+    return !!this.activeTargets_.length;
 };
 
 // Controller that will be assigned to all instances of the ResizeObserver.
@@ -1010,8 +1007,9 @@ var ResizeObserver = function(callback) {
 // Expose public methods of ResizeObserver.
 ['observe', 'unobserve', 'disconnect'].forEach(function (method) {
     ResizeObserver.prototype[method] = function () {
-        return (ref = observers.get(this))[method].apply(ref, arguments);
         var ref;
+
+        return (ref = observers.get(this))[method].apply(ref, arguments);
     };
 });
 
