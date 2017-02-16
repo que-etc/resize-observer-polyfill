@@ -998,6 +998,29 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
+        it('handles IE11 issue with the MutationObserver: https://jsfiddle.net/x2r3jpuz/2/', done => {
+            const spy = createAsyncSpy();
+
+            elements.root.insertAdjacentHTML('beforeend', `
+                <p>
+                    <strong></strong>
+                </p>
+            `);
+
+            observer = new ResizeObserver(spy);
+            observer.observe(elements.root);
+
+            spy.nextCall().then(async () => {
+                const strongElemn = elements.root.querySelector('strong');
+
+                // At this step IE11 will crash if MuatationObserver is used.
+                strongElemn.textContent = '-';
+                strongElemn.textContent = '-t';
+
+                await wait(timeout);
+            }).then(done).catch(done.fail);
+        });
+
         if (typeof document.body.style.transform !== 'undefined') {
             it('doesn\'t notify of transformations', done => {
                 const spy = createAsyncSpy();

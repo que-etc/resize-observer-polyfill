@@ -2,7 +2,19 @@ import isBrowser from './utils/isBrowser';
 import throttle from './utils/throttle';
 
 // Define whether the MutationObserver is supported.
-const mutationsSupported = typeof MutationObserver === 'function';
+// eslint-disable-next-line no-extra-parens
+const mutationsSupported = (
+    typeof MutationObserver === 'function' &&
+    // MutationObserver should not be used if running in IE11 as it's
+    // implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
+    // Unfortunately, there is no other way to check this issue but to use
+    // userAgent's information.
+    typeof navigator === 'object' &&
+    !(
+        navigator.appName === 'Netscape' &&
+        navigator.userAgent.match(/Trident\/.*rv:11/)
+    )
+);
 
 // Minimum delay before invoking the update of observers.
 const REFRESH_DELAY = 20;
