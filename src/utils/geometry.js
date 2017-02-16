@@ -7,7 +7,7 @@ const emptyRect = createRectInit(0, 0, 0, 0);
 /**
  * Converts provided string to a number.
  *
- * @param {string} value
+ * @param {number|string} value
  * @returns {number}
  */
 function toFloat(value) {

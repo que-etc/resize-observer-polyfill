@@ -10,51 +10,46 @@ export default class ResizeObserverSPI {
      *
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-activetargets
      *
-     * @private
-     * @type {Array}
+     * @private {Array<ResizeObservation>}
      */
-    _activeTargets = [];
+    activeTargets_ = [];
 
     /**
      * Reference to the callback function.
      * Spec: https://wicg.github.io/ResizeObserver/#resize-observer-callback
      *
-     * @private
-     * @type {Function}
+     * @private {ResizeObserverCallback}
      */
-    _callback;
+    callback_;
 
     /**
      * Public ResizeObserver instance which will be passed to the callback
      * function and used as a value of it's "this" binding.
      *
-     * @private
-     * @type {ResizeObserver}
+     * @private {ResizeObserver}
      */
-    _callbackCtx;
+    callbackCtx_;
 
     /**
      * Reference to the associated ResizeObserverController.
      *
-     * @private
-     * @type {ResizeObserverController}
+     * @private {ResizeObserverController}
      */
-    _controller;
+    controller_;
 
     /**
      * Registry of the ResizeObservation instances.
      * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-observationtargets
      *
-     * @private
-     * @type {Map}
+     * @private {Map<Element, ResizeObservation>}
      */
-    _observationTargets = new Map();
+    observationTargets_ = new Map();
 
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {ResizeObserverCallback} callback - Callback function that is invoked when one
-     *      of the observed elements changes it's content dimensions.
+     * @param {ResizeObserverCallback} callback - Callback function that is invoked
+     *      when one of the observed elements changes it's content dimensions.
      * @param {ResizeObserverController} controller - Controller instance which
      *      is responsible for the updates of observer.
      * @param {ResizeObserver} callbackCtx - Reference to the public
@@ -65,9 +60,9 @@ export default class ResizeObserverSPI {
             throw new TypeError('The callback provided as parameter 1 is not a function.');
         }
 
-        this._callback = callback;
-        this._controller = controller;
-        this._callbackCtx = callbackCtx;
+        this.callback_ = callback;
+        this.controller_ = controller;
+        this.callbackCtx_ = callbackCtx;
     }
 
     /**
@@ -91,7 +86,7 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this._observationTargets;
+        const targets = this.observationTargets_;
 
         // Do nothing if element is already being observed.
         if (targets.has(target)) {
@@ -102,12 +97,12 @@ export default class ResizeObserverSPI {
         targets.set(target, new ResizeObservation(target));
 
         // Add observer to controller if it hasn't been connected yet.
-        if (!this._controller.isConnected(this)) {
-            this._controller.connect(this);
+        if (!this.controller_.isConnected(this)) {
+            this.controller_.connect(this);
         }
 
         // Force the update of observations.
-        this._controller.refresh();
+        this.controller_.refresh();
     }
 
     /**
@@ -131,7 +126,7 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this._observationTargets;
+        const targets = this.observationTargets_;
 
         // Do nothing if element is not being observed.
         if (!targets.has(target)) {
@@ -156,8 +151,8 @@ export default class ResizeObserverSPI {
      */
     disconnect() {
         this.clearActive();
-        this._observationTargets.clear();
-        this._controller.disconnect(this);
+        this.observationTargets_.clear();
+        this.controller_.disconnect(this);
     }
 
     /**
@@ -170,9 +165,9 @@ export default class ResizeObserverSPI {
     gatherActive() {
         this.clearActive();
 
-        const activeTargets = this._activeTargets;
+        const activeTargets = this.activeTargets_;
 
-        this._observationTargets.forEach(observation => {
+        this.observationTargets_.forEach(observation => {
             if (observation.isActive()) {
                 activeTargets.push(observation);
             }
@@ -191,17 +186,17 @@ export default class ResizeObserverSPI {
             return;
         }
 
-        const ctx = this._callbackCtx;
+        const ctx = this.callbackCtx_;
 
         // Create ResizeObserverEntry instance for every active observation.
-        const entries = this._activeTargets.map(observation => {
+        const entries = this.activeTargets_.map(observation => {
             return new ResizeObserverEntry(
                 observation.target,
                 observation.broadcastRect()
             );
         });
 
-        this._callback.call(ctx, entries, ctx);
+        this.callback_.call(ctx, entries, ctx);
         this.clearActive();
     }
 
@@ -211,7 +206,7 @@ export default class ResizeObserverSPI {
      * @returns {void}
      */
     clearActive() {
-        this._activeTargets.splice(0);
+        this.activeTargets_.splice(0);
     }
 
     /**
@@ -220,6 +215,6 @@ export default class ResizeObserverSPI {
      * @returns {boolean}
      */
     hasActive() {
-        return !!this._activeTargets.length;
+        return !!this.activeTargets_.length;
     }
 }

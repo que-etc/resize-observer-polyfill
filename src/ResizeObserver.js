@@ -17,7 +17,7 @@ class ResizeObserver {
     /**
      * Creates a new instance of ResizeObserver.
      *
-     * @param {Function} callback - Callback that is invoked when dimensions of
+     * @param {ResizeObserverCallback} callback - Callback that is invoked when dimensions of
      *      the observed elements change.
      */
     constructor(callback) {

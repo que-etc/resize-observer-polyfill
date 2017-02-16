@@ -29,10 +29,9 @@ export default class ResizeObservation {
     /**
      * Reference to the last observed content rectangle.
      *
-     * @private
-     * @type {DOMRectInit}
+     * @private {DOMRectInit}
      */
-    _contentRect = createRectInit(0, 0, 0, 0);
+    contentRect_ = createRectInit(0, 0, 0, 0);
 
     /**
      * Creates an instance of ResizeObservation.
@@ -52,7 +51,7 @@ export default class ResizeObservation {
     isActive() {
         const rect = getContentRect(this.target);
 
-        this._contentRect = rect;
+        this.contentRect_ = rect;
 
         return (
             rect.width !== this.broadcastWidth ||
@@ -67,7 +66,7 @@ export default class ResizeObservation {
      * @returns {DOMRectInit} Last observed content rectangle.
      */
     broadcastRect() {
-        const rect = this._contentRect;
+        const rect = this.contentRect_;
 
         this.broadcastWidth = rect.width;
         this.broadcastHeight = rect.height;

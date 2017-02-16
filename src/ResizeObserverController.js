@@ -26,34 +26,30 @@ export default class ResizeObserverController {
     /**
      * Continuous updates must be enabled if MutationObserver is not supported.
      *
-     * @private
-     * @type {boolean}
+     * @private {boolean}
      */
-    _isCycleContinuous = !mutationsSupported;
+    isCycleContinuous_ = !mutationsSupported;
 
     /**
      * Indicates whether DOM listeners have been added.
      *
-     * @private
-     * @type {boolean}
+     * @private {boolean}
      */
-    _listenersEnabled = false;
+    listenersEnabled_ = false;
 
     /**
      * Keeps reference to the instance of MutationObserver.
      *
-     * @private
-     * @type {MutationObserver}
+     * @private {MutationObserver}
      */
-    _mutationsObserver;
+    mutationsObserver_;
 
     /**
      * A list of connected observers.
      *
-     * @private
-     * @type {ResizeObserver[]}
+     * @private {Array<ResizeObserverSPI>}
      */
-    _observers = [];
+    observers_ = [];
 
     /**
      * Creates a new instance of ResizeObserverController.
@@ -64,34 +60,34 @@ export default class ResizeObserverController {
         this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
 
         // Additionally postpone invocation of the continuous updates.
-        this._continuousUpdateHandler = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
+        this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
     }
 
     /**
      * Adds observer to observers list.
      *
-     * @param {ResizeObserver} observer - Observer to be added.
+     * @param {ResizeObserverSPI} observer - Observer to be added.
      * @returns {void}
      */
     connect(observer) {
         if (!this.isConnected(observer)) {
-            this._observers.push(observer);
+            this.observers_.push(observer);
         }
 
         // Add listeners if they haven't been added yet.
-        if (!this._listenersEnabled) {
-            this._addListeners();
+        if (!this.listenersEnabled_) {
+            this.addListeners_();
         }
     }
 
     /**
      * Removes observer from observers list.
      *
-     * @param {ResizeObserver} observer - Observer to be removed.
+     * @param {ResizeObserverSPI} observer - Observer to be removed.
      * @returns {void}
      */
     disconnect(observer) {
-        const observers = this._observers;
+        const observers = this.observers_;
         const index = observers.indexOf(observer);
 
         // Remove observer if it's present in registry.
@@ -100,19 +96,19 @@ export default class ResizeObserverController {
         }
 
         // Remove listeners if controller has no connected observers.
-        if (!observers.length && this._listenersEnabled) {
-            this._removeListeners();
+        if (!observers.length && this.listenersEnabled_) {
+            this.removeListeners_();
         }
     }
 
     /**
      * Tells whether the provided observer is connected to controller.
      *
-     * @param {ResizeObserver} observer - Observer to be checked.
+     * @param {ResizeObserverSPI} observer - Observer to be checked.
      * @returns {boolean}
      */
     isConnected(observer) {
-        return !!~this._observers.indexOf(observer);
+        return !!~this.observers_.indexOf(observer);
     }
 
     /**
@@ -122,15 +118,15 @@ export default class ResizeObserverController {
      * @returns {void}
      */
     refresh() {
-        const hasChanges = this._updateObservers();
+        const hasChanges = this.updateObservers_();
 
         // Continue running updates if changes have been detected as there might
         // be future ones caused by CSS transitions.
         if (hasChanges) {
             this.refresh();
-        } else if (this._isCycleContinuous && this._listenersEnabled) {
+        } else if (this.isCycleContinuous_ && this.listenersEnabled_) {
             // Automatically repeat cycle if it's necessary.
-            this._continuousUpdateHandler();
+            this.continuousUpdateHandler_();
         }
     }
 
@@ -142,10 +138,10 @@ export default class ResizeObserverController {
      * @returns {boolean} Returns "true" if any observer has detected changes in
      *      dimensions of it's elements.
      */
-    _updateObservers() {
+    updateObservers_() {
         let hasChanges = false;
 
-        for (const observer of this._observers) {
+        for (const observer of this.observers_) {
             // Collect active observations.
             observer.gatherActive();
 
@@ -167,10 +163,10 @@ export default class ResizeObserverController {
      * @private
      * @returns {void}
      */
-    _addListeners() {
+    addListeners_() {
         // Do nothing if running in a non-browser environment or if listeners
         // have been already added.
-        if (!isBrowser || this._listenersEnabled) {
+        if (!isBrowser || this.listenersEnabled_) {
             return;
         }
 
@@ -184,9 +180,9 @@ export default class ResizeObserverController {
         // Subscribe to DOM mutations if it's possible as they may lead to
         // changes in the dimensions of elements.
         if (mutationsSupported) {
-            this._mutationsObserver = new MutationObserver(this.refresh);
+            this.mutationsObserver_ = new MutationObserver(this.refresh);
 
-            this._mutationsObserver.observe(document, {
+            this.mutationsObserver_.observe(document, {
                 attributes: true,
                 childList: true,
                 characterData: true,
@@ -194,11 +190,11 @@ export default class ResizeObserverController {
             });
         }
 
-        this._listenersEnabled = true;
+        this.listenersEnabled_ = true;
 
         // Don't wait for a possible event that might trigger the update of
         // observers and manually initiate the update process.
-        if (this._isCycleContinuous) {
+        if (this.isCycleContinuous_) {
             this.refresh();
         }
     }
@@ -209,21 +205,21 @@ export default class ResizeObserverController {
      * @private
      * @returns {void}
      */
-    _removeListeners() {
+    removeListeners_() {
         // Do nothing if running in a non-browser environment or if listeners
         // have been already removed.
-        if (!isBrowser || !this._listenersEnabled) {
+        if (!isBrowser || !this.listenersEnabled_) {
             return;
         }
 
         window.removeEventListener('resize', this.refresh);
         document.removeEventListener('transitionend', this.refresh);
 
-        if (this._mutationsObserver) {
-            this._mutationsObserver.disconnect();
+        if (this.mutationsObserver_) {
+            this.mutationsObserver_.disconnect();
         }
 
-        this._mutationsObserver = null;
-        this._listenersEnabled = false;
+        this.mutationsObserver_ = null;
+        this.listenersEnabled_ = false;
     }
 }
