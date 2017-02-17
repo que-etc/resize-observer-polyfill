@@ -1,26 +1,26 @@
 import isBrowser from './utils/isBrowser';
 import throttle from './utils/throttle';
 
+// Minimum delay before invoking the update of observers.
+const REFRESH_DELAY = 20;
+
+// Delay before the next iteration of the continuous cycle.
+const CONTINUOUS_DELAY = 80;
+
 // Define whether the MutationObserver is supported.
 // eslint-disable-next-line no-extra-parens
 const mutationsSupported = (
-    typeof MutationObserver === 'function' &&
+    typeof MutationObserver == 'function' &&
     // MutationObserver should not be used if running in IE11 as it's
     // implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
     // Unfortunately, there is no other way to check this issue but to use
     // userAgent's information.
-    typeof navigator === 'object' &&
+    typeof navigator == 'object' &&
     !(
         navigator.appName === 'Netscape' &&
         navigator.userAgent.match(/Trident\/.*rv:11/)
     )
 );
-
-// Minimum delay before invoking the update of observers.
-const REFRESH_DELAY = 20;
-
-// Delay before iteration of the continuous cycle.
-const CONTINUOUS_HANDLER_DELAY = 80;
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
@@ -54,7 +54,7 @@ export default class ResizeObserverController {
      *
      * @private {MutationObserver}
      */
-    mutationsObserver_;
+    mutationsObserver_ = null;
 
     /**
      * A list of connected observers.
@@ -72,7 +72,7 @@ export default class ResizeObserverController {
         this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
 
         // Additionally postpone invocation of the continuous updates.
-        this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
+        this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_DELAY);
     }
 
     /**
@@ -151,22 +151,19 @@ export default class ResizeObserverController {
      *      dimensions of it's elements.
      */
     updateObservers_() {
-        let hasChanges = false;
+        // Collect observers that have active entries.
+        const active = this.observers_.filter(observer => {
+            return observer.gatherActive(), observer.hasActive();
+        });
 
-        for (const observer of this.observers_) {
-            // Collect active observations.
-            observer.gatherActive();
+        // Deliver notifications in a separate cycle in order to avoid any
+        // collisions between observers. E.g. when multiple instances of
+        // ResizeObserer are tracking the same element and the callback of one
+        // of them changes content dimensions of the observed target. Sometimes
+        // this may result in notifications being blocked for the rest of observers.
+        active.forEach(observer => observer.broadcastActive());
 
-            // Broadcast active observations and set the flag that changes have
-            // been detected.
-            if (observer.hasActive()) {
-                hasChanges = true;
-
-                observer.broadcastActive();
-            }
-        }
-
-        return hasChanges;
+        return active.length > 0;
     }
 
     /**

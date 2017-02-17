@@ -3,6 +3,7 @@ import {ResizeObserver, ResizeObserverEntry} from './source';
 import {createAsyncSpy, wait} from './helpers';
 
 let observer = null,
+    observer2 = null,
     elements = {},
     styles;
 
@@ -40,7 +41,7 @@ const template = `
     </div>
 `;
 
-const timeout = 150;
+const timeout = 200;
 
 function appendStyles() {
     styles = document.createElement('style');
@@ -86,9 +87,13 @@ describe('ResizeObserver', () => {
     afterEach(() => {
         if (observer) {
             observer.disconnect();
+            observer = null;
         }
 
-        observer = null;
+        if (observer2) {
+            observer2.disconnect();
+            observer2 = null;
+        }
 
         removeStyles();
         removeElements();
@@ -179,7 +184,7 @@ describe('ResizeObserver', () => {
             observer.observe(elements.target1);
         });
 
-        it('preserves initial order', done => {
+        it('preserves the initial order of elements', done => {
             const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
@@ -205,7 +210,45 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
-        it('doesn\'t notify already observed elements', done => {
+        // Checks that gathering of active observations and broadcasting of
+        // notifications happens in separate cycles.
+        it('doesn\'t block notifications when multiple observers are used', done => {
+            const spy = createAsyncSpy();
+            const spy2 = createAsyncSpy();
+
+            observer = new ResizeObserver(() => {
+                spy(...arguments);
+
+                if (spy.calls.count() === 2 && spy2.calls.count() === 1) {
+                    elements.target1.style.width = '200px';
+                }
+            });
+
+            observer2 = new ResizeObserver(() => {
+                spy2(...arguments);
+
+                if (spy2.calls.count() === 2 && spy.calls.count() === 1) {
+                    elements.target1.style.width = '200px';
+                }
+            });
+
+            observer.observe(elements.target1);
+            observer2.observe(elements.target1);
+
+            wait(timeout).then(() => {
+                expect(spy).toHaveBeenCalledTimes(1);
+                expect(spy2).toHaveBeenCalledTimes(1);
+
+                elements.target1.style.width = '220px';
+
+                return wait(timeout * 2);
+            }).then(() => {
+                expect(spy).toHaveBeenCalledTimes(3);
+                expect(spy2).toHaveBeenCalledTimes(3);
+            }).then(done).catch(done.fail);
+        });
+
+        it('doesn\'t notify of already observed elements', done => {
             const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
@@ -630,7 +673,7 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
-        it('handles scroll bars size', done => {
+        it('ignores scroll bars size', done => {
             const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
@@ -684,7 +727,7 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
-        it('handles non-replaced inline elements', done => {
+        it('doesn\'t trigger for a non-replaced inline elements', done => {
             const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
@@ -954,7 +997,7 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
-        it('doesn\'t trigger on svg elements that don\'t implement the SVGGraphicsElement interface', done => {
+        it('doesn\'t observe svg elements that don\'t implement the SVGGraphicsElement interface', done => {
             elements.root.insertAdjacentHTML('beforeend', `
                 <<svg width="600" height="200" viewBox="0 0 600 200"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1011,11 +1054,11 @@ describe('ResizeObserver', () => {
             observer.observe(elements.root);
 
             spy.nextCall().then(async () => {
-                const strongElemn = elements.root.querySelector('strong');
+                const elem = elements.root.querySelector('strong');
 
-                // At this step IE11 will crash if MuatationObserver is used.
-                strongElemn.textContent = '-';
-                strongElemn.textContent = '-t';
+                // IE11 crashes at this step if MuatationObserver is used.
+                elem.textContent = 'a';
+                elem.textContent = 'b';
 
                 await wait(timeout);
             }).then(done).catch(done.fail);
@@ -1167,6 +1210,8 @@ describe('ResizeObserver', () => {
             observer.observe(elements.target2);
 
             spy.nextCall().then(entries => {
+                expect(spy).toHaveBeenCalledTimes(1);
+
                 expect(entries.length).toBe(2);
 
                 expect(entries[0].target).toBe(elements.target1);
@@ -1179,9 +1224,52 @@ describe('ResizeObserver', () => {
 
                 const entries = await spy.nextCall();
 
+                expect(spy).toHaveBeenCalledTimes(2);
+
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target2);
                 expect(entries[0].contentRect.width).toBe(50);
+            }).then(async () => {
+                elements.target2.style.width = '100px';
+
+                observer.unobserve(elements.target2);
+
+                await wait(timeout);
+
+                expect(spy).toHaveBeenCalledTimes(2);
+            }).then(done).catch(done.fail);
+        });
+
+        it('doesn\'t prevent gathered observations from being notified', done => {
+            const spy = createAsyncSpy();
+            const spy2 = createAsyncSpy();
+
+            observer = new ResizeObserver(() => {
+                spy(...arguments);
+
+                if (spy.calls.count() === 2 && spy2.calls.count() === 1) {
+                    observer2.unobserve(elements.target1);
+                }
+            });
+
+            observer2 = new ResizeObserver(() => {
+                spy2(...arguments);
+
+                if (spy2.calls.count() === 2 && spy.calls.count() === 1) {
+                    observer.unobserve(elements.target1);
+                }
+            });
+
+            observer.observe(elements.target1);
+            observer2.observe(elements.target1);
+
+            wait(timeout).then(async () => {
+                elements.target1.style.width = '220px';
+
+                await wait(timeout);
+
+                expect(spy).toHaveBeenCalledTimes(2);
+                expect(spy2).toHaveBeenCalledTimes(2);
             }).then(done).catch(done.fail);
         });
 
@@ -1224,6 +1312,50 @@ describe('ResizeObserver', () => {
             }).then(done).catch(done.fail);
         });
 
+        it('prevents gathered observations from being notified', done => {
+            const spy = createAsyncSpy();
+            const spy2 = createAsyncSpy();
+            let wasPrevented = true;
+
+            observer = new ResizeObserver(() => {
+                spy(...arguments);
+
+                if (spy.calls.count() === 2) {
+                    if (spy2.calls.count() === 1) {
+                        observer2.disconnect();
+                    } else {
+                        wasPrevented = false;
+                    }
+                }
+            });
+
+            observer2 = new ResizeObserver(() => {
+                spy2(...arguments);
+
+                if (spy2.calls.count() === 2) {
+                    if (spy.calls.count() === 1) {
+                        observer.disconnect();
+                    } else {
+                        wasPrevented = false;
+                    }
+                }
+            });
+
+            observer.observe(elements.target1);
+            observer2.observe(elements.target1);
+
+            wait(timeout).then(async () => {
+                expect(spy).toHaveBeenCalledTimes(1);
+                expect(spy2).toHaveBeenCalledTimes(1);
+
+                elements.target1.style.width = '220px';
+
+                await wait(timeout);
+
+                expect(wasPrevented).toBe(true);
+            }).then(done).catch(done.fail);
+        });
+
         it('doesn\'t destroy observer', done => {
             const spy = createAsyncSpy();
 
@@ -1231,9 +1363,7 @@ describe('ResizeObserver', () => {
 
             observer.observe(elements.target1);
 
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-            }).then(async () => {
+            spy.nextCall().then(async () => {
                 elements.target1.style.width = '600px';
 
                 observer.disconnect();

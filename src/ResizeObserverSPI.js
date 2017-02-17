@@ -139,7 +139,7 @@ export default class ResizeObserverSPI {
 
         // Set back the initial state if there is nothing to observe.
         if (!targets.size) {
-            this.disconnect();
+            this.controller_.disconnect(this);
         }
     }
 
@@ -215,6 +215,6 @@ export default class ResizeObserverSPI {
      * @returns {boolean}
      */
     hasActive() {
-        return !!this.activeTargets_.length;
+        return this.activeTargets_.length > 0;
     }
 }

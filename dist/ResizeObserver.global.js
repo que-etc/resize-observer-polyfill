@@ -230,6 +230,12 @@ var throttle = function (callback, delay, afterRAF) {
     return proxy;
 };
 
+// Minimum delay before invoking the update of observers.
+var REFRESH_DELAY = 20;
+
+// Delay before the next iteration of the continuous cycle.
+var CONTINUOUS_DELAY = 80;
+
 // Define whether the MutationObserver is supported.
 // eslint-disable-next-line no-extra-parens
 var mutationsSupported = typeof MutationObserver === 'function' &&
@@ -238,12 +244,6 @@ var mutationsSupported = typeof MutationObserver === 'function' &&
 // Unfortunately, there is no other way to check this issue but to use
 // userAgent's information.
 typeof navigator === 'object' && !(navigator.appName === 'Netscape' && navigator.userAgent.match(/Trident\/.*rv:11/));
-
-// Minimum delay before invoking the update of observers.
-var REFRESH_DELAY = 20;
-
-// Delay before iteration of the continuous cycle.
-var CONTINUOUS_HANDLER_DELAY = 80;
 
 /**
  * Controller class which handles updates of ResizeObserver instances.
@@ -257,7 +257,7 @@ var CONTINUOUS_HANDLER_DELAY = 80;
  * Continuous update cycle will be used automatically in case MutationObserver
  * is not supported.
  */
-var ResizeObserverController = function () {
+var ResizeObserverController = function() {
     /**
      * Continuous updates must be enabled if MutationObserver is not supported.
      *
@@ -273,6 +273,13 @@ var ResizeObserverController = function () {
     this.listenersEnabled_ = false;
 
     /**
+     * Keeps reference to the instance of MutationObserver.
+     *
+     * @private {MutationObserver}
+     */
+    this.mutationsObserver_ = null;
+
+    /**
      * A list of connected observers.
      *
      * @private {Array<ResizeObserverSPI>}
@@ -284,7 +291,7 @@ var ResizeObserverController = function () {
     this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
 
     // Additionally postpone invocation of the continuous updates.
-    this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_HANDLER_DELAY);
+    this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_DELAY);
 };
 
 /**
@@ -363,24 +370,19 @@ ResizeObserverController.prototype.refresh = function () {
  *  dimensions of it's elements.
  */
 ResizeObserverController.prototype.updateObservers_ = function () {
-    var hasChanges = false;
+    // Collect observers that have active entries.
+    var active = this.observers_.filter(function (observer) {
+        return observer.gatherActive(), observer.hasActive();
+    });
 
-    for (var i = 0, list = this.observers_; i < list.length; i += 1) {
-        // Collect active observations.
-        var observer = list[i];
+    // Deliver notifications in a separate cycle in order to avoid any
+    // collisions between observers. E.g. when multiple instances of
+    // ResizeObserer are tracking the same element and the callback of one
+    // of them changes content dimensions of the observed target. Sometimes
+    // this may result in notifications being blocked for the rest of observers.
+    active.forEach(function (observer) { return observer.broadcastActive(); });
 
-        observer.gatherActive();
-
-        // Broadcast active observations and set the flag that changes have
-        // been detected.
-        if (observer.hasActive()) {
-            hasChanges = true;
-
-            observer.broadcastActive();
-        }
-    }
-
-    return hasChanges;
+    return active.length > 0;
 };
 
 /**
@@ -906,7 +908,7 @@ ResizeObserverSPI.prototype.unobserve = function (target) {
 
     // Set back the initial state if there is nothing to observe.
     if (!targets.size) {
-        this.disconnect();
+        this.controller_.disconnect(this);
     }
 };
 
@@ -979,7 +981,7 @@ ResizeObserverSPI.prototype.clearActive = function () {
  * @returns {boolean}
  */
 ResizeObserverSPI.prototype.hasActive = function () {
-    return !!this.activeTargets_.length;
+    return this.activeTargets_.length > 0;
 };
 
 // Controller that will be assigned to all instances of the ResizeObserver.
