@@ -1,7 +1,7 @@
 {
     "name": "resize-observer-polyfill",
     "author": "Denis Rul <que.etc@gmail.com>",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "A polyfill for the Resize Observer API",
     "main": "dist/ResizeObserver.js",
     "jsnext:main": "dist/ResizeObserver.es.js",

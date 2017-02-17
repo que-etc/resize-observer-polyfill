@@ -43,7 +43,7 @@ Polyfill has been tested and known to work in the following browsers:
 
 ## Usage Examples
 
-It's recommended to use this library in the form of the [ponyfill](https://github.com/sindresorhus/ponyfill), which doesn't inflict modifications of the global object.
+It's recommended to use this library in the form of a [ponyfill](https://github.com/sindresorhus/ponyfill), which doesn't inflict modifications of the global object.
 
 ```javascript
 import ResizeObserver from 'resize-observer-polyfill';
