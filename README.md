@@ -32,12 +32,7 @@ Or just grab one of the pre-built versions from [`dist`](https://github.com/que-
 
 Polyfill has been tested and known to work in the following browsers:
 
-* Chrome 40+ , _native since v54_
-* Firefox 37+
-* Safari 9+, _including mobile_
-* Opera 30+
-* Edge 13+
-* Internet Explorer 9+
+[![Sauce Test Status](https://saucelabs.com/browser-matrix/que-etc.svg)](https://saucelabs.com/u/que-etc)
 
 **NOTE:** Internet Explorer 8 and its earlier versions are not supported.
 

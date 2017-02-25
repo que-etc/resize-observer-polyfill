@@ -1,14 +1,14 @@
+sudo: false
+
 language: node_js
 
 node_js:
   - "6"
 
-addons:
-  firefox:
-    "latest"
+script:
+  - npm run test:ci
 
-before_script:
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
-
-sudo: false
+env:
+  global:
+  - secure: GL+U+eGM/0dZftjRsq9iEjkJCXQrRSif3yVXGeZW44r+LR8om4bXOBi/FpVfdw5SjOBrE4dwYLdQpVlHVc17Uqv1wYuauzGz5dQjNvNOlZtxVJhOLS2hDsU0mltWPV3zHNf75lsQ+bKQfWfkJ2DJLNAfZGVIchnkhguLjNKYfR2WGt0XLulCFUqB1ugfYOpxWk3BYjCP+QlqS0B2jsmgkEqLeYo6I/XXWwOta8ZAXgmaKrUrFQC5EGrD3KiHJFoxcc37twgvJJOMchvIGV9GLjCOJoeoJXjMi/Cpq3+jeTdw1PKb9kRbvZ8hteGKbtu8SmCInevHJwwEa4Ip2Gy0ksi80RVFamioEckh1drMbWp520qRpgytrwopYdwzyJ2D7m2Wowh3Uf7RopEOQ2NzvPL+8toVN6kXX47vfU13Xa16am14uAP6c5beQ4Ad1TIgFic1x7E7BKHvuJl+nU4w16HNV+jSTc+ePPZku+yaWrQCfJFLcKuKB1Ft9cDSaRlasgLKGVNJJKo6tLNV8AGu2CbOU8YjlTQ5Ak4fCFBe+0jXOM/gCvFCGaAobV4mUn4pi0g/bmVFEOY8lw0Z4175q3KWyNJe1nhVoMNoiN3bbwGR5Qt3ydWkTuK5RJGaFMMAS3FeWwu589bNB11G6v0Lzm+/vgzbASbc295Ar2ycYwY=
+  - secure: m+yqQRYYyruzZgDqzu9mJNDmAPEKzcnE6Yp8+qkCTtfrEpa0Lc4TGuIi+feTYxcLLV9parb10j/bhn9ZpTJvnH18tNQxQP+GqVdkRWbnPaY+1gwaBXdhzw4uEOXec7vG8eGPjua4I26nM47yHWnS+PvROLE+odUgaCSIp5qZcyuhsxALljuLSnW3kHyXgAv5Qyott0NlpiPchCM0QnFaZuPyZ76VoxQM5xw4bMlXc9LTql+DCisJ0ZvvNmPrFRNXPXKTEAkvWGolr7g8cOZTW33+5DO7VdRxtbLV12lx5QMyl6DArpQvo3MuKHcnijr3SQgP/ocIgc+dRHHXeSTWrZWcBXPpSjkDYsWw6p+F+WYyAs2FQ39HZ4aLrzPDPtyKizPWCuzWXONOb21lyibZ41vPyjuWiEypY/wtVkjDMWAoRVwZpYFW0dKY4h4gJntRSRo1szAteuqLDZ2MUguCv77oDtuXaZF0wBiDKfxqEbeexhZ0ky/6cMCO8Af2qsyFcIr/2Vz0n7BkPW6/z4xjzFDjwUBGomt2ex4ANERQuu8qhqloq2d3xqAPUCi6kz3IuSDhFju5ouTR8BwNbhXCJm+5PYpP4V39vzaR+Bd4FTetT78xLPlSj6gyyA7mI7ZCMR5TTFSr8vPCowAB6yk3SiOTACupHRCIdA4hqkE4eSY=
