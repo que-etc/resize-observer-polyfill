@@ -1131,7 +1131,7 @@ describe('ResizeObserver', () => {
                     elements.target1.style.width = '600px';
                     elements.target1.style.height = '350px';
 
-                    await wait(1100);
+                    await wait(1170);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
