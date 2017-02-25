@@ -264,6 +264,13 @@ describe('ResizeObserver', () => {
                 await wait(timeout);
 
                 expect(spy).toHaveBeenCalledTimes(1);
+
+                elements.target1.style.width = '220px';
+
+                const entries = await spy.nextCall();
+
+                expect(entries.length).toBe(1);
+                expect(entries[0].target).toBe(elements.target1);
             }).then(done).catch(done.fail);
         });
 
@@ -1159,7 +1166,7 @@ describe('ResizeObserver', () => {
                     elements.target2.style.width = '700px';
                     elements.target2.style.height = '350px';
 
-                    await wait(570);
+                    await wait(650);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
