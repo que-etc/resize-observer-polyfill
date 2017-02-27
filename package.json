@@ -9,10 +9,11 @@
     "scripts": {
         "build": "rollup -c",
         "test": "npm run test:lint && npm run test:spec",
-        "test:ci": "npm run test:lint && npm run test:spec:sauce && npm run test:spec:node",
+        "test:ci": "npm run test:lint && npm run test:spec:sauce && npm run test:spec:sauce:ios && npm run test:spec:node",
         "test:lint": "node ./node_modules/eslint/bin/eslint.js \"**/*.js\" --ignore-pattern \"/dist/\"",
         "test:spec": "karma start --browsers Chrome && npm run test:spec:node",
         "test:spec:sauce": "karma start --sauce",
+        "test:spec:sauce:ios": "karma start --sauce --iOS",
         "test:spec:node": "babel-node --presets latest,stage-2 tests/node/index.js",
         "test:spec:custom": "karma start --no-browsers",
         "test:spec:native": "karma start --no-browsers --native"
