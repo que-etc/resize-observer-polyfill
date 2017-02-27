@@ -1201,7 +1201,7 @@ describe('ResizeObserver', () => {
                     });
 
                     await transitionEnd;
-                    await wait(100);
+                    await wait(timeout);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
@@ -1246,7 +1246,7 @@ describe('ResizeObserver', () => {
                     });
 
                     await transitionEnd;
-                    await wait(100);
+                    await wait(timeout);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
