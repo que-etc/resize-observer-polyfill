@@ -22,13 +22,6 @@ const customLaunchers = {
         browserName: 'chrome'
     },
 
-    SL_CHROME_PRECEDING_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'chrome',
-        version: 'latest-1'
-    },
-
     SL_CHROME_CURRENT_LINUX: {
         base: 'SauceLabs',
         browserName: 'chrome',
@@ -60,13 +53,6 @@ const customLaunchers = {
         base: 'SauceLabs',
         platform: 'OS X 10.11',
         browserName: 'firefox'
-    },
-
-    SL_FIREFOX_PRECEDING_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'firefox',
-        version: 'latest-1'
     },
 
     SL_FIREFOX_CURRENT_LINUX: {
