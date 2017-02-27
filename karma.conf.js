@@ -1,7 +1,7 @@
 const babel = require('rollup-plugin-babel');
 const buble = require('rollup-plugin-buble');
 
-const customLaunchers = {
+let customLaunchers = {
     // Chrome
     SL_CHROME_CURRENT_WINDOWS: {
         base: 'SauceLabs',
@@ -20,6 +20,13 @@ const customLaunchers = {
         base: 'SauceLabs',
         platform: 'OS X 10.11',
         browserName: 'chrome'
+    },
+
+    SL_CHROME_PRECEDING_OSX: {
+        base: 'SauceLabs',
+        platform: 'OS X 10.11',
+        browserName: 'chrome',
+        version: 'latest-1'
     },
 
     SL_CHROME_CURRENT_LINUX: {
@@ -55,6 +62,13 @@ const customLaunchers = {
         browserName: 'firefox'
     },
 
+    SL_FIREFOX_PRECEDING_OSX: {
+        base: 'SauceLabs',
+        platform: 'OS X 10.11',
+        browserName: 'firefox',
+        version: 'latest-1'
+    },
+
     SL_FIREFOX_CURRENT_LINUX: {
         base: 'SauceLabs',
         platform: 'Linux',
@@ -81,23 +95,6 @@ const customLaunchers = {
         platform: 'OS X 10.11',
         browserName: 'safari',
         version: '9.0'
-    },
-
-    // IOS
-    SL_IOS_10: {
-        base: 'SauceLabs',
-        browserName: 'safari',
-        deviceName: 'iPhone Simulator',
-        platform: 'iOS',
-        version: '10.0'
-    },
-
-    SL_IOS_9: {
-        base: 'SauceLabs',
-        browserName: 'safari',
-        deviceName: 'iPhone Simulator',
-        platform: 'iOS',
-        version: '9.3'
     },
 
     // Edge
@@ -130,6 +127,24 @@ const customLaunchers = {
     }
 };
 
+const iOSLaunchers = {
+    SL_IOS_10: {
+        base: 'SauceLabs',
+        browserName: 'safari',
+        deviceName: 'iPhone Simulator',
+        platform: 'iOS',
+        version: '10.0'
+    },
+
+    SL_IOS_9: {
+        base: 'SauceLabs',
+        browserName: 'safari',
+        deviceName: 'iPhone Simulator',
+        platform: 'iOS',
+        version: '9.3'
+    }
+};
+
 module.exports = function (config) {
     if (config.sauce === true && (!process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY)) {
         // eslint-disable-next-line no-console
@@ -142,7 +157,12 @@ module.exports = function (config) {
     let browsers = [];
 
     if (config.sauce === true) {
+        if (config.iOS === true) {
+            customLaunchers = iOSLaunchers;
+        }
+
         browsers = Object.keys(customLaunchers);
+
         reporters.push('saucelabs');
     } else {
         reporters.push('kjhtml');

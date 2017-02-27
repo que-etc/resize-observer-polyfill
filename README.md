@@ -30,16 +30,9 @@ Or just grab one of the pre-built versions from [`dist`](https://github.com/que-
 
 ## Browser Support
 
-Polyfill has been tested and known to work in the following browsers:
+Polyfill has been tested in the following browsers:
 
-* Chrome: latest & latest-1 (under the `#enable-experimental-web-platform-features` flag since v54)
-* Firefox: latest & latest-1
-* Safari: 9+
-* Safari on iOS: 9+
-* Edge: latest
-* Internet Explorer: 9+
-
-Automated [Travis](https://travis-ci.org/que-etc/resize-observer-polyfill) and [SauceLabs](https://saucelabs.com/u/que-etc) tests are available.
+[![Build Status](https://saucelabs.com/browser-matrix/que-etc.svg)](https://saucelabs.com/beta/builds/303f5344a7214ba5b62bc7079a15d376)
 
 **NOTE:** Internet Explorer 8 and it's earlier versions are not supported.
 

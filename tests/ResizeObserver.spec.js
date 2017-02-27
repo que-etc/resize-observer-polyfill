@@ -41,7 +41,7 @@ const template = `
     </div>
 `;
 
-const timeout = 200;
+const timeout = 300;
 
 function appendStyles() {
     styles = document.createElement('style');
@@ -189,25 +189,27 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target2);
-            observer.observe(elements.target1);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(2);
 
                 expect(entries[0].target).toBe(elements.target2);
                 expect(entries[1].target).toBe(elements.target1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.height = '400px';
                 elements.target2.style.height = '100px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(2);
 
                 expect(entries[0].target).toBe(elements.target2);
                 expect(entries[1].target).toBe(elements.target1);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target2);
+            observer.observe(elements.target1);
         });
 
         // Checks that gathering of active observations and broadcasting of
@@ -253,8 +255,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -265,13 +265,17 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
 
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.width = '220px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
 
         it('handles elements that are not yet in the DOM', done => {
@@ -293,9 +297,11 @@ describe('ResizeObserver', () => {
 
                 expect(spy).not.toHaveBeenCalled();
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.root.appendChild(elements.container);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -310,9 +316,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
             spy.nextCall().then(entries => {
                 expect(spy).toHaveBeenCalledTimes(1);
 
@@ -321,9 +324,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].target).toBe(elements.target1);
                 expect(entries[1].target).toBe(elements.target2);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.container.removeChild(elements.target1);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -335,9 +340,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(0);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.root.removeChild(elements.container);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target2);
@@ -349,6 +356,9 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(0);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
+            observer.observe(elements.target2);
         });
 
         it('handles resizing of the documentElement', done => {
@@ -357,8 +367,6 @@ describe('ResizeObserver', () => {
             const styles = window.getComputedStyle(docElement);
 
             observer = new ResizeObserver(spy);
-
-            observer.observe(document.documentElement);
 
             spy.nextCall().then(entries => {
                 const width = parseFloat(styles.width);
@@ -375,12 +383,14 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(height);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 document.body.removeChild(elements.root);
 
                 const width = parseFloat(styles.width);
                 const height = parseFloat(styles.height);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -393,6 +403,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(height);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(document.documentElement);
         });
 
         it('handles hidden elements', done => {
@@ -414,10 +426,12 @@ describe('ResizeObserver', () => {
 
                 expect(spy).not.toHaveBeenCalled();
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.root.style.display = 'block';
                 elements.target1.style.position = 'fixed';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -429,10 +443,12 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.root.style.display = 'none';
                 elements.target1.style.padding = '10px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -455,9 +471,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target2);
@@ -469,6 +482,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.width = '200px';
                 elements.target1.style.height = '200px';
 
@@ -476,7 +491,7 @@ describe('ResizeObserver', () => {
                 elements.target2.style.height = '0px';
                 elements.target2.padding = '10px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(2);
 
@@ -493,6 +508,9 @@ describe('ResizeObserver', () => {
                 expect(entries[1].contentRect.bottom).toBe(0);
                 expect(entries[1].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
+            observer.observe(elements.target2);
         });
 
         it('handles paddings', done => {
@@ -501,8 +519,6 @@ describe('ResizeObserver', () => {
             elements.target1.style.padding = '2px 4px 6px 8px';
 
             observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
 
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
@@ -522,9 +538,11 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.boxSizing = 'border-box';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -537,9 +555,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(197);
                 expect(entries[0].contentRect.left).toBe(6);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.padding = '0px 6px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(spy).toHaveBeenCalledTimes(3);
 
@@ -554,9 +574,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(6);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.padding = '0px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -569,6 +591,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
 
         it('handles borders', done => {
@@ -577,8 +601,6 @@ describe('ResizeObserver', () => {
             elements.target1.style.border = '10px solid black';
 
             observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
 
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
@@ -598,9 +620,11 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.boxSizing = 'border-box';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -613,10 +637,12 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(190);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.borderTop = '';
                 elements.target1.style.borderBottom = '';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -629,10 +655,12 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.borderLeft = '';
                 elements.target1.style.borderRight = '';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -645,6 +673,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
 
         it('doesn\'t notify when position changes', done => {
@@ -656,8 +686,6 @@ describe('ResizeObserver', () => {
             elements.target1.style.padding = '2px 3px';
 
             observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
 
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
@@ -678,6 +706,8 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
 
         it('ignores scroll bars size', done => {
@@ -690,8 +720,6 @@ describe('ResizeObserver', () => {
             elements.root.style.overflow = 'auto';
 
             elements.container.style.minWidth = '0px';
-
-            observer.observe(elements.root);
 
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
@@ -710,21 +738,24 @@ describe('ResizeObserver', () => {
 
                 return (async () => {
                     const width = elements.root.clientWidth;
+                    const nextCall = spy.nextCall();
 
                     elements.target1.style.width = width + 'px';
                     elements.target2.style.width = width + 'px';
 
-                    const entries = await spy.nextCall();
+                    const entries = await nextCall;
 
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.root);
 
                     expect(entries[0].contentRect.height).toBe(250);
                 })().then(async () => {
+                    const nextCall = spy.nextCall();
+
                     elements.target1.style.height = '125px';
                     elements.target2.style.height = '125px';
 
-                    const entries = await spy.nextCall();
+                    const entries = await nextCall;
 
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.root);
@@ -732,6 +763,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(100);
                 });
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.root);
         });
 
         it('doesn\'t trigger for a non-replaced inline elements', done => {
@@ -747,9 +780,11 @@ describe('ResizeObserver', () => {
             wait(timeout).then(() => {
                 expect(spy).not.toHaveBeenCalled();
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.position = 'absolute';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -759,9 +794,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.top).toBe(10);
                 expect(entries[0].contentRect.left).toBe(10);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.position = 'static';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -779,9 +816,11 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(2);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.display = 'block';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -791,9 +830,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.top).toBe(10);
                 expect(entries[0].contentRect.left).toBe(10);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.display = 'inline';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -820,8 +861,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(replaced);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(replaced);
@@ -833,9 +872,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(35);
                 expect(entries[0].contentRect.left).toBe(6);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 replaced.style.width = '190px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(replaced);
@@ -847,9 +888,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(35);
                 expect(entries[0].contentRect.left).toBe(6);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 replaced.style.boxSizing = 'border-box';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(replaced);
@@ -861,6 +904,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(21);
                 expect(entries[0].contentRect.left).toBe(6);
             }).then(done).catch(done.fail);
+
+            observer.observe(replaced);
         });
 
         it('handles fractional dimensions', done => {
@@ -872,8 +917,6 @@ describe('ResizeObserver', () => {
             const spy = createAsyncSpy();
 
             observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
 
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
@@ -892,9 +935,11 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.boxSizing = 'border-box';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -906,9 +951,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBeCloseTo(170.7, 1);
                 expect(entries[0].contentRect.left).toBeCloseTo(3.8, 1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.padding = '7.9px 3.9px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -920,9 +967,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
                 expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 elements.target1.style.width = '200px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
                 expect(entries[0].target).toBe(elements.target1);
@@ -934,6 +983,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
                 expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
 
         it('handles SVGGraphicsElement', done => {
@@ -957,8 +1008,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(svgRect);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(1);
 
@@ -971,10 +1020,12 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(150);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 svgRect.setAttribute('width', 250);
                 svgRect.setAttribute('height', 200);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -987,9 +1038,11 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 observer.observe(svgRoot);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(entries.length).toBe(1);
 
@@ -1002,6 +1055,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].contentRect.bottom).toBe(200);
                 expect(entries[0].contentRect.left).toBe(0);
             }).then(done).catch(done.fail);
+
+            observer.observe(svgRect);
         });
 
         it('doesn\'t observe svg elements that don\'t implement the SVGGraphicsElement interface', done => {
@@ -1058,7 +1113,6 @@ describe('ResizeObserver', () => {
             `);
 
             observer = new ResizeObserver(spy);
-            observer.observe(elements.root);
 
             spy.nextCall().then(async () => {
                 const elem = elements.root.querySelector('strong');
@@ -1069,6 +1123,8 @@ describe('ResizeObserver', () => {
 
                 await wait(timeout);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.root);
         });
 
         if (typeof document.body.style.transform !== 'undefined') {
@@ -1076,8 +1132,6 @@ describe('ResizeObserver', () => {
                 const spy = createAsyncSpy();
 
                 observer = new ResizeObserver(spy);
-
-                observer.observe(elements.target1);
 
                 spy.nextCall().then(entries => {
                     expect(entries.length).toBe(1);
@@ -1088,12 +1142,14 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.top).toBe(0);
                     expect(entries[0].contentRect.left).toBe(0);
                 }).then(async () => {
+                    const nextCall = spy.nextCall();
+
                     elements.container.style.transform = 'scale(0.5)';
                     elements.target2.style.transform = 'scale(0.5)';
 
                     observer.observe(elements.target2);
 
-                    const entries = await spy.nextCall();
+                    const entries = await nextCall;
 
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.target2);
@@ -1110,6 +1166,8 @@ describe('ResizeObserver', () => {
 
                     expect(spy).toHaveBeenCalledTimes(2);
                 }).then(done).catch(done.fail);
+
+                observer.observe(elements.target1);
             });
         }
 
@@ -1121,8 +1179,6 @@ describe('ResizeObserver', () => {
 
                 observer = new ResizeObserver(spy);
 
-                observer.observe(elements.target1);
-
                 spy.nextCall().then(entries => {
                     expect(entries[0].target).toBe(elements.target1);
                     expect(entries[0].contentRect.width).toBe(200);
@@ -1131,7 +1187,21 @@ describe('ResizeObserver', () => {
                     elements.target1.style.width = '600px';
                     elements.target1.style.height = '350px';
 
-                    await wait(1170);
+                    const transitionEnd = new Promise(resolve => {
+                        let i = 0;
+
+                        const callback = () => {
+                            if (i++) {
+                                document.removeEventListener('transitionend', callback);
+                                resolve();
+                            }
+                        };
+
+                        document.addEventListener('transitionend', callback);
+                    });
+
+                    await transitionEnd;
+                    await wait(100);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
@@ -1142,6 +1212,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(600);
                     expect(entries[0].contentRect.height).toBe(350);
                 }).then(done).catch(done.fail);
+
+                observer.observe(elements.target1);
             });
 
             it('handles changes caused by delayed transitions in nearby or descendant elements', done => {
@@ -1152,8 +1224,6 @@ describe('ResizeObserver', () => {
                 elements.target2.style.transition = 'width 0.5s, height 0.5s';
 
                 observer = new ResizeObserver(spy);
-
-                observer.observe(elements.container);
 
                 spy.nextCall().then(entries => {
                     expect(entries[0].target).toBe(elements.container);
@@ -1166,7 +1236,17 @@ describe('ResizeObserver', () => {
                     elements.target2.style.width = '700px';
                     elements.target2.style.height = '350px';
 
-                    await wait(650);
+                    const transitionEnd = new Promise(resolve => {
+                        const callback = () => {
+                            document.removeEventListener('transitionend', callback);
+                            resolve();
+                        };
+
+                        document.addEventListener('transitionend', callback);
+                    });
+
+                    await transitionEnd;
+                    await wait(100);
 
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
@@ -1175,6 +1255,8 @@ describe('ResizeObserver', () => {
                     expect(entries[0].contentRect.width).toBe(700);
                     expect(entries[0].contentRect.height).toBe(700);
                 }).then(done).catch(done.fail);
+
+                observer.observe(elements.container);
             });
         }
     });
@@ -1213,9 +1295,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
             spy.nextCall().then(entries => {
                 expect(spy).toHaveBeenCalledTimes(1);
 
@@ -1224,12 +1303,14 @@ describe('ResizeObserver', () => {
                 expect(entries[0].target).toBe(elements.target1);
                 expect(entries[1].target).toBe(elements.target2);
             }).then(async () => {
+                const nextCall = spy.nextCall();
+
                 observer.unobserve(elements.target1);
 
                 elements.target1.style.width = '50px';
                 elements.target2.style.width = '50px';
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(spy).toHaveBeenCalledTimes(2);
 
@@ -1245,6 +1326,9 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(2);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
+            observer.observe(elements.target2);
         });
 
         it('doesn\'t prevent gathered observations from being notified', done => {
@@ -1299,9 +1383,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
             spy.nextCall().then(entries => {
                 expect(entries.length).toBe(2);
 
@@ -1317,6 +1398,9 @@ describe('ResizeObserver', () => {
 
                 expect(spy).toHaveBeenCalledTimes(1);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
+            observer.observe(elements.target2);
         });
 
         it('prevents gathered observations from being notified', done => {
@@ -1368,8 +1452,6 @@ describe('ResizeObserver', () => {
 
             observer = new ResizeObserver(spy);
 
-            observer.observe(elements.target1);
-
             spy.nextCall().then(async () => {
                 elements.target1.style.width = '600px';
 
@@ -1377,9 +1459,11 @@ describe('ResizeObserver', () => {
 
                 await wait(timeout);
 
+                const nextCall = spy.nextCall();
+
                 observer.observe(elements.target1);
 
-                const entries = await spy.nextCall();
+                const entries = await nextCall;
 
                 expect(spy).toHaveBeenCalledTimes(2);
 
@@ -1388,6 +1472,8 @@ describe('ResizeObserver', () => {
                 expect(entries[0].target).toBe(elements.target1);
                 expect(entries[0].contentRect.width).toBe(600);
             }).then(done).catch(done.fail);
+
+            observer.observe(elements.target1);
         });
     });
 });
