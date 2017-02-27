@@ -32,15 +32,16 @@ Or just grab one of the pre-built versions from [`dist`](https://github.com/que-
 
 Polyfill has been tested and known to work in the following browsers:
 
-* Chrome latest , _native since v54_
-* Firefox latest
-* Safari 9+, _including mobile_
-* Edge latest
-* Internet Explorer 9+
+* Chrome: latest & latest-1 (under the `#enable-experimental-web-platform-features` flag since v54)
+* Firefox: latest & latest-1
+* Safari: 9+
+* Safari on iOS: 9+
+* Edge: latest
+* Internet Explorer: 9+
 
 Automated [Travis](https://travis-ci.org/que-etc/resize-observer-polyfill) and [SauceLabs](https://saucelabs.com/u/que-etc) tests are available.
 
-**NOTE:** Internet Explorer 8 and its earlier versions are not supported.
+**NOTE:** Internet Explorer 8 and it's earlier versions are not supported.
 
 ## Usage Examples
 
@@ -61,17 +62,10 @@ const ro = new ResizeObserver((entries, observer) => {
 
 ro.observe(document.body);
 ```
-Though you always can extend the global object if you need it.
 
-```javascript
-import ResizeObserver from 'resize-observer-polyfill';
+Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) bundle and it will be dynamically substituted by the ES6 modules version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) field, e.g. for [Rollup](https://github.com/rollup/rollup).
 
-window.ResizeObserver = ResizeObserver;
-```
-
-Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) module and it will be dynamically substituted by the ES6 version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) field, e.g. for [Rollup](https://github.com/rollup/rollup).
-
-**Note**: global versions (`index.global` and `dist/ResizeObserver.global`) are deprecated and will be removed in the next major release.
+**Note**: global version of the polyfill (`dist/ResizeObserver.global`) is deprecated and will be removed in the next major release.
 
 ## Limitations
 

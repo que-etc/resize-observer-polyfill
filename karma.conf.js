@@ -3,41 +3,83 @@ const buble = require('rollup-plugin-buble');
 
 const customLaunchers = {
     // Chrome
-    SL_CHROME_LATEST_WINDOWS: {
+    SL_CHROME_CURRENT_WINDOWS: {
         base: 'SauceLabs',
         platform: 'Windows 10',
         browserName: 'chrome'
     },
 
-    SL_CHROME_LATEST_OSX: {
+    SL_CHROME_PRECEDING_WINDOWS: {
+        base: 'SauceLabs',
+        platform: 'Windows 10',
+        browserName: 'chrome',
+        version: 'latest-1'
+    },
+
+    SL_CHROME_CURRENT_OSX: {
         base: 'SauceLabs',
         platform: 'OS X 10.11',
         browserName: 'chrome'
     },
 
-    SL_CHROME_LATEST_LINUX: {
+    SL_CHROME_PRECEDING_OSX: {
+        base: 'SauceLabs',
+        platform: 'OS X 10.11',
+        browserName: 'chrome',
+        version: 'latest-1'
+    },
+
+    SL_CHROME_CURRENT_LINUX: {
         base: 'SauceLabs',
         browserName: 'chrome',
         platform: 'Linux'
     },
 
+    SL_CHROME_PRECEDING_LINUX: {
+        base: 'SauceLabs',
+        browserName: 'chrome',
+        platform: 'Linux',
+        version: 'latest-1'
+    },
+
     // Firefox
-    SL_FIREFOX_LATEST_WINDOWS: {
+    SL_FIREFOX_CURRENT_WINDOWS: {
         base: 'SauceLabs',
         platform: 'Windows 10',
         browserName: 'firefox'
     },
 
-    SL_FIREFOX_LATEST_OSX: {
+    SL_FIREFOX_PRECEDING_WINDOWS: {
+        base: 'SauceLabs',
+        platform: 'Windows 10',
+        browserName: 'firefox',
+        version: 'latest-1'
+    },
+
+    SL_FIREFOX_CURRENT_OSX: {
         base: 'SauceLabs',
         platform: 'OS X 10.11',
         browserName: 'firefox'
     },
 
-    SL_FIREFOX_LATEST_LINUX: {
+    SL_FIREFOX_PRECEDING_OSX: {
+        base: 'SauceLabs',
+        platform: 'OS X 10.11',
+        browserName: 'firefox',
+        version: 'latest-1'
+    },
+
+    SL_FIREFOX_CURRENT_LINUX: {
         base: 'SauceLabs',
         platform: 'Linux',
         browserName: 'firefox'
+    },
+
+    SL_FIREFOX_PRECEDING_LINUX: {
+        base: 'SauceLabs',
+        platform: 'Linux',
+        browserName: 'firefox',
+        version: 'latest-1'
     },
 
     // Safari
@@ -73,7 +115,7 @@ const customLaunchers = {
     },
 
     // Edge
-    SL_EDGE_LATEST: {
+    SL_EDGE_CURRENT: {
         base: 'SauceLabs',
         platform: 'Windows 10',
         browserName: 'MicrosoftEdge'
