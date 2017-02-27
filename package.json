@@ -25,14 +25,10 @@
     "bugs": {
         "url": "https://github.com/que-etc/resize-observer-polyfill/issues"
     },
-    "types": "index.d.ts",
+    "types": "src/index.d.ts",
     "files": [
         "src/",
-        "dist/",
-        "index.js",
-        "index.d.ts",
-        "index.global.js",
-        "index.global.d.ts"
+        "dist/"
     ],
     "keywords": [
         "ResizeObserver",

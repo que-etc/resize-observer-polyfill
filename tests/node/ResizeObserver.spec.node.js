@@ -1,5 +1,5 @@
 /* eslint-disable max-nested-callbacks, no-shadow, require-jsdoc */
-import ResizeObserver from '../../index';
+import ResizeObserver from '../../src/index';
 
 let observer;
 
