@@ -98,10 +98,18 @@ let customLaunchers = {
     },
 
     // Edge
-    SL_EDGE_CURRENT: {
+    SL_EDGE_14: {
         base: 'SauceLabs',
         platform: 'Windows 10',
-        browserName: 'MicrosoftEdge'
+        browserName: 'MicrosoftEdge',
+        version: '14.14393'
+    },
+
+    SL_EDGE_13: {
+        base: 'SauceLabs',
+        platform: 'Windows 10',
+        browserName: 'MicrosoftEdge',
+        version: '13.10586'
     },
 
     // Internet Explorer
@@ -124,6 +132,15 @@ let customLaunchers = {
         browserName: 'internet explorer',
         platform: 'Windows 7',
         version: '9.0'
+    },
+
+    // Android
+    SL_ANDROID_5: {
+        base: 'SauceLabs',
+        deviceName: 'Android Emulator',
+        browserName: 'Browser',
+        platformVersion: '5.1',
+        platformName: 'Android'
     }
 };
 
@@ -142,11 +159,19 @@ const iOSLaunchers = {
         deviceName: 'iPhone Simulator',
         platform: 'iOS',
         version: '9.3'
+    },
+
+    SL_IOS_8: {
+        base: 'SauceLabs',
+        browserName: 'safari',
+        deviceName: 'iPhone Simulator',
+        platform: 'iOS',
+        version: '8.4'
     }
 };
 
 module.exports = function (config) {
-    if (config.sauce === true && (!process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY)) {
+    if (config.sauce === true && !(process.env.SAUCE_USERNAME && process.env.SAUCE_ACCESS_KEY)) {
         // eslint-disable-next-line no-console
         console.log('SAUCE_USERNAME and SAUCE_ACCESS_KEY environment variables are not defined.');
 
