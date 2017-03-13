@@ -2,6 +2,48 @@ const babel = require('rollup-plugin-babel');
 const buble = require('rollup-plugin-buble');
 
 const launchers = {
+    osx: {
+        SL_CHROME_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'macOS 10.12',
+            browserName: 'chrome'
+        },
+
+        SL_CHROME_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'macOS 10.12',
+            browserName: 'chrome',
+            version: 'latest-1'
+        },
+
+        SL_FIREFOX_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'macOS 10.12',
+            browserName: 'firefox'
+        },
+
+        SL_FIREFOX_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'macOS 10.12',
+            browserName: 'firefox',
+            version: 'latest-1'
+        },
+
+        // Safari
+        SL_SAFARI_10: {
+            base: 'SauceLabs',
+            platform: 'macOS 10.12',
+            browserName: 'safari',
+            version: '10.0'
+        },
+
+        SL_SAFARI_9: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'safari',
+            version: '9.0'
+        }
+    },
     windows: {
         SL_CHROME_CURRENT: {
             base: 'SauceLabs',
@@ -91,48 +133,6 @@ const launchers = {
             platform: 'Linux',
             browserName: 'firefox',
             version: 'latest-1'
-        }
-    },
-    osx: {
-        SL_CHROME_CURRENT: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'chrome'
-        },
-
-        SL_CHROME_PRECEDING: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'chrome',
-            version: 'latest-1'
-        },
-
-        SL_FIREFOX_CURRENT: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'firefox'
-        },
-
-        SL_FIREFOX_PRECEDING: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'firefox',
-            version: 'latest-1'
-        },
-
-        // Safari
-        SL_SAFARI_10: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.12',
-            browserName: 'safari',
-            version: '10.0'
-        },
-
-        SL_SAFARI_9: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'safari',
-            version: '9.0'
         }
     },
     ios: {
