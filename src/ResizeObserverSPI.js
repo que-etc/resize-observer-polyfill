@@ -8,15 +8,12 @@ export default class ResizeObserverSPI {
      * Collection of resize observations that have detected changes in dimensions
      * of elements.
      *
-     * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-activetargets
-     *
      * @private {Array<ResizeObservation>}
      */
-    activeTargets_ = [];
+    activeObservations_ = [];
 
     /**
      * Reference to the callback function.
-     * Spec: https://wicg.github.io/ResizeObserver/#resize-observer-callback
      *
      * @private {ResizeObserverCallback}
      */
@@ -39,11 +36,10 @@ export default class ResizeObserverSPI {
 
     /**
      * Registry of the ResizeObservation instances.
-     * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-observationtargets
      *
      * @private {Map<Element, ResizeObservation>}
      */
-    observationTargets_ = new Map();
+    observations_ = new Map();
 
     /**
      * Creates a new instance of ResizeObserver.
@@ -67,7 +63,6 @@ export default class ResizeObserverSPI {
 
     /**
      * Starts observing provided element.
-     * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-observe
      *
      * @param {Element} target - Element to be observed.
      * @returns {void}
@@ -86,20 +81,16 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this.observationTargets_;
+        const targets = this.observations_;
 
         // Do nothing if element is already being observed.
         if (targets.has(target)) {
             return;
         }
 
-        // Register new ResizeObservation instance.
         targets.set(target, new ResizeObservation(target));
 
-        // Add observer to controller if it hasn't been connected yet.
-        if (!this.controller_.isConnected(this)) {
-            this.controller_.connect(this);
-        }
+        this.controller_.addObserver(this);
 
         // Force the update of observations.
         this.controller_.refresh();
@@ -107,7 +98,6 @@ export default class ResizeObserverSPI {
 
     /**
      * Stops observing provided element.
-     * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-unobserve
      *
      * @param {Element} target - Element to stop observing.
      * @returns {void}
@@ -126,50 +116,43 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this.observationTargets_;
+        const targets = this.observations_;
 
         // Do nothing if element is not being observed.
         if (!targets.has(target)) {
             return;
         }
 
-        // Remove element and associated with it ResizeObsrvation instance from
-        // registry.
         targets.delete(target);
 
-        // Set back the initial state if there is nothing to observe.
         if (!targets.size) {
-            this.controller_.disconnect(this);
+            this.controller_.removeObserver(this);
         }
     }
 
     /**
-     * Stops observing all elements and clears the observations list.
-     * Spec: https://wicg.github.io/ResizeObserver/#dom-resizeobserver-disconnect
+     * Stops observing all elements.
      *
      * @returns {void}
      */
     disconnect() {
         this.clearActive();
-        this.observationTargets_.clear();
-        this.controller_.disconnect(this);
+        this.observations_.clear();
+        this.controller_.removeObserver(this);
     }
 
     /**
-     * Clears an array of previously collected active observations and collects
-     * observation instances which associated element has changed it's content
-     * rectangle.
+     * Collects observation instances the associated element of which has changed
+     * it's content rectangle.
      *
      * @returns {void}
      */
     gatherActive() {
         this.clearActive();
 
-        const activeTargets = this.activeTargets_;
-
-        this.observationTargets_.forEach(observation => {
+        this.observations_.forEach(observation => {
             if (observation.isActive()) {
-                activeTargets.push(observation);
+                this.activeObservations_.push(observation);
             }
         });
     }
@@ -189,7 +172,7 @@ export default class ResizeObserverSPI {
         const ctx = this.callbackCtx_;
 
         // Create ResizeObserverEntry instance for every active observation.
-        const entries = this.activeTargets_.map(observation => {
+        const entries = this.activeObservations_.map(observation => {
             return new ResizeObserverEntry(
                 observation.target,
                 observation.broadcastRect()
@@ -201,20 +184,20 @@ export default class ResizeObserverSPI {
     }
 
     /**
-     * Clears the collection of pending/active observations.
+     * Clears the collection of active observations.
      *
      * @returns {void}
      */
     clearActive() {
-        this.activeTargets_.splice(0);
+        this.activeObservations_.splice(0);
     }
 
     /**
-     * Tells whether observer has pending observations.
+     * Tells whether observer has active observations.
      *
      * @returns {boolean}
      */
     hasActive() {
-        return this.activeTargets_.length > 0;
+        return this.activeObservations_.length > 0;
     }
 }

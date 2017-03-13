@@ -4,16 +4,12 @@ import throttle from './utils/throttle';
 // Minimum delay before invoking the update of observers.
 const REFRESH_DELAY = 20;
 
-// Delay before the next iteration of the continuous cycle.
-const CONTINUOUS_DELAY = 80;
-
-// Define whether the MutationObserver is supported.
 // eslint-disable-next-line no-extra-parens
-const mutationsSupported = (
+const mutationObserverSupported = (
     typeof MutationObserver == 'function' &&
     // MutationObserver should not be used if running in IE11 as it's
     // implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
-    // Unfortunately, there is no other way to check this issue but to use
+    // Unfortunately, there is no other way to check for this issue but to use
     // userAgent's information.
     typeof navigator == 'object' &&
     !(
@@ -22,32 +18,36 @@ const mutationsSupported = (
     )
 );
 
+// A list of substrings of CSS properties used to find transition events that
+// might affect dimensions of observed elements.
+const transitionKeys = [
+    'top',
+    'right',
+    'bottom',
+    'left',
+    'width',
+    'height',
+    'size',
+    'weight'
+];
+
 /**
- * Controller class which handles updates of ResizeObserver instances.
- * It decides when and for how long it's necessary to run updates by listening
- * to the windows "resize" event along with a tracking of DOM mutations
- * (nodes removal, changes of attributes, etc.).
- *
- * Transitions and animations are handled by running a repeatable update cycle
- * until the dimensions of observed elements are changing.
- *
- * Continuous update cycle will be used automatically in case MutationObserver
- * is not supported.
+ * Singleton controller class which handles updates of ResizeObserver instances.
  */
 export default class ResizeObserverController {
-    /**
-     * Continuous updates must be enabled if MutationObserver is not supported.
-     *
-     * @private {boolean}
-     */
-    isCycleContinuous_ = !mutationsSupported;
-
     /**
      * Indicates whether DOM listeners have been added.
      *
      * @private {boolean}
      */
-    listenersEnabled_ = false;
+    connected_ = false;
+
+    /**
+     * Tells that controller has subscribed for Mutation Events.
+     *
+     * @private {boolean}
+     */
+    mutationEventsAdded_ = false;
 
     /**
      * Keeps reference to the instance of MutationObserver.
@@ -64,15 +64,20 @@ export default class ResizeObserverController {
     observers_ = [];
 
     /**
+     * Holds reference to the controller's instance.
+     *
+     * @private {ResizeObserverController}
+     */
+    static instance_ = null;
+
+    /**
      * Creates a new instance of ResizeObserverController.
+     *
+     * @private
      */
     constructor() {
-        // Make sure that the "refresh" method is invoked as a RAF callback and
-        // that it happens only once during the provided period.
-        this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY, true);
-
-        // Additionally postpone invocation of the continuous updates.
-        this.continuousUpdateHandler_ = throttle(this.refresh, CONTINUOUS_DELAY);
+        this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
+        this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
     }
 
     /**
@@ -81,14 +86,14 @@ export default class ResizeObserverController {
      * @param {ResizeObserverSPI} observer - Observer to be added.
      * @returns {void}
      */
-    connect(observer) {
-        if (!this.isConnected(observer)) {
+    addObserver(observer) {
+        if (!~this.observers_.indexOf(observer)) {
             this.observers_.push(observer);
         }
 
         // Add listeners if they haven't been added yet.
-        if (!this.listenersEnabled_) {
-            this.addListeners_();
+        if (!this.connected_) {
+            this.connect_();
         }
     }
 
@@ -98,7 +103,7 @@ export default class ResizeObserverController {
      * @param {ResizeObserverSPI} observer - Observer to be removed.
      * @returns {void}
      */
-    disconnect(observer) {
+    removeObserver(observer) {
         const observers = this.observers_;
         const index = observers.indexOf(observer);
 
@@ -108,37 +113,24 @@ export default class ResizeObserverController {
         }
 
         // Remove listeners if controller has no connected observers.
-        if (!observers.length && this.listenersEnabled_) {
-            this.removeListeners_();
+        if (!observers.length && this.connected_) {
+            this.disconnect_();
         }
     }
 
     /**
-     * Tells whether the provided observer is connected to controller.
-     *
-     * @param {ResizeObserverSPI} observer - Observer to be checked.
-     * @returns {boolean}
-     */
-    isConnected(observer) {
-        return !!~this.observers_.indexOf(observer);
-    }
-
-    /**
      * Invokes the update of observers. It will continue running updates insofar
-     * it detects changes or if continuous updates are enabled.
+     * it detects changes.
      *
      * @returns {void}
      */
     refresh() {
-        const hasChanges = this.updateObservers_();
+        const changesDetected = this.updateObservers_();
 
         // Continue running updates if changes have been detected as there might
         // be future ones caused by CSS transitions.
-        if (hasChanges) {
+        if (changesDetected) {
             this.refresh();
-        } else if (this.isCycleContinuous_ && this.listenersEnabled_) {
-            // Automatically repeat cycle if it's necessary.
-            this.continuousUpdateHandler_();
         }
     }
 
@@ -151,19 +143,19 @@ export default class ResizeObserverController {
      *      dimensions of it's elements.
      */
     updateObservers_() {
-        // Collect observers that have active entries.
-        const active = this.observers_.filter(observer => {
+        // Collect observers that have active observations.
+        const activeObservers = this.observers_.filter(observer => {
             return observer.gatherActive(), observer.hasActive();
         });
 
         // Deliver notifications in a separate cycle in order to avoid any
-        // collisions between observers. E.g. when multiple instances of
-        // ResizeObserer are tracking the same element and the callback of one
+        // collisions between observers, e.g. when multiple instances of
+        // ResizeObserver are tracking the same element and the callback of one
         // of them changes content dimensions of the observed target. Sometimes
         // this may result in notifications being blocked for the rest of observers.
-        active.forEach(observer => observer.broadcastActive());
+        activeObservers.forEach(observer => observer.broadcastActive());
 
-        return active.length > 0;
+        return activeObservers.length > 0;
     }
 
     /**
@@ -172,23 +164,21 @@ export default class ResizeObserverController {
      * @private
      * @returns {void}
      */
-    addListeners_() {
+    connect_() {
         // Do nothing if running in a non-browser environment or if listeners
         // have been already added.
-        if (!isBrowser || this.listenersEnabled_) {
+        if (!isBrowser || this.connected_) {
             return;
         }
 
+        // Subscription to the "Transitionend" event is used as a workaround for
+        // delayed transitions. This way it's possible to capture at least the
+        // final state of an element.
+        document.addEventListener('transitionend', this.onTransitionEnd_);
+
         window.addEventListener('resize', this.refresh);
 
-        // Subscription to the "Transitionend" event is used as a workaround for
-        // delayed transitions. This way we can capture at least the final state
-        // of an element.
-        document.addEventListener('transitionend', this.refresh);
-
-        // Subscribe to DOM mutations if it's possible as they may lead to
-        // changes in the dimensions of elements.
-        if (mutationsSupported) {
+        if (mutationObserverSupported) {
             this.mutationsObserver_ = new MutationObserver(this.refresh);
 
             this.mutationsObserver_.observe(document, {
@@ -197,15 +187,13 @@ export default class ResizeObserverController {
                 characterData: true,
                 subtree: true
             });
+        } else {
+            document.addEventListener('DOMSubtreeModified', this.refresh);
+
+            this.mutationEventsAdded_ = true;
         }
 
-        this.listenersEnabled_ = true;
-
-        // Don't wait for a possible event that might trigger the update of
-        // observers and manually initiate the update process.
-        if (this.isCycleContinuous_) {
-            this.refresh();
-        }
+        this.connected_ = true;
     }
 
     /**
@@ -214,21 +202,57 @@ export default class ResizeObserverController {
      * @private
      * @returns {void}
      */
-    removeListeners_() {
+    disconnect_() {
         // Do nothing if running in a non-browser environment or if listeners
         // have been already removed.
-        if (!isBrowser || !this.listenersEnabled_) {
+        if (!isBrowser || !this.connected_) {
             return;
         }
 
+        document.removeEventListener('transitionend', this.onTransitionEnd_);
         window.removeEventListener('resize', this.refresh);
-        document.removeEventListener('transitionend', this.refresh);
 
         if (this.mutationsObserver_) {
             this.mutationsObserver_.disconnect();
         }
 
+        if (this.mutationEventsAdded_) {
+            document.removeEventListener('DOMSubtreeModified', this.refresh);
+        }
+
         this.mutationsObserver_ = null;
-        this.listenersEnabled_ = false;
+        this.mutationEventsAdded_ = false;
+        this.connected_ = false;
+    }
+
+    /**
+     * "Transitionend" event handler.
+     *
+     * @private
+     * @param {TransitionEvent} event
+     * @returns {void}
+     */
+    onTransitionEnd_({propertyName}) {
+        // Detect whether transition may affect dimensions of an element.
+        const isReflowProperty = transitionKeys.some(key => {
+            return !!~propertyName.indexOf(key);
+        });
+
+        if (isReflowProperty) {
+            this.refresh();
+        }
+    }
+
+    /**
+     * Returns instance of the ResizeObserverController.
+     *
+     * @returns {ResizeObserverController}
+     */
+    static getInstance() {
+        if (!this.instance_) {
+            this.instance_ = new ResizeObserverController();
+        }
+
+        return this.instance_;
     }
 }

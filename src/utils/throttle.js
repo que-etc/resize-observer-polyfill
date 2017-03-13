@@ -4,91 +4,74 @@ import requestAnimationFrame from '../shims/requestAnimationFrame';
 const trailingTimeout = 2;
 
 /**
- * Returns time stamp retrieved either from the "performance.now" or from
- * the "Date.now" method.
- *
- * @returns {DOMHighResTimeStamp|number}
- */
-const timeStamp = (() => {
-    let host = Date;
-
-    if (typeof performance === 'object' && typeof performance.now === 'function') {
-        host = performance;
-    }
-
-    return () => host.now();
-})();
-
-/**
  * Creates a wrapper function which ensures that provided callback will be
- * invoked only once during the specified delay period. It also caches the last
- * call and re-invokes it after pending activation is resolved.
+ * invoked only once during the specified delay period.
  *
  * @param {Function} callback - Function to be invoked after the delay period.
  * @param {number} delay - Delay after which to invoke callback.
- * @param {boolean} [afterRAF = false] - Whether function needs to be invoked as
- *      a requestAnimationFrame callback.
  * @returns {Function}
  */
-export default function (callback, delay, afterRAF = false) {
+export default function (callback, delay) {
     let leadingCall = false,
         trailingCall = false,
         lastCallTime = 0;
 
     /**
-     * Invokes the original callback function and schedules a new invocation if
-     * the wrapper was called during current request.
+     * Invokes the original callback function and schedules new invocation if
+     * the "proxy" was called during current request.
      *
      * @returns {void}
      */
-    function invokeCallback() {
-        leadingCall = false;
+    function resolvePending() {
+        if (leadingCall) {
+            leadingCall = false;
 
-        // Invoke original function.
-        callback();
+            callback();
+        }
 
-        // Schedule new invocation if there has been a call during delay period.
         if (trailingCall) {
             proxy();
         }
     }
 
     /**
-     * Callback that will be invoked after the specified delay period. It will
-     * delegate invocation of the original function to the requestAnimationFrame
-     * if "afterRAF" parameter is set to "true".
+     * Callback invoked after the specified delay. It will further postpone
+     * invocation of the original function delegating it to the
+     * requestAnimationFrame.
      *
      * @returns {void}
      */
     function timeoutCallback() {
-        afterRAF ? requestAnimationFrame(invokeCallback) : invokeCallback();
+        requestAnimationFrame(resolvePending);
     }
 
     /**
-     * Schedules invocation of the initial function.
+     * Schedules invocation of the original function.
      *
      * @returns {void}
      */
     function proxy() {
-        const callTime = timeStamp();
+        const timeStamp = Date.now();
 
-        // Postpone activation if there is already a pending call.
         if (leadingCall) {
-            // Reject immediately following invocations.
-            if (callTime - lastCallTime < trailingTimeout) {
+            // Reject immediately following calls.
+            if (timeStamp - lastCallTime < trailingTimeout) {
                 return;
             }
 
+            // Schedule new call to be in invoked when the pending one is resolved.
+            // This is important for "transitions" which never actually start
+            // immediately so there is a chance that we might miss one if change
+            // happens amids the pending invocation.
             trailingCall = true;
         } else {
             leadingCall = true;
             trailingCall = false;
 
-            // Schedule new invocation.
             setTimeout(timeoutCallback, delay);
         }
 
-        lastCallTime = callTime;
+        lastCallTime = timeStamp;
     }
 
     return proxy;
