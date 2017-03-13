@@ -101,16 +101,16 @@ let customLaunchers = {
     SL_EDGE_14: {
         base: 'SauceLabs',
         platform: 'Windows 10',
-        browserName: 'MicrosoftEdge',
-        version: '14.14393'
+        browserName: 'MicrosoftEdge'
     },
 
-    SL_EDGE_13: {
+    // SauceLabs-CI fails when multiple instances of Edge are running at the same time.
+    /*SL_EDGE_13: {
         base: 'SauceLabs',
         platform: 'Windows 10',
         browserName: 'MicrosoftEdge',
         version: '13.10586'
-    },
+    },*/
 
     // Internet Explorer
     SL_IE_11: {
