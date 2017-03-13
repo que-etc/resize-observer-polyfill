@@ -1,191 +1,181 @@
 const babel = require('rollup-plugin-babel');
 const buble = require('rollup-plugin-buble');
 
-let customLaunchers = {
-    // Chrome
-    SL_CHROME_CURRENT_WINDOWS: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'chrome'
+const launchers = {
+    windows: {
+        SL_CHROME_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'chrome'
+        },
+
+        SL_CHROME_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'chrome',
+            version: 'latest-1'
+        },
+
+        // Firefox
+        SL_FIREFOX_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'firefox'
+        },
+
+        SL_FIREFOX_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'firefox',
+            version: 'latest-1'
+        },
+
+        // Edge
+        SL_EDGE_14: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'MicrosoftEdge'
+        },
+
+        SL_EDGE_13: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'MicrosoftEdge',
+            version: '13.10586'
+        },
+
+        // Internet Explorer
+        SL_IE_11: {
+            base: 'SauceLabs',
+            browserName: 'internet explorer',
+            platform: 'Windows 8.1',
+            version: '11.0'
+        },
+
+        SL_IE_10: {
+            base: 'SauceLabs',
+            browserName: 'internet explorer',
+            platform: 'Windows 7',
+            version: '10.0'
+        },
+
+        SL_IE_9: {
+            base: 'SauceLabs',
+            browserName: 'internet explorer',
+            platform: 'Windows 7',
+            version: '9.0'
+        }
     },
+    linux: {
+        SL_CHROME_CURRENT: {
+            base: 'SauceLabs',
+            browserName: 'chrome',
+            platform: 'Linux'
+        },
 
-    SL_CHROME_PRECEDING_WINDOWS: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'chrome',
-        version: 'latest-1'
+        SL_CHROME_PRECEDING: {
+            base: 'SauceLabs',
+            browserName: 'chrome',
+            platform: 'Linux',
+            version: 'latest-1'
+        },
+
+        SL_FIREFOX_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'Linux',
+            browserName: 'firefox'
+        },
+
+        SL_FIREFOX_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'Linux',
+            browserName: 'firefox',
+            version: 'latest-1'
+        }
     },
+    osx: {
+        SL_CHROME_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'chrome'
+        },
 
-    SL_CHROME_CURRENT_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'chrome'
+        SL_CHROME_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'chrome',
+            version: 'latest-1'
+        },
+
+        SL_FIREFOX_CURRENT: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'firefox'
+        },
+
+        SL_FIREFOX_PRECEDING: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'firefox',
+            version: 'latest-1'
+        },
+
+        // Safari
+        SL_SAFARI_10: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.12',
+            browserName: 'safari',
+            version: '10.0'
+        },
+
+        SL_SAFARI_9: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.11',
+            browserName: 'safari',
+            version: '9.0'
+        }
     },
+    ios: {
+        SL_IOS_10: {
+            base: 'SauceLabs',
+            browserName: 'safari',
+            deviceName: 'iPhone Simulator',
+            platform: 'iOS',
+            version: '10.0'
+        },
 
-    SL_CHROME_PRECEDING_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'chrome',
-        version: 'latest-1'
-    },
+        SL_IOS_9: {
+            base: 'SauceLabs',
+            browserName: 'safari',
+            deviceName: 'iPhone Simulator',
+            platform: 'iOS',
+            version: '9.3'
+        },
 
-    SL_CHROME_CURRENT_LINUX: {
-        base: 'SauceLabs',
-        browserName: 'chrome',
-        platform: 'Linux'
-    },
-
-    SL_CHROME_PRECEDING_LINUX: {
-        base: 'SauceLabs',
-        browserName: 'chrome',
-        platform: 'Linux',
-        version: 'latest-1'
-    },
-
-    // Firefox
-    SL_FIREFOX_CURRENT_WINDOWS: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'firefox'
-    },
-
-    SL_FIREFOX_PRECEDING_WINDOWS: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'firefox',
-        version: 'latest-1'
-    },
-
-    SL_FIREFOX_CURRENT_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'firefox'
-    },
-
-    SL_FIREFOX_PRECEDING_OSX: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'firefox',
-        version: 'latest-1'
-    },
-
-    SL_FIREFOX_CURRENT_LINUX: {
-        base: 'SauceLabs',
-        platform: 'Linux',
-        browserName: 'firefox'
-    },
-
-    SL_FIREFOX_PRECEDING_LINUX: {
-        base: 'SauceLabs',
-        platform: 'Linux',
-        browserName: 'firefox',
-        version: 'latest-1'
-    },
-
-    // Safari
-    SL_SAFARI_10: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.12',
-        browserName: 'safari',
-        version: '10.0'
-    },
-
-    SL_SAFARI_9: {
-        base: 'SauceLabs',
-        platform: 'OS X 10.11',
-        browserName: 'safari',
-        version: '9.0'
-    },
-
-    // Edge
-    SL_EDGE_14: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'MicrosoftEdge'
-    },
-
-    // SauceLabs-CI fails when multiple instances of Edge are running at the same time.
-    /*SL_EDGE_13: {
-        base: 'SauceLabs',
-        platform: 'Windows 10',
-        browserName: 'MicrosoftEdge',
-        version: '13.10586'
-    },*/
-
-    // Internet Explorer
-    SL_IE_11: {
-        base: 'SauceLabs',
-        browserName: 'internet explorer',
-        platform: 'Windows 8.1',
-        version: '11.0'
-    },
-
-    SL_IE_10: {
-        base: 'SauceLabs',
-        browserName: 'internet explorer',
-        platform: 'Windows 7',
-        version: '10.0'
-    },
-
-    SL_IE_9: {
-        base: 'SauceLabs',
-        browserName: 'internet explorer',
-        platform: 'Windows 7',
-        version: '9.0'
-    },
-
-    // Android
-    SL_ANDROID_5: {
-        base: 'SauceLabs',
-        deviceName: 'Android Emulator',
-        browserName: 'Browser',
-        platformVersion: '5.1',
-        platformName: 'Android'
-    }
-};
-
-const iOSLaunchers = {
-    SL_IOS_10: {
-        base: 'SauceLabs',
-        browserName: 'safari',
-        deviceName: 'iPhone Simulator',
-        platform: 'iOS',
-        version: '10.0'
-    },
-
-    SL_IOS_9: {
-        base: 'SauceLabs',
-        browserName: 'safari',
-        deviceName: 'iPhone Simulator',
-        platform: 'iOS',
-        version: '9.3'
-    },
-
-    SL_IOS_8: {
-        base: 'SauceLabs',
-        browserName: 'safari',
-        deviceName: 'iPhone Simulator',
-        platform: 'iOS',
-        version: '8.4'
+        SL_IOS_8: {
+            base: 'SauceLabs',
+            browserName: 'safari',
+            deviceName: 'iPhone Simulator',
+            platform: 'iOS',
+            version: '8.4'
+        }
     }
 };
 
 module.exports = function (config) {
-    if (config.sauce === true && !(process.env.SAUCE_USERNAME && process.env.SAUCE_ACCESS_KEY)) {
-        // eslint-disable-next-line no-console
-        console.log('SAUCE_USERNAME and SAUCE_ACCESS_KEY environment variables are not defined.');
-
-        process.exit(1);
-    }
-
     const reporters = ['spec'];
-    let browsers = [];
+    let browsers = [],
+        customLaunchers = {};
 
-    if (config.sauce === true) {
-        if (config.iOS === true) {
-            customLaunchers = iOSLaunchers;
+    if (config.sauce) {
+        if (!process.env.SAUCE_USERNAME || !process.env.SAUCE_ACCESS_KEY) {
+            // eslint-disable-next-line no-console
+            console.log('SAUCE_USERNAME and SAUCE_ACCESS_KEY environment variables are not defined.');
+
+            process.exit(1);
         }
 
+        customLaunchers = launchers[config.sauce];
         browsers = Object.keys(customLaunchers);
 
         reporters.push('saucelabs');
