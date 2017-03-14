@@ -1,11 +1,12 @@
-import ResizeObserver from './ResizeObserver';
-import global from './shims/global';
+import ResizeObserverPolyfill from './ResizeObserver';
+import isConstructor from './utils/isConstructor';
 
-export default (function () {
-    // Export existing implementation if it's available.
-    if (typeof global.ResizeObserver === 'function') {
-        return global.ResizeObserver;
+export default (() => {
+    // Export existing implementation if available.
+    if (isConstructor('ResizeObserver')) {
+        // eslint-disable-next-line no-undef
+        return ResizeObserver;
     }
 
-    return ResizeObserver;
+    return ResizeObserverPolyfill;
 })();

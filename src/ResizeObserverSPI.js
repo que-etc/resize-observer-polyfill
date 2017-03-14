@@ -1,7 +1,7 @@
 import {Map} from './shims/es6-collections';
 import ResizeObservation from './ResizeObservation';
 import ResizeObserverEntry from './ResizeObserverEntry';
-import global from './shims/global';
+import isConstructor from './utils/isConstructor';
 
 export default class ResizeObserverSPI {
     /**
@@ -73,7 +73,7 @@ export default class ResizeObserverSPI {
         }
 
         // Do nothing if current environment doesn't have the Element interface.
-        if (!('Element' in global) || !(Element instanceof Object)) {
+        if (!isConstructor('Element')) {
             return;
         }
 
@@ -81,14 +81,14 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this.observations_;
+        const observations = this.observations_;
 
         // Do nothing if element is already being observed.
-        if (targets.has(target)) {
+        if (observations.has(target)) {
             return;
         }
 
-        targets.set(target, new ResizeObservation(target));
+        observations.set(target, new ResizeObservation(target));
 
         this.controller_.addObserver(this);
 
@@ -108,7 +108,7 @@ export default class ResizeObserverSPI {
         }
 
         // Do nothing if current environment doesn't have the Element interface.
-        if (!('Element' in global) || !(Element instanceof Object)) {
+        if (!isConstructor('Element')) {
             return;
         }
 
@@ -116,16 +116,16 @@ export default class ResizeObserverSPI {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
-        const targets = this.observations_;
+        const observations = this.observations_;
 
         // Do nothing if element is not being observed.
-        if (!targets.has(target)) {
+        if (!observations.has(target)) {
             return;
         }
 
-        targets.delete(target);
+        observations.delete(target);
 
-        if (!targets.size) {
+        if (!observations.size) {
             this.controller_.removeObserver(this);
         }
     }

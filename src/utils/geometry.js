@@ -1,5 +1,6 @@
 import defineConfigurable from './defineConfigurable';
 import isBrowser from './isBrowser';
+import isConstructor from './isConstructor';
 
 // Placeholder of an empty content rectangle.
 const emptyRect = createRectInit(0, 0, 0, 0);
@@ -22,8 +23,8 @@ function toFloat(value) {
  * @returns {number}
  */
 function getBordersSize(styles, ...positions) {
-    return positions.reduce((size, pos) => {
-        const value = styles['border-' + pos + '-width'];
+    return positions.reduce((size, position) => {
+        const value = styles['border-' + position + '-width'];
 
         return size + toFloat(value);
     }, 0);
@@ -36,13 +37,13 @@ function getBordersSize(styles, ...positions) {
  * @returns {Object} Paddings box.
  */
 function getPaddings(styles) {
-    const boxKeys = ['top', 'right', 'bottom', 'left'];
+    const positions = ['top', 'right', 'bottom', 'left'];
     const paddings = {};
 
-    for (const key of boxKeys) {
-        const value = styles['padding-' + key];
+    for (const position of positions) {
+        const value = styles['padding-' + position];
 
-        paddings[key] = toFloat(value);
+        paddings[position] = toFloat(value);
     }
 
     return paddings;
@@ -91,13 +92,13 @@ function getHTMLElementContentRect(target) {
 
     // Computed styles of width & height are being used because they are the
     // only dimensions available to JS that contain non-rounded values. It could
-    // be possible to utilize getBoundingClientRect if only it's data wasn't
+    // be possible to utilize the getBoundingClientRect if only it's data wasn't
     // affected by CSS transformations let alone paddings, borders and scroll bars.
     let width = toFloat(styles.width),
         height = toFloat(styles.height);
 
-    // Width & height include paddings and bord when 'border-box' box model is
-    // applied (except for IE).
+    // Width & height include paddings and borders when the 'border-box' box
+    // model is applied (except for IE).
     if (styles.boxSizing === 'border-box') {
         // Following conditions are required to handle Internet Explorer which
         // doesn't include paddings and borders to computed CSS dimensions.
@@ -114,7 +115,7 @@ function getHTMLElementContentRect(target) {
         }
     }
 
-    // Following steps can't applied to the document's root element as it's
+    // Following steps can't be applied to the document's root element as its
     // client[Width/Height] properties represent viewport area of the window.
     // Besides, it's as well not necessary as the <html> itself neither has
     // rendered scroll bars nor it can be clipped.
@@ -152,12 +153,12 @@ function getHTMLElementContentRect(target) {
 const isSVGGraphicsElement = (() => {
     // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
     // interface.
-    if (typeof SVGGraphicsElement === 'function') {
+    if (isConstructor('SVGGraphicsElement')) {
         return target => target instanceof SVGGraphicsElement;
     }
 
-    // If it's so, than check that element is at least an instance of the
-    // SVGElement and that it has the "getBBox" method in the prototype chain.
+    // If it's so, then check that element is at least an instance of the
+    // SVGElement and that it has the "getBBox" method.
     // eslint-disable-next-line no-extra-parens
     return target => (
         target instanceof SVGElement &&
@@ -166,7 +167,7 @@ const isSVGGraphicsElement = (() => {
 })();
 
 /**
- * Checks whether provided element is a document element (root element of a document, i.e. <html>).
+ * Checks whether provided element is a document element (<html>).
  *
  * @param {Element} target - Element to be checked.
  * @returns {boolean}
@@ -182,7 +183,6 @@ function isDocumentElement(target) {
  * @returns {DOMRectInit}
  */
 export function getContentRect(target) {
-    // Return empty rectangle if running in a non-browser environment.
     if (!isBrowser) {
         return emptyRect;
     }
@@ -203,13 +203,12 @@ export function getContentRect(target) {
  */
 export function createReadOnlyRect({x, y, width, height}) {
     // If DOMRectReadOnly is available use it as a prototype for the rectangle.
-    const Constr = typeof DOMRectReadOnly === 'function' ? DOMRectReadOnly : Object;
+    const Constr = isConstructor('DOMRectReadOnly') ? DOMRectReadOnly : Object;
     const rect = Object.create(Constr.prototype);
 
     // Rectangle's properties are not writable and non-enumerable.
     defineConfigurable(rect, {
-        x, y,
-        width, height,
+        x, y, width, height,
         top: y,
         right: x + width,
         bottom: height + y,

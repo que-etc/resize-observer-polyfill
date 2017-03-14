@@ -1,22 +1,9 @@
 import isBrowser from './utils/isBrowser';
+import isConstructor from './utils/isConstructor';
 import throttle from './utils/throttle';
 
 // Minimum delay before invoking the update of observers.
 const REFRESH_DELAY = 20;
-
-// eslint-disable-next-line no-extra-parens
-const mutationObserverSupported = (
-    typeof MutationObserver != 'undefined' &&
-    // MutationObserver should not be used if running in IE11 as it's
-    // implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
-    // Unfortunately, there is no other way to check for this issue but to use
-    // userAgent's information.
-    typeof navigator == 'object' &&
-    !(
-        navigator.appName === 'Netscape' &&
-        navigator.userAgent.match(/Trident\/.*rv:11/)
-    )
-);
 
 // A list of substrings of CSS properties used to find transition events that
 // might affect dimensions of observed elements.
@@ -30,6 +17,14 @@ const transitionKeys = [
     'size',
     'weight'
 ];
+
+// MutationObserver should not be used if running in Internet Explorer 11 as it's
+// implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
+// Unfortunately, there is no other way to check for this issue but to use the
+// userAgent's information.
+const mutationObserverSupported =
+        isConstructor('MutationObserver') &&
+        !(/Trident\/.*rv:11/).test(navigator.userAgent);
 
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
