@@ -237,14 +237,17 @@ describe('ResizeObserver', () => {
             observer.observe(elements.target1);
             observer2.observe(elements.target1);
 
-            wait(timeout).then(() => {
+            spy.nextCall().then(async () => {
+                await wait(10);
+
                 expect(spy).toHaveBeenCalledTimes(1);
                 expect(spy2).toHaveBeenCalledTimes(1);
-
+            }).then(async () => {
                 elements.target1.style.width = '220px';
 
-                return wait(timeout * 2);
-            }).then(() => {
+                await spy.nextCall().then(spy.nextCall);
+                await wait(10);
+
                 expect(spy).toHaveBeenCalledTimes(3);
                 expect(spy2).toHaveBeenCalledTimes(3);
             }).then(done).catch(done.fail);

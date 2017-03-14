@@ -208,7 +208,7 @@ module.exports = function (config) {
         captureTimeout: 4 * 60 * 1000,
         browserNoActivityTimeout: 4 * 60 * 1000,
         browserDisconnectTimeout: 10 * 1000,
-        concurrency: 3,
+        concurrency: 2,
         browserDisconnectTolerance: 3,
         reporters,
         browsers,
