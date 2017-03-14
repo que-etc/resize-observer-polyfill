@@ -8,43 +8,34 @@ const launchers = {
             platform: 'Windows 10',
             browserName: 'chrome'
         },
-
         SL_CHROME_PRECEDING: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'chrome',
             version: 'latest-1'
         },
-
-        // Firefox
         SL_FIREFOX_CURRENT: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'firefox'
         },
-
         SL_FIREFOX_PRECEDING: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'firefox',
             version: 'latest-1'
         },
-
-        // Edge
         SL_EDGE_14: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'MicrosoftEdge'
         },
-
         SL_EDGE_13: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'MicrosoftEdge',
             version: '13.10586'
         },
-
-        // Internet Explorer
         SL_IE_11: {
             base: 'SauceLabs',
             browserName: 'internet explorer',
@@ -58,7 +49,6 @@ const launchers = {
             platform: 'Windows 7',
             version: '10.0'
         },
-
         SL_IE_9: {
             base: 'SauceLabs',
             browserName: 'internet explorer',
@@ -72,20 +62,17 @@ const launchers = {
             browserName: 'chrome',
             platform: 'Linux'
         },
-
         SL_CHROME_PRECEDING: {
             base: 'SauceLabs',
             browserName: 'chrome',
             platform: 'Linux',
             version: 'latest-1'
         },
-
         SL_FIREFOX_CURRENT: {
             base: 'SauceLabs',
             platform: 'Linux',
             browserName: 'firefox'
         },
-
         SL_FIREFOX_PRECEDING: {
             base: 'SauceLabs',
             platform: 'Linux',
@@ -99,35 +86,29 @@ const launchers = {
             platform: 'OS X 10.11',
             browserName: 'chrome'
         },
-
         SL_CHROME_PRECEDING: {
             base: 'SauceLabs',
             platform: 'OS X 10.11',
             browserName: 'chrome',
             version: 'latest-1'
         },
-
         SL_FIREFOX_CURRENT: {
             base: 'SauceLabs',
             platform: 'OS X 10.11',
             browserName: 'firefox'
         },
-
         SL_FIREFOX_PRECEDING: {
             base: 'SauceLabs',
             platform: 'OS X 10.11',
             browserName: 'firefox',
             version: 'latest-1'
         },
-
-        // Safari
         SL_SAFARI_10: {
             base: 'SauceLabs',
             platform: 'OS X 10.12',
             browserName: 'safari',
             version: '10.0'
         },
-
         SL_SAFARI_9: {
             base: 'SauceLabs',
             platform: 'OS X 10.11',
@@ -143,7 +124,6 @@ const launchers = {
             platform: 'iOS',
             version: '10.0'
         },
-
         SL_IOS_9: {
             base: 'SauceLabs',
             browserName: 'safari',
@@ -151,7 +131,6 @@ const launchers = {
             platform: 'iOS',
             version: '9.3'
         },
-
         SL_IOS_8: {
             base: 'SauceLabs',
             browserName: 'safari',
@@ -159,11 +138,33 @@ const launchers = {
             platform: 'iOS',
             version: '8.4'
         }
+    },
+    android: {
+        SL_ANDROID_5: {
+            base: 'SauceLabs',
+            browserName: 'Browser',
+            deviceName: 'Android Emulator',
+            platformVersion: '5.1',
+            platformName: 'Android'
+        }
+
+        // Can't make it work because of the SSL certificate. And the
+        // "--no-ssl-bump-domain" option causes Sauce Connect to fail.
+        /*
+        SL_ANDROID_4: {
+            base: 'SauceLabs',
+            browserName: 'Browser',
+            deviceName: 'Android Emulator',
+            platformVersion: '4.4',
+            platformName: 'Android'
+        }
+        */
     }
 };
 
 module.exports = function (config) {
     const reporters = ['spec'];
+
     let browsers = [],
         customLaunchers = {};
 
@@ -175,6 +176,9 @@ module.exports = function (config) {
             process.exit(1);
         }
 
+        // SauceLabs may randomly disconnect browsers if all of them are being
+        // tested together. So, I'll keep launchers separated by the platform
+        // until I figure out a cleaner way to run CI tests.
         customLaunchers = launchers[config.sauce];
         browsers = Object.keys(customLaunchers);
 
@@ -185,15 +189,12 @@ module.exports = function (config) {
 
     config.set({
         singleRun: true,
-
         frameworks: ['jasmine'],
-
         files: [
             './node_modules/regenerator-runtime/runtime.js',
             './node_modules/promise-polyfill/promise.js',
             'tests/**/*.spec.js'
         ],
-
         plugins: [
             'karma-chrome-launcher',
             'karma-jasmine',
@@ -203,29 +204,22 @@ module.exports = function (config) {
             'karma-sourcemap-loader',
             'karma-spec-reporter'
         ],
-
         port: 9876,
         captureTimeout: 4 * 60 * 1000,
         browserNoActivityTimeout: 4 * 60 * 1000,
         browserDisconnectTimeout: 10 * 1000,
-        concurrency: 2,
+        concurrency: 3,
         browserDisconnectTolerance: 3,
-
         reporters,
-
         browsers,
-
         customLaunchers,
-
         client: {
             native: config.native === true
         },
-
         preprocessors: {
             'tests/*.js': ['rollup', 'sourcemap'],
             'src/**/*.js': ['rollup']
         },
-
         rollupPreprocessor: {
             plugins: [
                 babel({
@@ -247,7 +241,6 @@ module.exports = function (config) {
             format: 'iife',
             sourceMap: 'inline'
         },
-
         sauceLabs: {
             testName: 'resize-observer-polyfill',
             public: 'public'
