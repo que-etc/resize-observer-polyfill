@@ -1,6 +1,6 @@
 /* eslint-disable max-nested-callbacks, no-shadow, require-jsdoc */
-import {ResizeObserver, ResizeObserverEntry} from './source';
-import {createAsyncSpy, wait} from './helpers';
+import {ResizeObserver, ResizeObserverEntry} from './resources/observer';
+import {createAsyncSpy, wait} from './resources/helpers';
 
 let observer = null,
     observer2 = null,

@@ -1,5 +1,5 @@
-import ResizeObserverEntryPolyfill from '../src/ResizeObserverEntry';
-import ResizeObserverPolyfill from '../src/ResizeObserver';
+import ResizeObserverEntryPolyfill from '../../src/ResizeObserverEntry';
+import ResizeObserverPolyfill from '../../src/ResizeObserver';
 
 let ResizeObserver = ResizeObserverPolyfill,
     ResizeObserverEntry = ResizeObserverEntryPolyfill;

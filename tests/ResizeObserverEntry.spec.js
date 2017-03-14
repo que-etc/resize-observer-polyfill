@@ -1,5 +1,5 @@
 /* eslint-disable max-nested-callbacks, require-jsdoc */
-import {ResizeObserver} from './source';
+import {ResizeObserver} from './resources/observer';
 
 const NEW_VALUE = Date.now();
 
