@@ -1130,8 +1130,6 @@ describe('ResizeObserver', () => {
                 observer.observe(elements.target1);
 
                 spy.nextCall().then(async () => {
-                    elements.target1.style.width = '600px';
-
                     const transitionEnd = new Promise(resolve => {
                         const callback = () => {
                             elements.target1.removeEventListener('transitionend', callback);
@@ -1140,6 +1138,10 @@ describe('ResizeObserver', () => {
 
                         elements.target1.addEventListener('transitionend', callback);
                     });
+
+                    await wait(20);
+
+                    elements.target1.style.width = '600px';
 
                     await transitionEnd;
                     await wait(timeout);
@@ -1164,8 +1166,6 @@ describe('ResizeObserver', () => {
                 observer.observe(elements.container);
 
                 spy.nextCall().then(async () => {
-                    elements.target1.style.width = '700px';
-
                     const transitionEnd = new Promise(resolve => {
                         const callback = () => {
                             elements.target1.removeEventListener('transitionend', callback);
@@ -1174,6 +1174,10 @@ describe('ResizeObserver', () => {
 
                         elements.target1.addEventListener('transitionend', callback);
                     });
+
+                    await wait(20);
+
+                    elements.target1.style.width = '700px';
 
                     await transitionEnd;
                     await wait(timeout);
