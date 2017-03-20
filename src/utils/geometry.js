@@ -1,6 +1,5 @@
 import defineConfigurable from './defineConfigurable';
 import isBrowser from './isBrowser';
-import isConstructor from './isConstructor';
 
 // Placeholder of an empty content rectangle.
 const emptyRect = createRectInit(0, 0, 0, 0);
@@ -153,7 +152,7 @@ function getHTMLElementContentRect(target) {
 const isSVGGraphicsElement = (() => {
     // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
     // interface.
-    if (isConstructor('SVGGraphicsElement')) {
+    if (typeof SVGGraphicsElement != 'undefined') {
         return target => target instanceof SVGGraphicsElement;
     }
 
@@ -203,7 +202,7 @@ export function getContentRect(target) {
  */
 export function createReadOnlyRect({x, y, width, height}) {
     // If DOMRectReadOnly is available use it as a prototype for the rectangle.
-    const Constr = isConstructor('DOMRectReadOnly') ? DOMRectReadOnly : Object;
+    const Constr = typeof DOMRectReadOnly != 'undefined' ? DOMRectReadOnly : Object;
     const rect = Object.create(Constr.prototype);
 
     // Rectangle's properties are not writable and non-enumerable.

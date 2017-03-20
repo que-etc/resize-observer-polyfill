@@ -1,7 +1,6 @@
 import {Map} from './shims/es6-collections';
 import ResizeObservation from './ResizeObservation';
 import ResizeObserverEntry from './ResizeObserverEntry';
-import isConstructor from './utils/isConstructor';
 
 export default class ResizeObserverSPI {
     /**
@@ -73,7 +72,7 @@ export default class ResizeObserverSPI {
         }
 
         // Do nothing if current environment doesn't have the Element interface.
-        if (!isConstructor('Element')) {
+        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
             return;
         }
 
@@ -108,7 +107,7 @@ export default class ResizeObserverSPI {
         }
 
         // Do nothing if current environment doesn't have the Element interface.
-        if (!isConstructor('Element')) {
+        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
             return;
         }
 

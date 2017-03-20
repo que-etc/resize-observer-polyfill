@@ -1,12 +1,11 @@
 import {Map} from './shims/es6-collections';
 import ResizeObserverController from './ResizeObserverController';
 import ResizeObserverSPI from './ResizeObserverSPI';
-import isConstructor from './utils/isConstructor';
 
 // Registry of internal observers. If WeakMap is not available use current shim
 // for the Map collection as it has all required methods and because WeakMap
 // can't be fully polyfilled anyway.
-const observers = isConstructor('WeakMap') ? new WeakMap() : new Map();
+const observers = typeof WeakMap != 'undefined' ? new WeakMap() : new Map();
 
 /**
  * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation

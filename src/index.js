@@ -1,9 +1,8 @@
 import ResizeObserverPolyfill from './ResizeObserver';
-import isConstructor from './utils/isConstructor';
 
 export default (() => {
     // Export existing implementation if available.
-    if (isConstructor('ResizeObserver')) {
+    if (typeof ResizeObserver != 'undefined') {
         // eslint-disable-next-line no-undef
         return ResizeObserver;
     }

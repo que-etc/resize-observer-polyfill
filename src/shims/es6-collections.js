@@ -4,13 +4,10 @@
  * These implementations are not meant to be used outside of the ResizeObserver
  * modules as they cover only a limited range of use cases.
  */
-import global from './global';
-import isConstructor from '../utils/isConstructor';
-
 /* eslint-disable require-jsdoc, valid-jsdoc */
-export const Map = (() => {
-    if (isConstructor('Map')) {
-        return global.Map;
+const MapShim = (() => {
+    if (typeof Map != 'undefined') {
+        return Map;
     }
 
     /**
@@ -114,3 +111,5 @@ export const Map = (() => {
         }
     };
 })();
+
+export {MapShim as Map};

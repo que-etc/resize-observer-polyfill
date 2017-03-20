@@ -1,5 +1,4 @@
 import isBrowser from './utils/isBrowser';
-import isConstructor from './utils/isConstructor';
 import throttle from './utils/throttle';
 
 // Minimum delay before invoking the update of observers.
@@ -7,24 +6,17 @@ const REFRESH_DELAY = 20;
 
 // A list of substrings of CSS properties used to find transition events that
 // might affect dimensions of observed elements.
-const transitionKeys = [
-    'top',
-    'right',
-    'bottom',
-    'left',
-    'width',
-    'height',
-    'size',
-    'weight'
-];
+const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
+
+// Detect whether running in IE 11 (facepalm).
+const isIE11 = typeof navigator != 'undefined' && (/Trident\/.*rv:11/).test(navigator.userAgent);
 
 // MutationObserver should not be used if running in Internet Explorer 11 as it's
 // implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
-// Unfortunately, there is no other way to check for this issue but to use the
-// userAgent's information.
-const mutationObserverSupported =
-        isConstructor('MutationObserver') &&
-        !(/Trident\/.*rv:11/).test(navigator.userAgent);
+//
+// It's a real bummer that there is no other way to check for this issue but to
+// use the UA information.
+const mutationObserverSupported = typeof MutationObserver != 'undefined' && !isIE11;
 
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
@@ -71,8 +63,8 @@ export default class ResizeObserverController {
      * @private
      */
     constructor() {
-        this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
         this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
+        this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
     }
 
     /**
