@@ -8,7 +8,7 @@ A polyfill for the Resize Observer API.
 
 Implementation is based on the MutationObserver with a fall back to Mutation Events if the first one is not supported, so there will be no polling unless DOM changes. Doesn't modify observed elements. Handles CSS transitions/animations, `<textarea>` resizes and can possibly observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
 
-Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _2.6KB_ when minified and gzipped.
+Compliant with the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _2.44 KiB_ when minified and gzipped.
 
 [Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
 
@@ -64,16 +64,18 @@ Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) bundle that wil
 
 As mentioned above, this implementation primarily (but not solely) relies on Mutation Observer with a fallback to Mutation Events for IE 9, IE 10 and IE 11. It's important to notice that even though MO is available in Internet Explorer 11 it won't be used due to a very unreliable behavior mentioned in the issue #6 (run [this example](https://jsfiddle.net/x2r3jpuz/2/) in IE11).
 
-It's also worth mentioning that Mutation Events might not be not as dreadful as they are being framed, particularly when their calls are batched, postponed and when there is no need to analyze changes. Given that, they won't interrupt browser's reflow/repaint cycles (same for MutationObserver) and may even outperform Internet Explorer's implementation of MO causing little to no performance degradation. In contemporary browsers (Chrome, Firefox, etc.) Mutation Observer slows down [the suite](https://jsfiddle.net/que_etc/gaqLe8rn/) that includes 200 iterations of adding/removing elements, changing attributes and modifying text data by less than 1%. Internet Explorer gives different results with MO slowing down the same suite by 2-3% while Mutation Events show the difference of ~0.6%.
+It's also worth mentioning that Mutation Events might not be not as ugly as they are being framed, particularly when their calls are batched, postponed and when there is no need to analyze changes. Given that, they won't interrupt browser's reflow/repaint cycles (same for MutationObserver) and may even outperform Internet Explorer's implementation of MO causing little to no performance degradation. In contemporary browsers (Chrome, Firefox, etc.) Mutation Observer slows down [the suite](https://jsfiddle.net/que_etc/gaqLe8rn/) that includes 200 iterations of adding/removing elements, changing attributes and modifying text data by less than 1%. Internet Explorer gives different results with MO slowing down the same suite by 2-3% while Mutation Events show the difference of ~0.6%.
 
 As for the reasons why other approaches, namely the iframe/object and `scroll` strategies, were ruled out:
 * They require the observed element to be non-statically positioned.
 * You can't apply them directly to quite a number of elements: `<img>`, `<input>`, `<textarea>`, `<canvas>`, `<tr>`, `<tbody>`, `<thead>`, `<table>`, etc. For most of them you would need to keep an extra `<div>` wrapper and almost all instances of the SVGGraphicsElement will be out of scope.
+* The ResizeObserver spec requires to deliver notifications when a non-empty visible element becomes hidden, i.e. when either this element directly or one of its parent nodes receive the `display: none` state. Same goes for when it's being removed from or added to the DOM. It's not possible to handle these cases merely by using former approaches so you'd still need to either subscribe for DOM mutations or to continuously check element's state.
 
 And though every approach has its own limitations, I reckon that it'd be too much of a trade-off to have those constraints when building something generic and especially in case of the polyfill.
 
 ## Limitations
 
+* Notifications being delivered 20ms after actual changes happen.
 * CSS changes caused by dynamic pseudo-classes, e.g. `:hover` and `:focus`, are not tracked. As a workaround you can add a short transition which would trigger the `transitionend` event when an element receives one of the former classes ([example](https://jsfiddle.net/que_etc/7fudzqng/)).
 * Delayed transitions will receive only one notification with the latest dimensions of an element.
 
