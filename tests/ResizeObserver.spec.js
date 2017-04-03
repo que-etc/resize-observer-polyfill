@@ -1149,44 +1149,8 @@ describe('ResizeObserver', () => {
                     // eslint-disable-next-line prefer-destructuring
                     const entries = spy.calls.mostRecent().args[0];
 
-                    expect(spy.calls.count()).toBeGreaterThan(2);
-
                     expect(entries[0].target).toBe(elements.target1);
                     expect(Math.round(entries[0].contentRect.width)).toBe(600);
-                }).then(done).catch(done.fail);
-            });
-
-            it('handles changes caused by transitions in nearby or descendant elements', done => {
-                const spy = createAsyncSpy();
-
-                elements.target1.style.transition = 'width 0.5s';
-
-                observer = new ResizeObserver(spy);
-
-                observer.observe(elements.container);
-
-                spy.nextCall().then(async () => {
-                    const transitionEnd = new Promise(resolve => {
-                        const callback = () => {
-                            elements.target1.removeEventListener('transitionend', callback);
-                            resolve();
-                        };
-
-                        elements.target1.addEventListener('transitionend', callback);
-                    });
-
-                    await wait(20);
-
-                    elements.target1.style.width = '700px';
-
-                    await transitionEnd;
-                    await wait(timeout);
-
-                    // eslint-disable-next-line prefer-destructuring
-                    const entries = spy.calls.mostRecent().args[0];
-
-                    expect(entries[0].target).toBe(elements.container);
-                    expect(Math.round(entries[0].contentRect.width)).toBe(700);
                 }).then(done).catch(done.fail);
             });
         }
