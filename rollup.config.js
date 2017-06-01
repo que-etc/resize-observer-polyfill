@@ -25,8 +25,10 @@ export default {
         }),
 
         uglify({
-            mangleProperties: {
-                regex: /_$/
+            mangle: {
+                properties: {
+                    regex: /_$/
+                }
             }
         })
     ]
