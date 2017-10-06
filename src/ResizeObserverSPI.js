@@ -1,6 +1,6 @@
-import {Map} from './shims/es6-collections';
-import ResizeObservation from './ResizeObservation';
-import ResizeObserverEntry from './ResizeObserverEntry';
+import {Map} from './shims/es6-collections.js';
+import ResizeObservation from './ResizeObservation.js';
+import ResizeObserverEntry from './ResizeObserverEntry.js';
 
 export default class ResizeObserverSPI {
     /**

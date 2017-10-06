@@ -1,4 +1,4 @@
-import ResizeObserverPolyfill from './ResizeObserver';
+import ResizeObserverPolyfill from './ResizeObserver.js';
 
 export default (() => {
     // Export existing implementation if available.

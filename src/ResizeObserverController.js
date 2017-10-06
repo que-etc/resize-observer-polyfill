@@ -1,5 +1,5 @@
-import isBrowser from './utils/isBrowser';
-import throttle from './utils/throttle';
+import isBrowser from './utils/isBrowser.js';
+import throttle from './utils/throttle.js';
 
 // Minimum delay before invoking the update of observers.
 const REFRESH_DELAY = 20;

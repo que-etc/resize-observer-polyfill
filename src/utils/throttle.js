@@ -1,4 +1,4 @@
-import requestAnimationFrame from '../shims/requestAnimationFrame';
+import requestAnimationFrame from '../shims/requestAnimationFrame.js';
 
 // Defines minimum timeout before adding a trailing call.
 const trailingTimeout = 2;

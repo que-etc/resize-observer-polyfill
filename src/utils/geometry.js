@@ -1,5 +1,5 @@
-import defineConfigurable from './defineConfigurable';
-import isBrowser from './isBrowser';
+import defineConfigurable from './defineConfigurable.js';
+import isBrowser from './isBrowser.js';
 
 // Placeholder of an empty content rectangle.
 const emptyRect = createRectInit(0, 0, 0, 0);

@@ -1,5 +1,5 @@
-import {createReadOnlyRect} from './utils/geometry';
-import defineConfigurable from './utils/defineConfigurable';
+import {createReadOnlyRect} from './utils/geometry.js';
+import defineConfigurable from './utils/defineConfigurable.js';
 
 export default class ResizeObserverEntry {
     /**

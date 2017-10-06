@@ -1,6 +1,6 @@
-import {Map} from './shims/es6-collections';
-import ResizeObserverController from './ResizeObserverController';
-import ResizeObserverSPI from './ResizeObserverSPI';
+import {Map} from './shims/es6-collections.js';
+import ResizeObserverController from './ResizeObserverController.js';
+import ResizeObserverSPI from './ResizeObserverSPI.js';
 
 // Registry of internal observers. If WeakMap is not available use current shim
 // for the Map collection as it has all required methods and because WeakMap

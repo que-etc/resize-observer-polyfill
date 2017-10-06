@@ -1,4 +1,4 @@
-import {createRectInit, getContentRect} from './utils/geometry';
+import {createRectInit, getContentRect} from './utils/geometry.js';
 
 /**
  * Class that is responsible for computations of the content rectangle of
