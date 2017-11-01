@@ -4,7 +4,6 @@
     "version": "1.4.2",
     "description": "A polyfill for the Resize Observer API",
     "main": "dist/ResizeObserver.js",
-    "jsnext:main": "dist/ResizeObserver.es.js",
     "module": "dist/ResizeObserver.es.js",
     "scripts": {
         "build": "rollup -c",
