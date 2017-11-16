@@ -6,7 +6,7 @@
  */
 /* eslint-disable require-jsdoc, valid-jsdoc */
 const MapShim = (() => {
-    if (typeof Map != 'undefined') {
+    if (typeof Map !== 'undefined') {
         return Map;
     }
 

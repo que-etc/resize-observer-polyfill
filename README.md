@@ -20,13 +20,12 @@ From NPM:
 npm install resize-observer-polyfill --save-dev
 ```
 
-From Bower:
+~~From Bower:~~ (will be removed with the next major release)
 
 ```sh
 bower install resize-observer-polyfill --save-dev
 ```
 
-Or just [grab](https://github.com/que-etc/resize-observer-polyfill/tree/master/dist/ResizeObserver.js) the pre-built version.
 
 ## Browser Support
 
@@ -56,13 +55,13 @@ const ro = new ResizeObserver((entries, observer) => {
 ro.observe(document.body);
 ```
 
-Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) bundle that will be swapped with the ES6 modules version for those bundlers that are aware of the [jnext:main](https://github.com/rollup/rollup/wiki/jsnext:main) field, e.g. for [Rollup](https://github.com/rollup/rollup) or webpack.
+Package's main file is a ES5 [UMD](https://github.com/umdjs/umd) bundle that will be swapped with the ES6 modules version for those bundlers that are aware of the [module](https://github.com/rollup/rollup/wiki/pkg.module) field, e.g. for [Rollup](https://github.com/rollup/rollup) or webpack 2+.
 
 **Note**: global version of the polyfill (`dist/ResizeObserver.global`) is deprecated and will be removed in the next major release.
 
 ## Observation Strategy
 
-As mentioned above, this implementation primarily (but not solely) relies on Mutation Observer with a fallback to Mutation Events for IE 9, IE 10 and IE 11. It's important to notice that even though MO is available in Internet Explorer 11, it won't be used due to a very unreliable behavior mentioned in the issue #6 (run [this example](https://jsfiddle.net/x2r3jpuz/2/) in IE11).
+As mentioned above, this implementation primarily (but not solely) relies on Mutation Observer with a fallback to Mutation Events for IE 9 and IE 10.
 
 Speaking of Mutation Events as a fallback approach: they might not be as ugly as they are being rendered, particularly when their calls are batched, throttled and there is no need to analyze changes. Given that, they won't interrupt browser's reflow/repaint cycles (same for MutationObserver) and may even outperform Internet Explorer's implementation of MO causing little to no performance degradation. In contemporary browsers (Chrome, Firefox, etc.) Mutation Observer slows down [the suite](https://jsfiddle.net/que_etc/gaqLe8rn/) that includes 200 iterations of adding/removing elements, changing attributes and modifying text data by less than 1%. Internet Explorer gives different results with MO slowing down the same suite by 2-3% while Mutation Events show the difference of ~0.6%.
 

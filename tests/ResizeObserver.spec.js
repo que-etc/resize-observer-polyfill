@@ -7,7 +7,7 @@ let observer = null,
     elements = {},
     styles;
 
-// eslint-disable-next-line no-empty-function
+// eslint-disable-next-line
 const emptyFn = () => {};
 const css = `
     #root {

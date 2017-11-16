@@ -3,7 +3,7 @@ import global from './shims/global.js';
 
 export default (() => {
     // Export existing implementation if available.
-    if (typeof global.ResizeObserver != 'undefined') {
+    if (typeof global.ResizeObserver !== 'undefined') {
         return global.ResizeObserver;
     }
 

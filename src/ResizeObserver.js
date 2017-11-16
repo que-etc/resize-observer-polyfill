@@ -5,7 +5,7 @@ import ResizeObserverSPI from './ResizeObserverSPI.js';
 // Registry of internal observers. If WeakMap is not available use current shim
 // for the Map collection as it has all required methods and because WeakMap
 // can't be fully polyfilled anyway.
-const observers = typeof WeakMap != 'undefined' ? new WeakMap() : new Map();
+const observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new Map();
 
 /**
  * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
@@ -19,6 +19,9 @@ class ResizeObserver {
      *      dimensions of the observed elements change.
      */
     constructor(callback) {
+        if (!(this instanceof ResizeObserver)) {
+            throw new TypeError('Cannot call a class as a function.');
+        }
         if (!arguments.length) {
             throw new TypeError('1 argument required, but only 0 present.');
         }
