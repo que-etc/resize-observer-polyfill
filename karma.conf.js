@@ -222,12 +222,13 @@ module.exports = function (config) {
         rollupPreprocessor: {
             plugins: [
                 babel({
-                    presets: ['stage-2'],
                     plugins: [
                         ['transform-regenerator', {
                             async: false,
                             asyncGenerators: false
-                        }]
+                        }],
+                        'transform-class-properties',
+                        'transform-async-to-generator'
                     ]
                 }),
                 buble({

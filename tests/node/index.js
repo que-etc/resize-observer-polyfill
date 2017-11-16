@@ -1,4 +1,4 @@
-import Jasmine from 'jasmine';
+const Jasmine = require('jasmine');
 
 const jasmine = new Jasmine();
 

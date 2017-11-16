@@ -1,5 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import buble from 'rollup-plugin-buble';
+
 const pkg = require('./package.json');
 
 export default {
@@ -14,7 +15,7 @@ export default {
     }],
     plugins: [
         babel({
-            presets: ['stage-2']
+            plugins: ['transform-class-properties']
         }),
 
         buble({

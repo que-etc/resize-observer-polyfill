@@ -1,9 +1,9 @@
-/* eslint-disable max-nested-callbacks, no-shadow, require-jsdoc */
-import ResizeObserver from '../../src/index';
+/* eslint-disable max-nested-callbacks */
+const ResizeObserver = require('../../dist/ResizeObserver');
 
 let observer;
 
-// eslint-disable-next-line no-empty-function
+// eslint-disable-next-line
 const emptyFn = () => {};
 
 describe('ResizeObserver', () => {
