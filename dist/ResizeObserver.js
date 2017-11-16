@@ -12,7 +12,7 @@
  */
 /* eslint-disable require-jsdoc, valid-jsdoc */
 var MapShim = (function () {
-    if (typeof Map != 'undefined') {
+    if (typeof Map !== 'undefined') {
         return Map;
     }
 
@@ -132,7 +132,25 @@ var MapShim = (function () {
 /**
  * Detects whether window and document objects are available in current environment.
  */
-var isBrowser = typeof window != 'undefined' && typeof document != 'undefined' && window.document === document;
+var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
+
+// Returns global object of a current environment.
+var global$1 = (function () {
+    if (typeof global !== 'undefined' && global.Math === Math) {
+        return global;
+    }
+
+    if (typeof self !== 'undefined' && self.Math === Math) {
+        return self;
+    }
+
+    if (typeof window !== 'undefined' && window.Math === Math) {
+        return window;
+    }
+
+    // eslint-disable-next-line no-new-func
+    return Function('return this')();
+})();
 
 /**
  * A shim for the requestAnimationFrame which falls back to the setTimeout if
@@ -142,7 +160,10 @@ var isBrowser = typeof window != 'undefined' && typeof document != 'undefined' &
  */
 var requestAnimationFrame$1 = (function () {
     if (typeof requestAnimationFrame === 'function') {
-        return requestAnimationFrame;
+        // It's required to use a bounded function because IE sometimes throws
+        // an "Invalid calling object" error if rAF is invoked without the global
+        // object on the left hand side.
+        return requestAnimationFrame.bind(global$1);
     }
 
     return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
@@ -232,15 +253,8 @@ var REFRESH_DELAY = 20;
 // might affect dimensions of observed elements.
 var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
 
-// Detect whether running in IE 11 (facepalm).
-var isIE11 = typeof navigator != 'undefined' && /Trident\/.*rv:11/.test(navigator.userAgent);
-
-// MutationObserver should not be used if running in Internet Explorer 11 as it's
-// implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
-//
-// It's a real bummer that there is no other way to check for this issue but to
-// use the UA information.
-var mutationObserverSupported = typeof MutationObserver != 'undefined' && !isIE11;
+// Check if MutationObserver is available.
+var mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
@@ -428,7 +442,7 @@ ResizeObserverController.prototype.disconnect_ = function () {
  * @returns {void}
  */
 ResizeObserverController.prototype.onTransitionEnd_ = function (ref) {
-        var propertyName = ref.propertyName;
+        var propertyName = ref.propertyName; if ( propertyName === void 0 ) propertyName = '';
 
     // Detect whether transition may affect dimensions of an element.
     var isReflowProperty = transitionKeys.some(function (key) {
@@ -475,6 +489,23 @@ var defineConfigurable = (function (target, props) {
     }
 
     return target;
+});
+
+/**
+ * Returns the global object associated with provided element.
+ *
+ * @param {Object} target
+ * @returns {Object}
+ */
+var getWindowOf = (function (target) {
+    // Assume that the element is an instance of Node, which means that it
+    // has the "ownerDocument" property from which we can retrieve a
+    // corresponding global object.
+    var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView;
+
+    // Return the local global object if it's not possible extract one from
+    // provided element.
+    return ownerGlobal || global$1;
 });
 
 // Placeholder of an empty content rectangle.
@@ -566,7 +597,7 @@ function getHTMLElementContentRect(target) {
         return emptyRect;
     }
 
-    var styles = getComputedStyle(target);
+    var styles = getWindowOf(target).getComputedStyle(target);
     var paddings = getPaddings(styles);
     var horizPad = paddings.left + paddings.right;
     var vertPad = paddings.top + paddings.bottom;
@@ -634,14 +665,14 @@ function getHTMLElementContentRect(target) {
 var isSVGGraphicsElement = (function () {
     // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
     // interface.
-    if (typeof SVGGraphicsElement != 'undefined') {
-        return function (target) { return target instanceof SVGGraphicsElement; };
+    if (typeof SVGGraphicsElement !== 'undefined') {
+        return function (target) { return target instanceof getWindowOf(target).SVGGraphicsElement; };
     }
 
     // If it's so, then check that element is at least an instance of the
     // SVGElement and that it has the "getBBox" method.
     // eslint-disable-next-line no-extra-parens
-    return function (target) { return target instanceof SVGElement && typeof target.getBBox === 'function'; };
+    return function (target) { return target instanceof getWindowOf(target).SVGElement && typeof target.getBBox === 'function'; };
 })();
 
 /**
@@ -651,7 +682,7 @@ var isSVGGraphicsElement = (function () {
  * @returns {boolean}
  */
 function isDocumentElement(target) {
-    return target === document.documentElement;
+    return target === getWindowOf(target).document.documentElement;
 }
 
 /**
@@ -686,7 +717,7 @@ function createReadOnlyRect(ref) {
     var height = ref.height;
 
     // If DOMRectReadOnly is available use it as a prototype for the rectangle.
-    var Constr = typeof DOMRectReadOnly != 'undefined' ? DOMRectReadOnly : Object;
+    var Constr = typeof DOMRectReadOnly !== 'undefined' ? DOMRectReadOnly : Object;
     var rect = Object.create(Constr.prototype);
 
     // Rectangle's properties are not writable and non-enumerable.
@@ -720,11 +751,11 @@ function createRectInit(x, y, width, height) {
  * provided DOM element and for keeping track of it's changes.
  */
 var ResizeObservation = function(target) {
-  this.broadcastWidth = 0;
-  this.broadcastHeight = 0;
-  this.contentRect_ = createRectInit(0, 0, 0, 0);
+    this.broadcastWidth = 0;
+    this.broadcastHeight = 0;
+    this.contentRect_ = createRectInit(0, 0, 0, 0);
 
-  this.target = target;
+    this.target = target;
 };
 
 /**
@@ -748,11 +779,11 @@ var ResizeObservation = function(target) {
  * @type {number}
  */
 ResizeObservation.prototype.isActive = function () {
-  var rect = getContentRect(this.target);
+    var rect = getContentRect(this.target);
 
-  this.contentRect_ = rect;
+    this.contentRect_ = rect;
 
-  return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
+    return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
 };
 
 /**
@@ -762,24 +793,24 @@ ResizeObservation.prototype.isActive = function () {
  * @returns {DOMRectInit} Last observed content rectangle.
  */
 ResizeObservation.prototype.broadcastRect = function () {
-  var rect = this.contentRect_;
+    var rect = this.contentRect_;
 
-  this.broadcastWidth = rect.width;
-  this.broadcastHeight = rect.height;
+    this.broadcastWidth = rect.width;
+    this.broadcastHeight = rect.height;
 
-  return rect;
+    return rect;
 };
 
 var ResizeObserverEntry = function(target, rectInit) {
-  var contentRect = createReadOnlyRect(rectInit);
+    var contentRect = createReadOnlyRect(rectInit);
 
-  // According to the specification following properties are not writable
-  // and are also not enumerable in the native implementation.
-  //
-  // Property accessors are not being used as they'd require to define a
-  // private WeakMap storage which may cause memory leaks in browsers that
-  // don't support this type of collections.
-  defineConfigurable(this, { target: target, contentRect: contentRect });
+    // According to the specification following properties are not writable
+    // and are also not enumerable in the native implementation.
+    //
+    // Property accessors are not being used as they'd require to define a
+    // private WeakMap storage which may cause memory leaks in browsers that
+    // don't support this type of collections.
+    defineConfigurable(this, { target: target, contentRect: contentRect });
 };
 
 var ResizeObserverSPI = function(callback, controller, callbackCtx) {
@@ -833,7 +864,7 @@ ResizeObserverSPI.prototype.observe = function (target) {
         return;
     }
 
-    if (!(target instanceof Element)) {
+    if (!(target instanceof getWindowOf(target).Element)) {
         throw new TypeError('parameter 1 is not of type "Element".');
     }
 
@@ -868,7 +899,7 @@ ResizeObserverSPI.prototype.unobserve = function (target) {
         return;
     }
 
-    if (!(target instanceof Element)) {
+    if (!(target instanceof getWindowOf(target).Element)) {
         throw new TypeError('parameter 1 is not of type "Element".');
     }
 
@@ -959,13 +990,16 @@ ResizeObserverSPI.prototype.hasActive = function () {
 // Registry of internal observers. If WeakMap is not available use current shim
 // for the Map collection as it has all required methods and because WeakMap
 // can't be fully polyfilled anyway.
-var observers = typeof WeakMap != 'undefined' ? new WeakMap() : new MapShim();
+var observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new MapShim();
 
 /**
  * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
  * exposing only those methods and properties that are defined in the spec.
  */
-var ResizeObserver$1 = function(callback) {
+var ResizeObserver = function(callback) {
+    if (!(this instanceof ResizeObserver)) {
+        throw new TypeError('Cannot call a class as a function.');
+    }
     if (!arguments.length) {
         throw new TypeError('1 argument required, but only 0 present.');
     }
@@ -978,7 +1012,7 @@ var ResizeObserver$1 = function(callback) {
 
 // Expose public methods of ResizeObserver.
 ['observe', 'unobserve', 'disconnect'].forEach(function (method) {
-    ResizeObserver$1.prototype[method] = function () {
+    ResizeObserver.prototype[method] = function () {
         return (ref = observers.get(this))[method].apply(ref, arguments);
         var ref;
     };
@@ -986,12 +1020,11 @@ var ResizeObserver$1 = function(callback) {
 
 var index = (function () {
     // Export existing implementation if available.
-    if (typeof ResizeObserver != 'undefined') {
-        // eslint-disable-next-line no-undef
-        return ResizeObserver;
+    if (typeof global$1.ResizeObserver !== 'undefined') {
+        return global$1.ResizeObserver;
     }
 
-    return ResizeObserver$1;
+    return ResizeObserver;
 })();
 
 return index;

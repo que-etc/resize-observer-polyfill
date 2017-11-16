@@ -6,7 +6,7 @@ ResizeObserver Polyfill
 
 A polyfill for the Resize Observer API.
 
-Implementation is based on the MutationObserver and uses Mutation Events as a fall back if the first one is not supported, so there will be no polling unless DOM changes. Doesn't modify observed elements. Handles CSS transitions/animations, `<textarea>` resizes and can possibly observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
+Implementation is based on the MutationObserver and uses Mutation Events as a fall back if the first one is not supported, so there will be no polling unless DOM changes. Doesn't modify observed elements. Handles CSS transitions/animations and can possibly observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
 
 Follows the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _2.44 KiB_ when minified and gzipped.
 
