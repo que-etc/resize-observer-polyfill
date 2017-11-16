@@ -8,15 +8,8 @@ const REFRESH_DELAY = 20;
 // might affect dimensions of observed elements.
 const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
 
-// Detect whether running in IE 11 (facepalm).
-const isIE11 = typeof navigator != 'undefined' && (/Trident\/.*rv:11/).test(navigator.userAgent);
-
-// MutationObserver should not be used if running in Internet Explorer 11 as it's
-// implementation is unreliable. Example: https://jsfiddle.net/x2r3jpuz/2/
-//
-// It's a real bummer that there is no other way to check for this issue but to
-// use the UA information.
-const mutationObserverSupported = typeof MutationObserver != 'undefined' && !isIE11;
+// Check if MutationObserver is available.
+const mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
@@ -219,7 +212,7 @@ export default class ResizeObserverController {
      * @param {TransitionEvent} event
      * @returns {void}
      */
-    onTransitionEnd_({propertyName}) {
+    onTransitionEnd_({propertyName = ''}) {
         // Detect whether transition may affect dimensions of an element.
         const isReflowProperty = transitionKeys.some(key => {
             return !!~propertyName.indexOf(key);
