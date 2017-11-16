@@ -1,4 +1,5 @@
 import defineConfigurable from './defineConfigurable.js';
+import getWindowOf from './getWindowOf.js';
 import isBrowser from './isBrowser.js';
 
 // Placeholder of an empty content rectangle.
@@ -84,7 +85,7 @@ function getHTMLElementContentRect(target) {
         return emptyRect;
     }
 
-    const styles = getComputedStyle(target);
+    const styles = getWindowOf(target).getComputedStyle(target);
     const paddings = getPaddings(styles);
     const horizPad = paddings.left + paddings.right;
     const vertPad = paddings.top + paddings.bottom;
@@ -152,15 +153,15 @@ function getHTMLElementContentRect(target) {
 const isSVGGraphicsElement = (() => {
     // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
     // interface.
-    if (typeof SVGGraphicsElement != 'undefined') {
-        return target => target instanceof SVGGraphicsElement;
+    if (typeof SVGGraphicsElement !== 'undefined') {
+        return target => target instanceof getWindowOf(target).SVGGraphicsElement;
     }
 
     // If it's so, then check that element is at least an instance of the
     // SVGElement and that it has the "getBBox" method.
     // eslint-disable-next-line no-extra-parens
     return target => (
-        target instanceof SVGElement &&
+        target instanceof getWindowOf(target).SVGElement &&
         typeof target.getBBox === 'function'
     );
 })();
@@ -172,7 +173,7 @@ const isSVGGraphicsElement = (() => {
  * @returns {boolean}
  */
 function isDocumentElement(target) {
-    return target === document.documentElement;
+    return target === getWindowOf(target).document.documentElement;
 }
 
 /**
@@ -202,7 +203,7 @@ export function getContentRect(target) {
  */
 export function createReadOnlyRect({x, y, width, height}) {
     // If DOMRectReadOnly is available use it as a prototype for the rectangle.
-    const Constr = typeof DOMRectReadOnly != 'undefined' ? DOMRectReadOnly : Object;
+    const Constr = typeof DOMRectReadOnly !== 'undefined' ? DOMRectReadOnly : Object;
     const rect = Object.create(Constr.prototype);
 
     // Rectangle's properties are not writable and non-enumerable.

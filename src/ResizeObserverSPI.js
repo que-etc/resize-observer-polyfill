@@ -1,6 +1,7 @@
 import {Map} from './shims/es6-collections.js';
 import ResizeObservation from './ResizeObservation.js';
 import ResizeObserverEntry from './ResizeObserverEntry.js';
+import getWindowOf from './utils/getWindowOf.js';
 
 export default class ResizeObserverSPI {
     /**
@@ -76,7 +77,7 @@ export default class ResizeObserverSPI {
             return;
         }
 
-        if (!(target instanceof Element)) {
+        if (!(target instanceof getWindowOf(target).Element)) {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
@@ -111,7 +112,7 @@ export default class ResizeObserverSPI {
             return;
         }
 
-        if (!(target instanceof Element)) {
+        if (!(target instanceof getWindowOf(target).Element)) {
             throw new TypeError('parameter 1 is not of type "Element".');
         }
 
