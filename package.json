@@ -6,7 +6,7 @@
     "main": "dist/ResizeObserver.js",
     "module": "dist/ResizeObserver.es.js",
     "scripts": {
-        "build": "rollup -c",
+        "build": "rollup -c && cpy src/index.js.flow dist --rename=ResizeObserver.js.flow",
         "test": "npm run test:lint && npm run test:spec",
         "test:ci": "npm run test:lint && npm run test:spec:sauce && npm run test:spec:node",
         "test:lint": "node ./node_modules/eslint/bin/eslint.js \"**/*.js\" --ignore-pattern \"/dist/\"",
@@ -47,6 +47,7 @@
         "babel-plugin-transform-regenerator": "^6.22.0",
         "babel-preset-stage-2": "^6.22.0",
         "eslint": "^4.10.0",
+        "cpy-cli": "^1.0.1",
         "jasmine": "^2.5.3",
         "jasmine-core": "^2.5.2",
         "karma": "^1.5.0",
