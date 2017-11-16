@@ -25,16 +25,17 @@ const launchers = {
             browserName: 'firefox',
             version: 'latest-1'
         },
-        SL_EDGE_14: {
-            base: 'SauceLabs',
-            platform: 'Windows 10',
-            browserName: 'MicrosoftEdge'
-        },
-        SL_EDGE_13: {
+        SL_EDGE_15: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'MicrosoftEdge',
-            version: '13.10586'
+            version: '15.15063'
+        },
+        SL_EDGE_14: {
+            base: 'SauceLabs',
+            platform: 'Windows 10',
+            browserName: 'MicrosoftEdge',
+            version: '14.14393'
         },
         SL_IE_11: {
             base: 'SauceLabs',
@@ -42,7 +43,6 @@ const launchers = {
             platform: 'Windows 8.1',
             version: '11.0'
         },
-
         SL_IE_10: {
             base: 'SauceLabs',
             browserName: 'internet explorer',
@@ -103,26 +103,33 @@ const launchers = {
             browserName: 'firefox',
             version: 'latest-1'
         },
+        SL_SAFARI_11: {
+            base: 'SauceLabs',
+            platform: 'OS X 10.12',
+            browserName: 'safari',
+            version: '11.0'
+        },
         SL_SAFARI_10: {
             base: 'SauceLabs',
             platform: 'OS X 10.12',
             browserName: 'safari',
-            version: '10.0'
-        },
-        SL_SAFARI_9: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'safari',
-            version: '9.0'
+            version: '10.1'
         }
     },
     ios: {
+        SL_IOS_11: {
+            base: 'SauceLabs',
+            browserName: 'safari',
+            deviceName: 'iPhone Simulator',
+            platform: 'iOS',
+            version: '11.0'
+        },
         SL_IOS_10: {
             base: 'SauceLabs',
             browserName: 'safari',
             deviceName: 'iPhone Simulator',
             platform: 'iOS',
-            version: '10.0'
+            version: '10.3'
         },
         SL_IOS_9: {
             base: 'SauceLabs',
@@ -130,13 +137,6 @@ const launchers = {
             deviceName: 'iPhone Simulator',
             platform: 'iOS',
             version: '9.3'
-        },
-        SL_IOS_8: {
-            base: 'SauceLabs',
-            browserName: 'safari',
-            deviceName: 'iPhone Simulator',
-            platform: 'iOS',
-            version: '8.4'
         }
     },
     android: {
