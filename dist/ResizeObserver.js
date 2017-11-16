@@ -1,9 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global.ResizeObserver = factory());
-}(this, (function () {
-'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(global.ResizeObserver = factory());
+}(this, (function () { 'use strict';
 
 /**
  * A collection of shims that provide minimal functionality of the ES6 collections.
@@ -45,7 +44,7 @@ var MapShim = (function () {
             this.__entries__ = [];
         }
 
-        var prototypeAccessors = { size: {} };
+        var prototypeAccessors = { size: { configurable: true } };
 
         /**
          * @returns {boolean}
@@ -114,9 +113,10 @@ var MapShim = (function () {
          * @returns {void}
          */
         anonymous.prototype.forEach = function (callback, ctx) {
+            var this$1 = this;
             if ( ctx === void 0 ) ctx = null;
 
-            for (var i = 0, list = this.__entries__; i < list.length; i += 1) {
+            for (var i = 0, list = this$1.__entries__; i < list.length; i += 1) {
                 var entry = list[i];
 
                 callback.call(ctx, entry[1], entry[0]);
@@ -246,32 +246,9 @@ var mutationObserverSupported = typeof MutationObserver != 'undefined' && !isIE1
  * Singleton controller class which handles updates of ResizeObserver instances.
  */
 var ResizeObserverController = function() {
-    /**
-     * Indicates whether DOM listeners have been added.
-     *
-     * @private {boolean}
-     */
     this.connected_ = false;
-
-    /**
-     * Tells that controller has subscribed for Mutation Events.
-     *
-     * @private {boolean}
-     */
     this.mutationEventsAdded_ = false;
-
-    /**
-     * Keeps reference to the instance of MutationObserver.
-     *
-     * @private {MutationObserver}
-     */
     this.mutationsObserver_ = null;
-
-    /**
-     * A list of connected observers.
-     *
-     * @private {Array<ResizeObserverSPI>}
-     */
     this.observers_ = [];
 
     this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
@@ -283,6 +260,26 @@ var ResizeObserverController = function() {
  *
  * @param {ResizeObserverSPI} observer - Observer to be added.
  * @returns {void}
+ */
+
+
+/**
+ * Holds reference to the controller's instance.
+ *
+ * @private {ResizeObserverController}
+ */
+
+
+/**
+ * Keeps reference to the instance of MutationObserver.
+ *
+ * @private {MutationObserver}
+ */
+
+/**
+ * Indicates whether DOM listeners have been added.
+ *
+ * @private {boolean}
  */
 ResizeObserverController.prototype.addObserver = function (observer) {
     if (!~this.observers_.indexOf(observer)) {
@@ -456,11 +453,6 @@ ResizeObserverController.getInstance = function () {
     return this.instance_;
 };
 
-/**
- * Holds reference to the controller's instance.
- *
- * @private {ResizeObserverController}
- */
 ResizeObserverController.instance_ = null;
 
 /**
@@ -506,7 +498,8 @@ function toFloat(value) {
  * @returns {number}
  */
 function getBordersSize(styles) {
-    var positions = Array.prototype.slice.call(arguments, 1);
+    var positions = [], len = arguments.length - 1;
+    while ( len-- > 0 ) positions[ len ] = arguments[ len + 1 ];
 
     return positions.reduce(function (size, position) {
         var value = styles['border-' + position + '-width'];
@@ -727,33 +720,11 @@ function createRectInit(x, y, width, height) {
  * provided DOM element and for keeping track of it's changes.
  */
 var ResizeObservation = function(target) {
-    /**
-     * Broadcasted width of content rectangle.
-     *
-     * @type {number}
-     */
-    this.broadcastWidth = 0;
+  this.broadcastWidth = 0;
+  this.broadcastHeight = 0;
+  this.contentRect_ = createRectInit(0, 0, 0, 0);
 
-    /**
-     * Broadcasted height of content rectangle.
-     *
-     * @type {number}
-     */
-    this.broadcastHeight = 0;
-
-    /**
-     * Reference to the last observed content rectangle.
-     *
-     * @private {DOMRectInit}
-     */
-    this.contentRect_ = createRectInit(0, 0, 0, 0);
-
-    /**
-     * Reference to the observed element.
-     *
-     * @type {Element}
-     */
-    this.target = target;
+  this.target = target;
 };
 
 /**
@@ -762,12 +733,26 @@ var ResizeObservation = function(target) {
  *
  * @returns {boolean}
  */
+
+
+/**
+ * Reference to the last observed content rectangle.
+ *
+ * @private {DOMRectInit}
+ */
+
+
+/**
+ * Broadcasted width of content rectangle.
+ *
+ * @type {number}
+ */
 ResizeObservation.prototype.isActive = function () {
-    var rect = getContentRect(this.target);
+  var rect = getContentRect(this.target);
 
-    this.contentRect_ = rect;
+  this.contentRect_ = rect;
 
-    return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
+  return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
 };
 
 /**
@@ -777,66 +762,36 @@ ResizeObservation.prototype.isActive = function () {
  * @returns {DOMRectInit} Last observed content rectangle.
  */
 ResizeObservation.prototype.broadcastRect = function () {
-    var rect = this.contentRect_;
+  var rect = this.contentRect_;
 
-    this.broadcastWidth = rect.width;
-    this.broadcastHeight = rect.height;
+  this.broadcastWidth = rect.width;
+  this.broadcastHeight = rect.height;
 
-    return rect;
+  return rect;
 };
 
 var ResizeObserverEntry = function(target, rectInit) {
-    var contentRect = createReadOnlyRect(rectInit);
+  var contentRect = createReadOnlyRect(rectInit);
 
-    // According to the specification following properties are not writable
-    // and are also not enumerable in the native implementation.
-    //
-    // Property accessors are not being used as they'd require to define a
-    // private WeakMap storage which may cause memory leaks in browsers that
-    // don't support this type of collections.
-    defineConfigurable(this, { target: target, contentRect: contentRect });
+  // According to the specification following properties are not writable
+  // and are also not enumerable in the native implementation.
+  //
+  // Property accessors are not being used as they'd require to define a
+  // private WeakMap storage which may cause memory leaks in browsers that
+  // don't support this type of collections.
+  defineConfigurable(this, { target: target, contentRect: contentRect });
 };
 
 var ResizeObserverSPI = function(callback, controller, callbackCtx) {
+    this.activeObservations_ = [];
+    this.observations_ = new MapShim();
+
     if (typeof callback !== 'function') {
         throw new TypeError('The callback provided as parameter 1 is not a function.');
     }
 
-    /**
-     * Collection of resize observations that have detected changes in dimensions
-     * of elements.
-     *
-     * @private {Array<ResizeObservation>}
-     */
-    this.activeObservations_ = [];
-
-    /**
-     * Registry of the ResizeObservation instances.
-     *
-     * @private {Map<Element, ResizeObservation>}
-     */
-    this.observations_ = new MapShim();
-
-    /**
-     * Reference to the callback function.
-     *
-     * @private {ResizeObserverCallback}
-     */
     this.callback_ = callback;
-
-    /**
-     * Reference to the associated ResizeObserverController.
-     *
-     * @private {ResizeObserverController}
-     */
     this.controller_ = controller;
-
-    /**
-     * Public ResizeObserver instance which will be passed to the callback
-     * function and used as a value of it's "this" binding.
-     *
-     * @private {ResizeObserver}
-     */
     this.callbackCtx_ = callbackCtx;
 };
 
@@ -845,6 +800,28 @@ var ResizeObserverSPI = function(callback, controller, callbackCtx) {
  *
  * @param {Element} target - Element to be observed.
  * @returns {void}
+ */
+
+
+/**
+ * Registry of the ResizeObservation instances.
+ *
+ * @private {Map<Element, ResizeObservation>}
+ */
+
+
+/**
+ * Public ResizeObserver instance which will be passed to the callback
+ * function and used as a value of it's "this" binding.
+ *
+ * @private {ResizeObserver}
+ */
+
+/**
+ * Collection of resize observations that have detected changes in dimensions
+ * of elements.
+ *
+ * @private {Array<ResizeObservation>}
  */
 ResizeObserverSPI.prototype.observe = function (target) {
     if (!arguments.length) {
@@ -989,10 +966,6 @@ var observers = typeof WeakMap != 'undefined' ? new WeakMap() : new MapShim();
  * exposing only those methods and properties that are defined in the spec.
  */
 var ResizeObserver$1 = function(callback) {
-    if (!(this instanceof ResizeObserver$1)) {
-        throw new TypeError('Cannot call a class as a function');
-    }
-
     if (!arguments.length) {
         throw new TypeError('1 argument required, but only 0 present.');
     }
@@ -1022,4 +995,5 @@ var index = (function () {
 })();
 
 return index;
+
 })));

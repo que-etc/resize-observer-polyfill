@@ -199,7 +199,7 @@ module.exports = function (config) {
             'karma-chrome-launcher',
             'karma-jasmine',
             'karma-jasmine-html-reporter',
-            'karma-rollup-plugin',
+            'karma-rollup-preprocessor',
             'karma-sauce-launcher',
             'karma-sourcemap-loader',
             'karma-spec-reporter'
@@ -217,8 +217,7 @@ module.exports = function (config) {
             native: config.native === true
         },
         preprocessors: {
-            'tests/*.js': ['rollup', 'sourcemap'],
-            'src/**/*.js': ['rollup']
+            'tests/*.js': ['rollup', 'sourcemap']
         },
         rollupPreprocessor: {
             plugins: [
@@ -239,7 +238,7 @@ module.exports = function (config) {
                 })
             ],
             format: 'iife',
-            sourceMap: 'inline'
+            sourcemap: 'inline'
         },
         sauceLabs: {
             testName: 'resize-observer-polyfill',

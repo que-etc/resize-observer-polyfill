@@ -1,2 +1,3 @@
 /node_modules
+/dist/ResizerObserver.es.js
 /dist/ResizeObserver.js.flow
