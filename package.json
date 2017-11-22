@@ -26,11 +26,14 @@
     ],
     "homepage": "https://github.com/que-etc/resize-observer-polyfill",
     "devDependencies": {
-        "randomcolor": "^0.5.2",
-        "resize-observer-polyfill": "^1.4.2",
-        "rollup": "^0.41.6",
-        "rollup-plugin-buble": "^0.15.0",
-        "rollup-plugin-commonjs": "^8.0.2",
+        "babel-core": "^6.26.0",
+        "babel-plugin-transform-class-properties": "^6.24.1",
+        "randomcolor": "^0.5.3",
+        "resize-observer-polyfill": "^1.5.0",
+        "rollup": "^0.51.8",
+        "rollup-plugin-babel": "^3.0.2",
+        "rollup-plugin-buble": "^0.18.0",
+        "rollup-plugin-commonjs": "^8.2.6",
         "rollup-plugin-node-resolve": "^3.0.0",
         "rollup-plugin-uglify": "^2.0.1"
     }

@@ -1,6 +1,6 @@
 // We need to use a polyfill itself here,
 // not its' possible native implementation.
-import ResizeObserver from 'resize-observer-polyfill';
+import ResizeObserver from 'resize-observer-polyfill/src/ResizeObserver.js';
 import randomColor from 'randomcolor';
 
 const hues = [
