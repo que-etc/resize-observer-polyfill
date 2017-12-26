@@ -23,6 +23,13 @@ export default class ResizeObserverController {
     connected_ = false;
 
     /**
+     * The document that the observer is being connected to.
+     *
+     * @private {Document}
+     */
+    connectedOnDoc_ = null;
+
+    /**
      * Tells that controller has subscribed for Mutation Events.
      *
      * @private {boolean}
@@ -151,12 +158,17 @@ export default class ResizeObserverController {
             return;
         }
 
+        var target =
+            this.observers_[0].observations_.values().next().value.target;
+        var win = target.ownerDocument.defaultView;
+        var doc = target.ownerDocument;
+
         // Subscription to the "Transitionend" event is used as a workaround for
         // delayed transitions. This way it's possible to capture at least the
         // final state of an element.
-        document.addEventListener('transitionend', this.onTransitionEnd_);
+        doc.addEventListener('transitionend', this.onTransitionEnd_);
 
-        window.addEventListener('resize', this.refresh);
+        win.addEventListener('resize', this.refresh);
 
         if (mutationObserverSupported) {
             this.mutationsObserver_ = new MutationObserver(this.refresh);
@@ -168,12 +180,13 @@ export default class ResizeObserverController {
                 subtree: true
             });
         } else {
-            document.addEventListener('DOMSubtreeModified', this.refresh);
+            doc.addEventListener('DOMSubtreeModified', this.refresh);
 
             this.mutationEventsAdded_ = true;
         }
 
         this.connected_ = true;
+        this.connectedOnDoc_ = doc;
     }
 
     /**
@@ -189,20 +202,24 @@ export default class ResizeObserverController {
             return;
         }
 
-        document.removeEventListener('transitionend', this.onTransitionEnd_);
-        window.removeEventListener('resize', this.refresh);
+        this.connectedOnDoc_.removeEventListener(
+                                'transitionend', this.onTransitionEnd_);
+        this.connectedOnDoc_.defaultView.removeEventListener(
+                                'resize', this.refresh);
 
         if (this.mutationsObserver_) {
             this.mutationsObserver_.disconnect();
         }
 
         if (this.mutationEventsAdded_) {
-            document.removeEventListener('DOMSubtreeModified', this.refresh);
+            this.connectedOnDoc_.removeEventListener(
+                'DOMSubtreeModified', this.refresh);
         }
 
         this.mutationsObserver_ = null;
         this.mutationEventsAdded_ = false;
         this.connected_ = false;
+        this.connectedOnDoc_ = null;
     }
 
     /**
