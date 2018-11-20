@@ -31,17 +31,46 @@ class ResizeObserver {
 
         observers.set(this, observer);
     }
+
+    /**
+     * Starts observing provided element.
+     *
+     * @param {Element} target - Element to be observed.
+     * @returns {void}
+     */
+    observe(target) {
+        return observers.get(this).observe(target);
+    }
+
+    /**
+     * Stops observing provided element.
+     *
+     * @param {Element} target - Element to stop observing.
+     * @returns {void}
+     */
+    unobserve(target) {
+        return observers.get(this).unobserve(target);
+    }
+
+    /**
+     * Stops observing all elements.
+     *
+     * @returns {void}
+     */
+    disconnect() {
+        return observers.get(this).disconnect();
+    }
 }
 
 // Expose public methods of ResizeObserver.
-[
-    'observe',
-    'unobserve',
-    'disconnect'
-].forEach(method => {
-    ResizeObserver.prototype[method] = function () {
-        return observers.get(this)[method](...arguments);
-    };
-});
+// [
+//     'observe',
+//     'unobserve',
+//     'disconnect'
+// ].forEach(method => {
+//     ResizeObserver.prototype[method] = function () {
+//         return observers.get(this)[method](...arguments);
+//     };
+// });
 
 export default ResizeObserver;
