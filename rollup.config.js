@@ -12,7 +12,7 @@ const createConfig = ({output, browser = false}) => ({
             presets: [['@babel/preset-env', {loose}]],
             plugins: [
                 ['@babel/proposal-class-properties', {loose}],
-                ['@babel/wplugin-transform-for-of', {assumeArray: true}],
+                ['@babel/plugin-transform-for-of', {assumeArray: true}],
                 'annotate-pure-calls'
             ]
         }),
