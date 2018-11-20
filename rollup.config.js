@@ -12,7 +12,8 @@ const createConfig = ({output, browser = false}) => ({
             presets: [['@babel/env', {loose}]],
             plugins: [
                 ['@babel/proposal-class-properties', {loose}],
-                ['@babel/plugin-transform-for-of', {assumeArray: true}]
+                ['@babel/plugin-transform-for-of', {assumeArray: true}],
+                'annotate-pure-calls'
             ]
         }),
         replace({
@@ -40,5 +41,5 @@ export default [
             format: 'es'
         }],
         browser: true
-    }),
+    })
 ];
