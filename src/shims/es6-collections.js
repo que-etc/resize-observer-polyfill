@@ -18,31 +18,28 @@ const MapShim = (() => {
      * @returns {number}
      */
     function getIndex(arr, key) {
-        let result = -1;
-
-        arr.some((entry, index) => {
-            if (entry[0] === key) {
-                result = index;
-
-                return true;
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i][0] === key) {
+                return i;
             }
+        }
 
-            return false;
-        });
-
-        return result;
+        return -1;
     }
 
     return class {
         constructor() {
-            this.__entries__ = [];
-        }
+            const __entries__ = [];
 
-        /**
-         * @returns {boolean}
-         */
-        get size() {
-            return this.__entries__.length;
+            this.__entries__ = __entries__;
+
+            // Inline getter is used (instead of the one defined on the class)
+            // to prevent Babel from adding its helper for that, which would have cost unnecessary bytes
+            Object.defineProperty(this, 'size', {
+                get() {
+                    return __entries__.length;
+                }
+            });
         }
 
         /**
