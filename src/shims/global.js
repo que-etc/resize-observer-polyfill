@@ -1,17 +1,18 @@
 // Returns global object of a current environment.
-export default (() => {
-    if (typeof global !== 'undefined' && global.Math === Math) {
-        return global;
-    }
 
-    if (typeof self !== 'undefined' && self.Math === Math) {
-        return self;
-    }
+let _global;
 
-    if (typeof window !== 'undefined' && window.Math === Math) {
-        return window;
-    }
-
+if (process.env.BROWSER) {
+    _global = window;
+} else if (typeof global !== 'undefined' && global.Math === Math) {
+    _global = global;
+} else if (typeof self !== 'undefined' && self.Math === Math) {
+    _global = self;
+} else if (typeof window !== 'undefined' && window.Math === Math) {
+    _global = window;
+} else {
     // eslint-disable-next-line no-new-func
-    return Function('return this')();
-})();
+    _global = Function('return this')();
+}
+
+export default _global;

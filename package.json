@@ -3,8 +3,12 @@
     "author": "Denis Rul <que.etc@gmail.com>",
     "version": "1.5.0",
     "description": "A polyfill for the Resize Observer API",
-    "main": "dist/ResizeObserver.js",
-    "module": "dist/ResizeObserver.es.js",
+    "main": "./dist/ResizeObserver.js",
+    "module": "./dist/ResizeObserver.es.js",
+    "browser": {
+        "./dist/ResizeObserver.js": "./dist/ResizeObserver.browser.js",
+        "./dist/ResizeObserver.es.js": "./dist/ResizeObserver.es.browser.js"
+    },
     "scripts": {
         "build": "rollup -c && cpy src/index.js.flow dist --rename=ResizeObserver.js.flow",
         "test": "npm run test:lint && npm run test:spec",
@@ -65,6 +69,7 @@
         "promise-polyfill": "^6.0.2",
         "regenerator-runtime": "^0.11.0",
         "rollup": "^0.67.3",
-        "rollup-plugin-babel": "^4.0.3"
+        "rollup-plugin-babel": "^4.0.3",
+        "rollup-plugin-replace": "^2.1.0"
     }
 }
