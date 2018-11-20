@@ -238,8 +238,10 @@ module.exports = function (config) {
                     'process.env.BROWSER': JSON.stringify(true)
                 })
             ],
-            format: 'iife',
-            sourcemap: 'inline'
+            output: {
+                format: 'iife',
+                sourcemap: 'inline'
+            }
         },
         sauceLabs: {
             testName: 'resize-observer-polyfill',
