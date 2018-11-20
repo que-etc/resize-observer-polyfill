@@ -9,10 +9,10 @@ const createConfig = ({output, browser = false}) => ({
     output: output.map(format => Object.assign({name: 'ResizeObserver'}, format)),
     plugins: [
         babel({
-            presets: [['@babel/env', {loose}]],
+            presets: [['@babel/preset-env', {loose}]],
             plugins: [
                 ['@babel/proposal-class-properties', {loose}],
-                ['@babel/plugin-transform-for-of', {assumeArray: true}],
+                ['@babel/wplugin-transform-for-of', {assumeArray: true}],
                 'annotate-pure-calls'
             ]
         }),
