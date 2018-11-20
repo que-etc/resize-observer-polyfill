@@ -62,15 +62,4 @@ class ResizeObserver {
     }
 }
 
-// Expose public methods of ResizeObserver.
-// [
-//     'observe',
-//     'unobserve',
-//     'disconnect'
-// ].forEach(method => {
-//     ResizeObserver.prototype[method] = function () {
-//         return observers.get(this)[method](...arguments);
-//     };
-// });
-
 export default ResizeObserver;
