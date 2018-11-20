@@ -1,7 +1,7 @@
 import babel from 'rollup-plugin-babel';
-import buble from 'rollup-plugin-buble';
+import pkg from './package.json';
 
-const pkg = require('./package.json');
+const loose = true;
 
 export default {
     input: 'src/index.js',
@@ -15,14 +15,11 @@ export default {
     }],
     plugins: [
         babel({
-            plugins: ['transform-class-properties']
-        }),
-
-        buble({
-            transforms: {
-                dangerousForOf: true
-            },
-            namedFunctionExpressions: false
+            presets: [['@babel/env', {loose}]],
+            plugins: [
+                ['@babel/proposal-class-properties', {loose}],
+                ['@babel/plugin-transform-for-of', {assumeArray: true}]
+            ]
         })
     ]
 };
