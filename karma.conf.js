@@ -1,5 +1,5 @@
 const babel = require('rollup-plugin-babel');
-const buble = require('rollup-plugin-buble');
+const replace = require('rollup-plugin-replace');
 
 const launchers = {
     windows: {
@@ -223,24 +223,25 @@ module.exports = function (config) {
         rollupPreprocessor: {
             plugins: [
                 babel({
+                    presets: [['@babel/preset-env', {loose: true}]],
                     plugins: [
-                        ['transform-regenerator', {
+                        ['@babel/proposal-class-properties', {loose: true}],
+                        ['@babel/plugin-transform-for-of', {assumeArray: true}],
+                        ['@babel/plugin-transform-regenerator', {
                             async: false,
                             asyncGenerators: false
                         }],
-                        'transform-class-properties',
-                        'transform-async-to-generator'
+                        '@babel/plugin-transform-async-to-generator'
                     ]
                 }),
-                buble({
-                    transforms: {
-                        dangerousForOf: true
-                    },
-                    namedFunctionExpressions: false
+                replace({
+                    'process.env.BROWSER': JSON.stringify(true)
                 })
             ],
-            format: 'iife',
-            sourcemap: 'inline'
+            output: {
+                format: 'iife',
+                sourcemap: 'inline'
+            }
         },
         sauceLabs: {
             testName: 'resize-observer-polyfill',

@@ -1,11 +1,7 @@
 import ResizeObserverPolyfill from './ResizeObserver.js';
 import global from './shims/global.js';
 
-export default (() => {
+export default typeof global.ResizeObserver !== 'undefined' ?
     // Export existing implementation if available.
-    if (typeof global.ResizeObserver !== 'undefined') {
-        return global.ResizeObserver;
-    }
-
-    return ResizeObserverPolyfill;
-})();
+    global.ResizeObserver :
+    ResizeObserverPolyfill;

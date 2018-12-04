@@ -150,21 +150,18 @@ function getHTMLElementContentRect(target) {
  * @param {Element} target - Element to be checked.
  * @returns {boolean}
  */
-const isSVGGraphicsElement = (() => {
+const isSVGGraphicsElement =
     // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
     // interface.
-    if (typeof SVGGraphicsElement !== 'undefined') {
-        return target => target instanceof getWindowOf(target).SVGGraphicsElement;
-    }
-
-    // If it's so, then check that element is at least an instance of the
-    // SVGElement and that it has the "getBBox" method.
-    // eslint-disable-next-line no-extra-parens
-    return target => (
-        target instanceof getWindowOf(target).SVGElement &&
-        typeof target.getBBox === 'function'
-    );
-})();
+    typeof SVGGraphicsElement !== 'undefined' ?
+        target => target instanceof getWindowOf(target).SVGGraphicsElement :
+        // If it's so, then check that element is at least an instance of the
+        // SVGElement and that it has the "getBBox" method.
+        // eslint-disable-next-line no-extra-parens
+        target => (
+            target instanceof getWindowOf(target).SVGElement &&
+            typeof target.getBBox === 'function'
+        );
 
 /**
  * Checks whether provided element is a document element (<html>).

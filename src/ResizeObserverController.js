@@ -11,10 +11,12 @@ const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'si
 // Check if MutationObserver is available.
 const mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
+let instance_;
+
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
  */
-export default class ResizeObserverController {
+class ResizeObserverController {
     /**
      * Indicates whether DOM listeners have been added.
      *
@@ -222,17 +224,17 @@ export default class ResizeObserverController {
             this.refresh();
         }
     }
-
-    /**
-     * Returns instance of the ResizeObserverController.
-     *
-     * @returns {ResizeObserverController}
-     */
-    static getInstance() {
-        if (!this.instance_) {
-            this.instance_ = new ResizeObserverController();
-        }
-
-        return this.instance_;
-    }
 }
+
+/**
+ * Returns instance of the ResizeObserverController.
+ *
+ * @returns {ResizeObserverController}
+ */
+export default () => {
+    if (!instance_) {
+        instance_ = new ResizeObserverController();
+    }
+
+    return instance_;
+};

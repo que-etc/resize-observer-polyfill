@@ -1,6 +1,6 @@
 import {Map} from './shims/es6-collections.js';
-import ResizeObserverController from './ResizeObserverController.js';
 import ResizeObserverSPI from './ResizeObserverSPI.js';
+import getResizeObserverController from './ResizeObserverController.js';
 
 // Registry of internal observers. If WeakMap is not available use current shim
 // for the Map collection as it has all required methods and because WeakMap
@@ -26,22 +26,40 @@ class ResizeObserver {
             throw new TypeError('1 argument required, but only 0 present.');
         }
 
-        const controller = ResizeObserverController.getInstance();
+        const controller = getResizeObserverController();
         const observer = new ResizeObserverSPI(callback, controller, this);
 
         observers.set(this, observer);
     }
-}
 
-// Expose public methods of ResizeObserver.
-[
-    'observe',
-    'unobserve',
-    'disconnect'
-].forEach(method => {
-    ResizeObserver.prototype[method] = function () {
-        return observers.get(this)[method](...arguments);
-    };
-});
+    /**
+     * Starts observing provided element.
+     *
+     * @param {Element} target - Element to be observed.
+     * @returns {void}
+     */
+    observe(target) {
+        return observers.get(this).observe(target);
+    }
+
+    /**
+     * Stops observing provided element.
+     *
+     * @param {Element} target - Element to stop observing.
+     * @returns {void}
+     */
+    unobserve(target) {
+        return observers.get(this).unobserve(target);
+    }
+
+    /**
+     * Stops observing all elements.
+     *
+     * @returns {void}
+     */
+    disconnect() {
+        return observers.get(this).disconnect();
+    }
+}
 
 export default ResizeObserver;

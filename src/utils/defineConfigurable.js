@@ -9,8 +9,6 @@ export default (target, props) => {
     for (const key of Object.keys(props)) {
         Object.defineProperty(target, key, {
             value: props[key],
-            enumerable: false,
-            writable: false,
             configurable: true
         });
     }
