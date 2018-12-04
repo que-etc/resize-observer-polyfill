@@ -31,4 +31,10 @@ declare var ResizeObserver: {
     new(callback: ResizeObserverCallback): ResizeObserver;
 }
 
+interface ResizeObserver {
+    observe(target: Element): void;
+    unobserve(target: Element): void;
+    disconnect(): void;
+}
+
 export default ResizeObserver;
