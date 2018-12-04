@@ -492,20 +492,39 @@ var defineConfigurable = (function (target, props) {
 });
 
 /**
+ * Checks that target has a defaultView
+ * @param  {Object} target
+ * @returns {boolean}
+ */
+function checkDefaultViewExisting(target) {
+  var simplyExists = target && target.ownerDocument && target.ownerDocument.defaultView;
+
+  /**
+  * That case will work when target is an element inside of detached iframe.
+  * In Chrome it will end up with null by "target.ownerDocument.defaultView" path
+  * but in IE11 it will become a window with bunch of undefined properties so
+  * we should follow the duck typing way.
+  */
+  var nonEmptyWindow = !!(simplyExists && target.ownerDocument.defaultView.Object);
+
+  return nonEmptyWindow;
+}
+
+/**
  * Returns the global object associated with provided element.
  *
  * @param {Object} target
  * @returns {Object}
  */
 var getWindowOf = (function (target) {
-    // Assume that the element is an instance of Node, which means that it
-    // has the "ownerDocument" property from which we can retrieve a
-    // corresponding global object.
-    var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView;
+  // Assume that the element is an instance of Node, which means that it
+  // has the "ownerDocument" property from which we can retrieve a
+  // corresponding global object.
+  var ownerGlobal = checkDefaultViewExisting(target) ? target.ownerDocument.defaultView : null;
 
-    // Return the local global object if it's not possible extract one from
-    // provided element.
-    return ownerGlobal || global$1;
+  // Return the local global object if it's not possible extract one from
+  // provided element.
+  return ownerGlobal || global$1;
 });
 
 // Placeholder of an empty content rectangle.
@@ -751,11 +770,11 @@ function createRectInit(x, y, width, height) {
  * provided DOM element and for keeping track of it's changes.
  */
 var ResizeObservation = function(target) {
-    this.broadcastWidth = 0;
-    this.broadcastHeight = 0;
-    this.contentRect_ = createRectInit(0, 0, 0, 0);
+  this.broadcastWidth = 0;
+  this.broadcastHeight = 0;
+  this.contentRect_ = createRectInit(0, 0, 0, 0);
 
-    this.target = target;
+  this.target = target;
 };
 
 /**
@@ -779,11 +798,11 @@ var ResizeObservation = function(target) {
  * @type {number}
  */
 ResizeObservation.prototype.isActive = function () {
-    var rect = getContentRect(this.target);
+  var rect = getContentRect(this.target);
 
-    this.contentRect_ = rect;
+  this.contentRect_ = rect;
 
-    return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
+  return rect.width !== this.broadcastWidth || rect.height !== this.broadcastHeight;
 };
 
 /**
@@ -793,24 +812,24 @@ ResizeObservation.prototype.isActive = function () {
  * @returns {DOMRectInit} Last observed content rectangle.
  */
 ResizeObservation.prototype.broadcastRect = function () {
-    var rect = this.contentRect_;
+  var rect = this.contentRect_;
 
-    this.broadcastWidth = rect.width;
-    this.broadcastHeight = rect.height;
+  this.broadcastWidth = rect.width;
+  this.broadcastHeight = rect.height;
 
-    return rect;
+  return rect;
 };
 
 var ResizeObserverEntry = function(target, rectInit) {
-    var contentRect = createReadOnlyRect(rectInit);
+  var contentRect = createReadOnlyRect(rectInit);
 
-    // According to the specification following properties are not writable
-    // and are also not enumerable in the native implementation.
-    //
-    // Property accessors are not being used as they'd require to define a
-    // private WeakMap storage which may cause memory leaks in browsers that
-    // don't support this type of collections.
-    defineConfigurable(this, { target: target, contentRect: contentRect });
+  // According to the specification following properties are not writable
+  // and are also not enumerable in the native implementation.
+  //
+  // Property accessors are not being used as they'd require to define a
+  // private WeakMap storage which may cause memory leaks in browsers that
+  // don't support this type of collections.
+  defineConfigurable(this, { target: target, contentRect: contentRect });
 };
 
 var ResizeObserverSPI = function(callback, controller, callbackCtx) {
