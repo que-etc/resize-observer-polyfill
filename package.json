@@ -12,7 +12,7 @@
         "test:ci:pull": "npm run test:lint && karma start --browsers Firefox && npm run test:spec:node",
         "test:lint": "node ./node_modules/eslint/bin/eslint.js \"**/*.js\" --ignore-pattern \"/dist/\"",
         "test:spec": "karma start --browsers Chrome && npm run test:spec:node",
-        "test:spec:sauce": "karma start --sauce=windows && karma start --sauce=linux && karma start --sauce=osx && karma start --sauce=ios",
+        "test:spec:sauce": "karma start --sauce=windows && karma start --sauce=linux && karma start --sauce=osx",
         "test:spec:node": "npm run build && node tests/node/index.js",
         "test:spec:custom": "karma start --no-browsers",
         "test:spec:native": "karma start --no-browsers --native"
