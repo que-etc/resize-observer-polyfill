@@ -1,5 +1,4 @@
-const babel = require('rollup-plugin-babel');
-const buble = require('rollup-plugin-buble');
+const typescript = require('rollup-plugin-typescript');
 
 const launchers = {
     windows: {
@@ -25,17 +24,17 @@ const launchers = {
             browserName: 'firefox',
             version: 'latest-1'
         },
-        SL_EDGE_15: {
+        SL_EDGE_17: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'MicrosoftEdge',
-            version: '15.15063'
+            version: '17.17134'
         },
-        SL_EDGE_14: {
+        SL_EDGE_16: {
             base: 'SauceLabs',
             platform: 'Windows 10',
             browserName: 'MicrosoftEdge',
-            version: '14.14393'
+            version: '16.16299'
         },
         SL_IE_11: {
             base: 'SauceLabs',
@@ -83,82 +82,43 @@ const launchers = {
     osx: {
         SL_CHROME_CURRENT: {
             base: 'SauceLabs',
-            platform: 'OS X 10.11',
+            platform: 'macOS 10.13',
             browserName: 'chrome'
         },
         SL_CHROME_PRECEDING: {
             base: 'SauceLabs',
-            platform: 'OS X 10.11',
+            platform: 'macOS 10.13',
             browserName: 'chrome',
             version: 'latest-1'
         },
-        SL_FIREFOX_CURRENT: {
+        SL_SAFARI_12: {
             base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'firefox'
-        },
-        SL_FIREFOX_PRECEDING: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.11',
-            browserName: 'firefox',
-            version: 'latest-1'
+            platform: 'macOS 10.13',
+            browserName: 'safari',
+            version: '12.0'
         },
         SL_SAFARI_11: {
             base: 'SauceLabs',
-            platform: 'OS X 10.12',
+            platform: 'macOS 10.13',
             browserName: 'safari',
-            version: '11.0'
-        },
-        SL_SAFARI_10: {
-            base: 'SauceLabs',
-            platform: 'OS X 10.12',
-            browserName: 'safari',
-            version: '10.1'
+            version: '11.1'
         }
     },
     ios: {
+        SL_IOS_12: {
+            base: 'SauceLabs',
+            browserName: 'safari',
+            deviceName: 'iPhone Simulator',
+            platform: 'iOS',
+            version: '12.0'
+        },
         SL_IOS_11: {
             base: 'SauceLabs',
             browserName: 'safari',
             deviceName: 'iPhone Simulator',
             platform: 'iOS',
-            version: '11.0'
-        },
-        SL_IOS_10: {
-            base: 'SauceLabs',
-            browserName: 'safari',
-            deviceName: 'iPhone Simulator',
-            platform: 'iOS',
-            version: '10.3'
-        },
-        SL_IOS_9: {
-            base: 'SauceLabs',
-            browserName: 'safari',
-            deviceName: 'iPhone Simulator',
-            platform: 'iOS',
-            version: '9.3'
+            version: '11.3'
         }
-    },
-    android: {
-        SL_ANDROID_5: {
-            base: 'SauceLabs',
-            browserName: 'Browser',
-            deviceName: 'Android Emulator',
-            platformVersion: '5.1',
-            platformName: 'Android'
-        }
-
-        // Can't make it work because of the SSL certificate. And the
-        // "--no-ssl-bump-domain" option causes Sauce Connect to fail.
-        /*
-        SL_ANDROID_4: {
-            base: 'SauceLabs',
-            browserName: 'Browser',
-            deviceName: 'Android Emulator',
-            platformVersion: '4.4',
-            platformName: 'Android'
-        }
-        */
     }
 };
 
@@ -191,8 +151,7 @@ module.exports = function (config) {
         singleRun: true,
         frameworks: ['jasmine'],
         files: [
-            './node_modules/regenerator-runtime/runtime.js',
-            './node_modules/promise-polyfill/promise.js',
+            './node_modules/promise-polyfill/dist/polyfill.js',
             'tests/**/*.spec.js'
         ],
         plugins: [
@@ -222,25 +181,18 @@ module.exports = function (config) {
         },
         rollupPreprocessor: {
             plugins: [
-                babel({
-                    plugins: [
-                        ['transform-regenerator', {
-                            async: false,
-                            asyncGenerators: false
-                        }],
-                        'transform-class-properties',
-                        'transform-async-to-generator'
+                typescript({
+                    target: 'es5',
+                    include: [
+                        'src/**/*',
+                        'tests/**/*'
                     ]
-                }),
-                buble({
-                    transforms: {
-                        dangerousForOf: true
-                    },
-                    namedFunctionExpressions: false
                 })
             ],
-            format: 'iife',
-            sourcemap: 'inline'
+            output: {
+                format: 'iife',
+                sourcemap: 'inline'
+            }
         },
         sauceLabs: {
             testName: 'resize-observer-polyfill',

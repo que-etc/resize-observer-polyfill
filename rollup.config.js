@@ -1,7 +1,5 @@
-import babel from 'rollup-plugin-babel';
-import buble from 'rollup-plugin-buble';
-
-const pkg = require('./package.json');
+import pkg from './package.json';
+import typescript from 'rollup-plugin-typescript';
 
 export default {
     input: 'src/index.js',
@@ -14,15 +12,9 @@ export default {
         format: 'es'
     }],
     plugins: [
-        babel({
-            plugins: ['transform-class-properties']
-        }),
-
-        buble({
-            transforms: {
-                dangerousForOf: true
-            },
-            namedFunctionExpressions: false
+        typescript({
+            target: 'es5',
+            include: ['src/**/*']
         })
     ]
 };

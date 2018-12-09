@@ -220,16 +220,16 @@ describe('ResizeObserver', () => {
 
             let shouldRestoreDefault = false;
 
-            observer = new ResizeObserver(() => {
-                spy(...arguments);
+            observer = new ResizeObserver((...args) => {
+                spy(...args);
 
                 if (shouldRestoreDefault) {
                     elements.target1.style.width = defaultWidth;
                 }
             });
 
-            observer2 = new ResizeObserver(() => {
-                spy2(...arguments);
+            observer2 = new ResizeObserver((...args) => {
+                spy2(...args);
 
                 if (shouldRestoreDefault) {
                     elements.target1.style.width = defaultWidth;
@@ -1230,16 +1230,16 @@ describe('ResizeObserver', () => {
 
             let shouldUnobserve = false;
 
-            observer = new ResizeObserver(() => {
-                spy(...arguments);
+            observer = new ResizeObserver((...args) => {
+                spy(...args);
 
                 if (shouldUnobserve) {
                     observer2.unobserve(elements.target1);
                 }
             });
 
-            observer2 = new ResizeObserver(() => {
-                spy2(...arguments);
+            observer2 = new ResizeObserver((...args) => {
+                spy2(...args);
 
                 if (shouldUnobserve) {
                     observer.unobserve(elements.target1);
@@ -1306,16 +1306,16 @@ describe('ResizeObserver', () => {
 
             let shouldDisconnect = false;
 
-            observer = new ResizeObserver(() => {
-                spy(...arguments);
+            observer = new ResizeObserver((...args) => {
+                spy(...args);
 
                 if (shouldDisconnect) {
                     observer2.disconnect();
                 }
             });
 
-            observer2 = new ResizeObserver(() => {
-                spy2(...arguments);
+            observer2 = new ResizeObserver((...args) => {
+                spy2(...args);
 
                 if (shouldDisconnect) {
                     observer.disconnect();
