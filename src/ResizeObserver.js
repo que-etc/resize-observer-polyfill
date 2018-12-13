@@ -1,4 +1,3 @@
-import {Map} from './shims/es6-collections.js';
 import ResizeObserverController from './ResizeObserverController.js';
 import ResizeObserverSPI from './ResizeObserverSPI.js';
 

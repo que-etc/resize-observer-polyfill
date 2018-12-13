@@ -152,6 +152,8 @@ module.exports = function (config) {
         frameworks: ['jasmine'],
         files: [
             './node_modules/promise-polyfill/dist/polyfill.js',
+            './node_modules/es6-collections/es6-collections.js',
+            'tests/resources/map-shim.js',
             'tests/**/*.spec.js'
         ],
         plugins: [

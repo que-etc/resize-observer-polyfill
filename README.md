@@ -33,6 +33,9 @@ Polyfill has been tested in the following browsers:
 
 [![Build Status](https://saucelabs.com/browser-matrix/que-etc.svg)](https://saucelabs.com/beta/builds/303f5344a7214ba5b62bc7079a15d376)
 
+This polyfill additionally depends on [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) as well as `requestAnimationFrame`, for older browsers you will need to bring polyfills for those as
+well.
+
 **NOTE:** Internet Explorer 8 and its earlier versions are not supported.
 
 ## Usage Example

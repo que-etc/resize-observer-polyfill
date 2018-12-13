@@ -5,146 +5,9 @@
 }(this, (function () { 'use strict';
 
     /**
-     * A collection of shims that provide minimal functionality of the ES6 collections.
-     *
-     * These implementations are not meant to be used outside of the ResizeObserver
-     * modules as they cover only a limited range of use cases.
-     */
-    /* eslint-disable require-jsdoc, valid-jsdoc */
-    var MapShim = (function () {
-        if (typeof Map !== 'undefined') {
-            return Map;
-        }
-        /**
-         * Returns index in provided array that matches the specified key.
-         *
-         * @param {Array<Array>} arr
-         * @param {*} key
-         * @returns {number}
-         */
-        function getIndex(arr, key) {
-            var result = -1;
-            arr.some(function (entry, index) {
-                if (entry[0] === key) {
-                    result = index;
-                    return true;
-                }
-                return false;
-            });
-            return result;
-        }
-        return /** @class */ (function () {
-            function class_1() {
-                this.__entries__ = [];
-            }
-            Object.defineProperty(class_1.prototype, "size", {
-                /**
-                 * @returns {boolean}
-                 */
-                get: function () {
-                    return this.__entries__.length;
-                },
-                enumerable: true,
-                configurable: true
-            });
-            /**
-             * @param {*} key
-             * @returns {*}
-             */
-            class_1.prototype.get = function (key) {
-                var index = getIndex(this.__entries__, key);
-                var entry = this.__entries__[index];
-                return entry && entry[1];
-            };
-            /**
-             * @param {*} key
-             * @param {*} value
-             * @returns {void}
-             */
-            class_1.prototype.set = function (key, value) {
-                var index = getIndex(this.__entries__, key);
-                if (~index) {
-                    this.__entries__[index][1] = value;
-                }
-                else {
-                    this.__entries__.push([key, value]);
-                }
-            };
-            /**
-             * @param {*} key
-             * @returns {void}
-             */
-            class_1.prototype.delete = function (key) {
-                var entries = this.__entries__;
-                var index = getIndex(entries, key);
-                if (~index) {
-                    entries.splice(index, 1);
-                }
-            };
-            /**
-             * @param {*} key
-             * @returns {void}
-             */
-            class_1.prototype.has = function (key) {
-                return !!~getIndex(this.__entries__, key);
-            };
-            /**
-             * @returns {void}
-             */
-            class_1.prototype.clear = function () {
-                this.__entries__.splice(0);
-            };
-            /**
-             * @param {Function} callback
-             * @param {*} [ctx=null]
-             * @returns {void}
-             */
-            class_1.prototype.forEach = function (callback, ctx) {
-                if (ctx === void 0) { ctx = null; }
-                for (var _i = 0, _a = this.__entries__; _i < _a.length; _i++) {
-                    var entry = _a[_i];
-                    callback.call(ctx, entry[1], entry[0]);
-                }
-            };
-            return class_1;
-        }());
-    })();
-
-    /**
      * Detects whether window and document objects are available in current environment.
      */
     var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
-
-    // Returns global object of a current environment.
-    var global$1 = (function () {
-        if (typeof global !== 'undefined' && global.Math === Math) {
-            return global;
-        }
-        if (typeof self !== 'undefined' && self.Math === Math) {
-            return self;
-        }
-        if (typeof window !== 'undefined' && window.Math === Math) {
-            return window;
-        }
-        // eslint-disable-next-line no-new-func
-        return Function('return this')();
-    })();
-
-    /**
-     * A shim for the requestAnimationFrame which falls back to the setTimeout if
-     * first one is not supported.
-     *
-     * @returns {number} Requests' identifier.
-     */
-    var requestAnimationFrame$1 = (function () {
-        if (typeof requestAnimationFrame === 'function') {
-            // It's required to use a bounded function because IE sometimes throws
-            // an "Invalid calling object" error if rAF is invoked without the global
-            // object on the left hand side.
-            return requestAnimationFrame.bind(global$1);
-        }
-        return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
-    })();
 
     // Defines minimum timeout before adding a trailing call.
     var trailingTimeout = 2;
@@ -181,7 +44,7 @@
          * @returns {void}
          */
         function timeoutCallback() {
-            requestAnimationFrame$1(resolvePending);
+            requestAnimationFrame(resolvePending);
         }
         /**
          * Schedules invocation of the original function.
@@ -435,6 +298,21 @@
         }
         return target;
     });
+
+    // Returns global object of a current environment.
+    var global$1 = (function () {
+        if (typeof global !== 'undefined' && global.Math === Math) {
+            return global;
+        }
+        if (typeof self !== 'undefined' && self.Math === Math) {
+            return self;
+        }
+        if (typeof window !== 'undefined' && window.Math === Math) {
+            return window;
+        }
+        // eslint-disable-next-line no-new-func
+        return Function('return this')();
+    })();
 
     /**
      * Returns the global object associated with provided element.
@@ -758,7 +636,7 @@
              *
              * @private {Map<Element, ResizeObservation>}
              */
-            this.observations_ = new MapShim();
+            this.observations_ = new Map();
             if (typeof callback !== 'function') {
                 throw new TypeError('The callback provided as parameter 1 is not a function.');
             }
@@ -886,7 +764,7 @@
     // Registry of internal observers. If WeakMap is not available use current shim
     // for the Map collection as it has all required methods and because WeakMap
     // can't be fully polyfilled anyway.
-    var observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new MapShim();
+    var observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new Map();
     /**
      * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
      * exposing only those methods and properties that are defined in the spec.

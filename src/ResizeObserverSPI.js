@@ -1,4 +1,3 @@
-import {Map} from './shims/es6-collections.js';
 import ResizeObservation from './ResizeObservation.js';
 import ResizeObserverEntry from './ResizeObserverEntry.js';
 import getWindowOf from './utils/getWindowOf.js';
