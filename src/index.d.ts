@@ -37,4 +37,4 @@ interface ResizeObserver {
     disconnect(): void;
 }
 
-export default ResizeObserver;
+export = ResizeObserver;
