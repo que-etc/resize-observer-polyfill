@@ -218,6 +218,8 @@
     var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
     // Check if MutationObserver is available.
     var mutationObserverSupported = typeof MutationObserver !== 'undefined';
+    //Check if FontFaceSet is available
+    var fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined';
     /**
      * Singleton controller class which handles updates of ResizeObserver instances.
      */
@@ -353,6 +355,10 @@
                 document.addEventListener('DOMSubtreeModified', this.refresh);
                 this.mutationEventsAdded_ = true;
             }
+            if (fontFaceSetIsSupported) {
+                this.fontFaceSet_ = document.fonts;
+                this.fontFaceSet_.addEventListener('loadingdone', this.refresh);
+            }
             this.connected_ = true;
         };
         /**
@@ -375,7 +381,11 @@
             if (this.mutationEventsAdded_) {
                 document.removeEventListener('DOMSubtreeModified', this.refresh);
             }
+            if (this.fontFaceSet_) {
+                this.fontFaceSet_.removeEventListener('loadingdone', this.refresh);
+            }
             this.mutationsObserver_ = null;
+            this.fontFaceSet_ = null;
             this.mutationEventsAdded_ = false;
             this.connected_ = false;
         };
