@@ -11,6 +11,9 @@ const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'si
 // Check if MutationObserver is available.
 const mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
+//Check if FontFaceSet is available
+const fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined';
+
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.
  */
@@ -173,6 +176,11 @@ export default class ResizeObserverController {
             this.mutationEventsAdded_ = true;
         }
 
+        if (fontFaceSetIsSupported) {
+            this.fontFaceSet_ = document.fonts;
+            this.fontFaceSet_.addEventListener('loadingdone', this.refresh);
+        }
+
         this.connected_ = true;
     }
 
@@ -200,7 +208,12 @@ export default class ResizeObserverController {
             document.removeEventListener('DOMSubtreeModified', this.refresh);
         }
 
+        if (this.fontFaceSet_) {
+            this.fontFaceSet_.removeEventListener('loadingdone', this.refresh);
+        }
+
         this.mutationsObserver_ = null;
+        this.fontFaceSet_ = null;
         this.mutationEventsAdded_ = false;
         this.connected_ = false;
     }

@@ -31,12 +31,23 @@ const css = `
     #target2 {
         background: #fbbc05;
     }
+    
+    #target3 {
+        font-family: 'BioRhyme Expanded', serif;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: #cbbcf7;
+    }
 `;
 const template = `
     <div id="root">
         <div id="container">
             <div id="target1"></div>
             <div id="target2"></div>
+            <div id="target3">
+              <span>Text</span>
+            </div>
         </div>
     </div>
 `;
@@ -1154,6 +1165,47 @@ describe('ResizeObserver', () => {
                 }).then(done).catch(done.fail);
             });
         }
+
+        describe('handles font load', () => {
+            if (typeof document.fonts !== 'undefined') {
+                it('triggers when FontFaceSet is supported and font is loaded', done => {
+                    const bioRhymeFontFace = new FontFace('BioRhyme Expanded', 'url(https://fonts.gstatic.com/s/' +
+                        'biorhymeexpanded/v4/i7dQIE1zZzytGswgU577CDY9LjbffxSdT3GtYdjflKY.woff2)');
+
+                    document.fonts.add(bioRhymeFontFace);
+
+                    const spy = createAsyncSpy();
+
+                    observer = new ResizeObserver(spy);
+                    observer.observe(elements.target3);
+
+                    spy.nextCall().then(entries => {
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target3);
+                    }).then(async () => {
+                        bioRhymeFontFace.load();
+                        const entries = await spy.nextCall();
+
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target3);
+                    }).then(done).catch(done.fail);
+                });
+            }
+
+            if (typeof document.fonts === 'undefined') {
+                it('does not throw when FontFaceSet is not supported', done => {
+                    const spy = createAsyncSpy();
+
+                    observer = new ResizeObserver(spy);
+                    observer.observe(elements.target3);
+
+                    spy.nextCall().then(entries => {
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target3);
+                    }).then(done).catch(done.fail);
+                });
+            }
+        });
     });
 
     describe('unobserve', () => {
