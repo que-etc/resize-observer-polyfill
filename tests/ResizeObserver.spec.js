@@ -65,8 +65,7 @@ function appendElements() {
         root: document.getElementById('root'),
         container: document.getElementById('container'),
         target1: document.getElementById('target1'),
-        target2: document.getElementById('target2'),
-        target3: document.getElementById('target3')
+        target2: document.getElementById('target2')
     };
 }
 
@@ -1154,6 +1153,59 @@ describe('ResizeObserver', () => {
                 }).then(done).catch(done.fail);
             });
         }
+
+        describe('handles font load', () => {
+            const fontFaceSetIsSupported = typeof document.fonts !== 'undefined' && 'onloadingdone' in document.fonts;
+
+            if (fontFaceSetIsSupported) {
+                it('triggers when FontFaceSet is supported and font is loaded', done => {
+                    elements.root.insertAdjacentHTML('beforeend', `
+                        <div id="font-target" 
+                            style="height: 100%; font-family: 'BioRhyme-Regular', serif;  background: #cbbcf7;"/>>
+                            <span>Text</span>
+                        </div>
+                    `);
+
+                    const spy = createAsyncSpy();
+                    const fontTarget = document.getElementById('font-target');
+
+                    observer = new ResizeObserver(spy);
+                    observer.observe(fontTarget);
+
+                    spy.nextCall().then(entries => {
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(fontTarget);
+                    }).then(async () => {
+                        const bioRhymeFontFace = new FontFace('BioRhyme-Regular',
+                            'url(https://fonts.gstatic.com/s/' +
+                            'biorhymeexpanded/v4/i7dQIE1zZzytGswgU577CDY9LjbffxSdT3GtYdjflKY.woff2)');
+
+                        document.fonts.add(bioRhymeFontFace);
+
+                        await bioRhymeFontFace.load();
+
+                        const entries = await spy.nextCall();
+
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(fontTarget);
+                    }).then(done).catch(done.fail);
+                });
+            }
+
+            if (!fontFaceSetIsSupported) {
+                it('does not throw when FontFaceSet is not supported', done => {
+                    const spy = createAsyncSpy();
+
+                    observer = new ResizeObserver(spy);
+                    observer.observe(elements.target2);
+
+                    spy.nextCall().then(entries => {
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target2);
+                    }).then(done).catch(done.fail);
+                });
+            }
+        });
     });
 
     describe('unobserve', () => {
