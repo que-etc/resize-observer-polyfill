@@ -12,7 +12,7 @@ const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'si
 const mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
 //Check if FontFaceSet is available
-const fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined';
+const fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined' && 'onloadingdone' in document.fonts;
 
 /**
  * Singleton controller class which handles updates of ResizeObserver instances.

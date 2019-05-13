@@ -219,7 +219,7 @@
     // Check if MutationObserver is available.
     var mutationObserverSupported = typeof MutationObserver !== 'undefined';
     //Check if FontFaceSet is available
-    var fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined';
+    var fontFaceSetIsSupported = isBrowser && typeof document.fonts !== 'undefined' && 'onloadingdone' in document.fonts;
     /**
      * Singleton controller class which handles updates of ResizeObserver instances.
      */
