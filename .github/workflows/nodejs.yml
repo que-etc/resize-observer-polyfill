@@ -25,3 +25,7 @@ jobs:
         npm run test:spec:node
       env:
         CI: true
+    - name: check dist is up to date
+      run: |
+        git add . # make sure line endings are sanitized by git
+        git diff HEAD --exit-code
