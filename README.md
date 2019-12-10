@@ -1,37 +1,27 @@
 ResizeObserver Polyfill
 =============
 
-[![Build Status][travis-image]][travis-url]
-
-
 A polyfill for the Resize Observer API.
 
 Implementation is based on the MutationObserver and uses Mutation Events as a fall back if the first one is not supported, so there will be no polling unless DOM changes. Doesn't modify observed elements. Handles CSS transitions/animations and can possibly observe changes caused by dynamic CSS pseudo-classes, e.g. by `:hover`.
 
 Follows the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and the native implementation. The size is _2.44 KiB_ when minified and gzipped.
 
-[Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).
+***Not maintained by us:** [Live demo](http://que-etc.github.io/resize-observer-polyfill) (has style problems in IE10 and lower).*
 
 ## Installation
 
 From NPM:
 
 ```sh
-npm install resize-observer-polyfill --save-dev
+npm install github:bettermarks/resize-observer-polyfill#GITHASH --save-dev
 ```
-
-~~From Bower:~~ (will be removed with the next major release)
-
-```sh
-bower install resize-observer-polyfill --save-dev
-```
-
 
 ## Browser Support
 
-Polyfill has been tested in the following browsers:
+~~Polyfill has been tested in the following browsers:~~
 
-[![Build Status](https://saucelabs.com/browser-matrix/que-etc.svg)](https://saucelabs.com/beta/builds/303f5344a7214ba5b62bc7079a15d376)
+**We are currently not running the tests in an automated way.**
 
 **NOTE:** Internet Explorer 8 and its earlier versions are not supported.
 
@@ -107,6 +97,3 @@ npm run test:spec:native
 ```
 
 **NOTE:** after you invoke `spec:native` and `spec:custom` commands head to the `http://localhost:9876/debug.html` page.
-
-[travis-image]: https://travis-ci.org/que-etc/resize-observer-polyfill.svg?branch=master
-[travis-url]: https://travis-ci.org/que-etc/resize-observer-polyfill
