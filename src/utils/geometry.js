@@ -164,16 +164,6 @@ const isSVGGraphicsElement = (() => {
 })();
 
 /**
- * Checks whether provided element is a svg element.
- * 
- * @param {Element} target - Element to be checked.
- * @returns {boolean}
- */
-function isSvgElement(target) {
-    return (Boolean(getWindowOf(target).SVGElement) && target instanceof getWindowOf(target).SVGElement);
-}
-
-/**
  * Checks whether provided element is a document element (<html>).
  *
  * @param {Element} target - Element to be checked.
@@ -181,6 +171,16 @@ function isSvgElement(target) {
  */
 function isDocumentElement(target) {
     return target === getWindowOf(target).document.documentElement;
+}
+
+/**
+ * Checks whether provided element is a svg element.
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {boolean}
+ */
+export function isSvgElement(target) {
+    return Boolean(getWindowOf(target).SVGElement) && target instanceof getWindowOf(target).SVGElement;
 }
 
 /**
