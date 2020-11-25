@@ -160,11 +160,18 @@ const isSVGGraphicsElement = (() => {
     // If it's so, then check that element is at least an instance of the
     // SVGElement and that it has the "getBBox" method.
     // eslint-disable-next-line no-extra-parens
-    return target => (
-        target instanceof getWindowOf(target).SVGElement &&
-        typeof target.getBBox === 'function'
-    );
+    return target => (isSvgElement(target) && typeof target.getBBox === 'function');
 })();
+
+/**
+ * Checks whether provided element is a svg element.
+ * 
+ * @param {Element} target - Element to be checked.
+ * @returns {boolean}
+ */
+function isSvgElement(target) {
+    return (Boolean(getWindowOf(target).SVGElement) && target instanceof getWindowOf(target).SVGElement);
+}
 
 /**
  * Checks whether provided element is a document element (<html>).
