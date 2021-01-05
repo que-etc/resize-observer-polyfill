@@ -1,5 +1,5 @@
+import GlobalResizeObserverController from './GlobalResizeObserverController.js';
 import {Map} from './shims/es6-collections.js';
-import ResizeObserverController from './ResizeObserverController.js';
 import ResizeObserverSPI from './ResizeObserverSPI.js';
 
 // Registry of internal observers. If WeakMap is not available use current shim
@@ -26,7 +26,7 @@ class ResizeObserver {
             throw new TypeError('1 argument required, but only 0 present.');
         }
 
-        const controller = ResizeObserverController.getInstance();
+        const controller = GlobalResizeObserverController.getInstance();
         const observer = new ResizeObserverSPI(callback, controller, this);
 
         observers.set(this, observer);

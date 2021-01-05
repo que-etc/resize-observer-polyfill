@@ -1,3 +1,4 @@
+import ResizeObserverSPI from './ResizeObserverSPI';
 import isBrowser from './utils/isBrowser.js';
 import throttle from './utils/throttle.js';
 
@@ -12,9 +13,26 @@ const transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'si
 const mutationObserverSupported = typeof MutationObserver !== 'undefined';
 
 /**
- * Singleton controller class which handles updates of ResizeObserver instances.
+ * The controller that tracks the resize-related events for the specified
+ * root node. The `GlobalResizeObserverController` uses a per-root-node
+ * instance of this class to track mutations and other events within the
+ * specified root.
  */
 export default class ResizeObserverController {
+    /**
+     * The root node that this controller monitors.
+     *
+     * @private {Node}
+     */
+    rootNode_ = null;
+
+    /**
+     * The global controller.
+     *
+     * @private {GlobalResizeObserverController}
+     */
+    globalController_ = null;
+
     /**
      * Indicates whether DOM listeners have been added.
      *
@@ -37,6 +55,13 @@ export default class ResizeObserverController {
     mutationsObserver_ = null;
 
     /**
+     * Monitors the shadow root host for size changes.
+     *
+     * @private {ResizeObserverSPI}
+     */
+    hostObserver_ = null;
+
+    /**
      * A list of connected observers.
      *
      * @private {Array<ResizeObserverSPI>}
@@ -44,18 +69,16 @@ export default class ResizeObserverController {
     observers_ = [];
 
     /**
-     * Holds reference to the controller's instance.
-     *
-     * @private {ResizeObserverController}
-     */
-    static instance_ = null;
-
-    /**
      * Creates a new instance of ResizeObserverController.
      *
      * @private
+     * @param {Node} rootNode - The root node that this controller monitors.
+     * @param {GlobalResizeObserverController} globalController - The global
+     * controller for all roots.
      */
-    constructor() {
+    constructor(rootNode, globalController) {
+        this.rootNode_ = rootNode;
+        this.globalController_ = globalController;
         this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
         this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
     }
@@ -151,26 +174,38 @@ export default class ResizeObserverController {
             return;
         }
 
+        const rootNode = this.rootNode_;
+        const doc = rootNode.ownerDocument || rootNode;
+        const win = doc.defaultView;
+
         // Subscription to the "Transitionend" event is used as a workaround for
         // delayed transitions. This way it's possible to capture at least the
         // final state of an element.
-        document.addEventListener('transitionend', this.onTransitionEnd_);
+        rootNode.addEventListener('transitionend', this.onTransitionEnd_, true);
 
-        window.addEventListener('resize', this.refresh);
+        if (win) {
+            win.addEventListener('resize', this.refresh, true);
+        }
 
         if (mutationObserverSupported) {
             this.mutationsObserver_ = new MutationObserver(this.refresh);
 
-            this.mutationsObserver_.observe(document, {
+            this.mutationsObserver_.observe(rootNode, {
                 attributes: true,
                 childList: true,
                 characterData: true,
                 subtree: true
             });
         } else {
-            document.addEventListener('DOMSubtreeModified', this.refresh);
+            rootNode.addEventListener('DOMSubtreeModified', this.refresh, true);
 
             this.mutationEventsAdded_ = true;
+        }
+
+        // It's a shadow root. Monitor the host.
+        if (this.rootNode_.host) {
+            this.hostObserver_ = new ResizeObserverSPI(this.refresh, this.globalController_, this);
+            this.hostObserver_.observe(this.rootNode_.host);
         }
 
         this.connected_ = true;
@@ -189,17 +224,29 @@ export default class ResizeObserverController {
             return;
         }
 
-        document.removeEventListener('transitionend', this.onTransitionEnd_);
-        window.removeEventListener('resize', this.refresh);
+        const rootNode = this.rootNode_;
+        const doc = rootNode.ownerDocument || rootNode;
+        const win = doc.defaultView;
+
+        rootNode.removeEventListener('transitionend', this.onTransitionEnd_, true);
+
+        if (win) {
+            win.removeEventListener('resize', this.refresh, true);
+        }
 
         if (this.mutationsObserver_) {
             this.mutationsObserver_.disconnect();
         }
 
         if (this.mutationEventsAdded_) {
-            document.removeEventListener('DOMSubtreeModified', this.refresh);
+            rootNode.removeEventListener('DOMSubtreeModified', this.refresh, true);
         }
 
+        if (this.hostObserver_) {
+            this.hostObserver_.disconnect();
+        }
+
+        this.hostObserver_ = null;
         this.mutationsObserver_ = null;
         this.mutationEventsAdded_ = false;
         this.connected_ = false;
@@ -221,18 +268,5 @@ export default class ResizeObserverController {
         if (isReflowProperty) {
             this.refresh();
         }
-    }
-
-    /**
-     * Returns instance of the ResizeObserverController.
-     *
-     * @returns {ResizeObserverController}
-     */
-    static getInstance() {
-        if (!this.instance_) {
-            this.instance_ = new ResizeObserverController();
-        }
-
-        return this.instance_;
     }
 }

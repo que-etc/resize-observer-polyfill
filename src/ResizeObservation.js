@@ -13,6 +13,15 @@ export default class ResizeObservation {
     target;
 
     /**
+     * The root node of the observed element at the time of subscription. If
+     * the root node of the element changes, the `ResizeObserver` implementation
+     * will resubscribe.
+     *
+     * @type {Node}
+     */
+    rootNode;
+
+    /**
      * Broadcasted width of content rectangle.
      *
      * @type {number}
@@ -37,9 +46,12 @@ export default class ResizeObservation {
      * Creates an instance of ResizeObservation.
      *
      * @param {Element} target - Element to be observed.
+     * @param {Node} rootNode - The root node of the element at the time
+     * of subscription.
      */
-    constructor(target) {
+    constructor(target, rootNode) {
         this.target = target;
+        this.rootNode = rootNode;
     }
 
     /**
