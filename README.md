@@ -17,13 +17,13 @@ Follows the [spec](http://rawgit.com/WICG/ResizeObserver/master/index.html) and 
 From NPM:
 
 ```sh
-npm install resize-observer-polyfill --save-dev
+npm install resize-observer-polyfill
 ```
 
 ~~From Bower:~~ (will be removed with the next major release)
 
 ```sh
-bower install resize-observer-polyfill --save-dev
+bower install resize-observer-polyfill
 ```
 
 
