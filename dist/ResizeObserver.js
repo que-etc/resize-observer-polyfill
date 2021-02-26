@@ -111,312 +111,6 @@
     })();
 
     /**
-     * Detects whether window and document objects are available in current environment.
-     */
-    var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
-
-    // Returns global object of a current environment.
-    var global$1 = (function () {
-        if (typeof global !== 'undefined' && global.Math === Math) {
-            return global;
-        }
-        if (typeof self !== 'undefined' && self.Math === Math) {
-            return self;
-        }
-        if (typeof window !== 'undefined' && window.Math === Math) {
-            return window;
-        }
-        // eslint-disable-next-line no-new-func
-        return Function('return this')();
-    })();
-
-    /**
-     * A shim for the requestAnimationFrame which falls back to the setTimeout if
-     * first one is not supported.
-     *
-     * @returns {number} Requests' identifier.
-     */
-    var requestAnimationFrame$1 = (function () {
-        if (typeof requestAnimationFrame === 'function') {
-            // It's required to use a bounded function because IE sometimes throws
-            // an "Invalid calling object" error if rAF is invoked without the global
-            // object on the left hand side.
-            return requestAnimationFrame.bind(global$1);
-        }
-        return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
-    })();
-
-    // Defines minimum timeout before adding a trailing call.
-    var trailingTimeout = 2;
-    /**
-     * Creates a wrapper function which ensures that provided callback will be
-     * invoked only once during the specified delay period.
-     *
-     * @param {Function} callback - Function to be invoked after the delay period.
-     * @param {number} delay - Delay after which to invoke callback.
-     * @returns {Function}
-     */
-    function throttle (callback, delay) {
-        var leadingCall = false, trailingCall = false, lastCallTime = 0;
-        /**
-         * Invokes the original callback function and schedules new invocation if
-         * the "proxy" was called during current request.
-         *
-         * @returns {void}
-         */
-        function resolvePending() {
-            if (leadingCall) {
-                leadingCall = false;
-                callback();
-            }
-            if (trailingCall) {
-                proxy();
-            }
-        }
-        /**
-         * Callback invoked after the specified delay. It will further postpone
-         * invocation of the original function delegating it to the
-         * requestAnimationFrame.
-         *
-         * @returns {void}
-         */
-        function timeoutCallback() {
-            requestAnimationFrame$1(resolvePending);
-        }
-        /**
-         * Schedules invocation of the original function.
-         *
-         * @returns {void}
-         */
-        function proxy() {
-            var timeStamp = Date.now();
-            if (leadingCall) {
-                // Reject immediately following calls.
-                if (timeStamp - lastCallTime < trailingTimeout) {
-                    return;
-                }
-                // Schedule new call to be in invoked when the pending one is resolved.
-                // This is important for "transitions" which never actually start
-                // immediately so there is a chance that we might miss one if change
-                // happens amids the pending invocation.
-                trailingCall = true;
-            }
-            else {
-                leadingCall = true;
-                trailingCall = false;
-                setTimeout(timeoutCallback, delay);
-            }
-            lastCallTime = timeStamp;
-        }
-        return proxy;
-    }
-
-    // Minimum delay before invoking the update of observers.
-    var REFRESH_DELAY = 20;
-    // A list of substrings of CSS properties used to find transition events that
-    // might affect dimensions of observed elements.
-    var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
-    // Check if MutationObserver is available.
-    var mutationObserverSupported = typeof MutationObserver !== 'undefined';
-    /**
-     * Singleton controller class which handles updates of ResizeObserver instances.
-     */
-    var ResizeObserverController = /** @class */ (function () {
-        /**
-         * Creates a new instance of ResizeObserverController.
-         *
-         * @private
-         */
-        function ResizeObserverController() {
-            /**
-             * Indicates whether DOM listeners have been added.
-             *
-             * @private {boolean}
-             */
-            this.connected_ = false;
-            /**
-             * Tells that controller has subscribed for Mutation Events.
-             *
-             * @private {boolean}
-             */
-            this.mutationEventsAdded_ = false;
-            /**
-             * Keeps reference to the instance of MutationObserver.
-             *
-             * @private {MutationObserver}
-             */
-            this.mutationsObserver_ = null;
-            /**
-             * A list of connected observers.
-             *
-             * @private {Array<ResizeObserverSPI>}
-             */
-            this.observers_ = [];
-            this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
-            this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
-        }
-        /**
-         * Adds observer to observers list.
-         *
-         * @param {ResizeObserverSPI} observer - Observer to be added.
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.addObserver = function (observer) {
-            if (!~this.observers_.indexOf(observer)) {
-                this.observers_.push(observer);
-            }
-            // Add listeners if they haven't been added yet.
-            if (!this.connected_) {
-                this.connect_();
-            }
-        };
-        /**
-         * Removes observer from observers list.
-         *
-         * @param {ResizeObserverSPI} observer - Observer to be removed.
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.removeObserver = function (observer) {
-            var observers = this.observers_;
-            var index = observers.indexOf(observer);
-            // Remove observer if it's present in registry.
-            if (~index) {
-                observers.splice(index, 1);
-            }
-            // Remove listeners if controller has no connected observers.
-            if (!observers.length && this.connected_) {
-                this.disconnect_();
-            }
-        };
-        /**
-         * Invokes the update of observers. It will continue running updates insofar
-         * it detects changes.
-         *
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.refresh = function () {
-            var changesDetected = this.updateObservers_();
-            // Continue running updates if changes have been detected as there might
-            // be future ones caused by CSS transitions.
-            if (changesDetected) {
-                this.refresh();
-            }
-        };
-        /**
-         * Updates every observer from observers list and notifies them of queued
-         * entries.
-         *
-         * @private
-         * @returns {boolean} Returns "true" if any observer has detected changes in
-         *      dimensions of it's elements.
-         */
-        ResizeObserverController.prototype.updateObservers_ = function () {
-            // Collect observers that have active observations.
-            var activeObservers = this.observers_.filter(function (observer) {
-                return observer.gatherActive(), observer.hasActive();
-            });
-            // Deliver notifications in a separate cycle in order to avoid any
-            // collisions between observers, e.g. when multiple instances of
-            // ResizeObserver are tracking the same element and the callback of one
-            // of them changes content dimensions of the observed target. Sometimes
-            // this may result in notifications being blocked for the rest of observers.
-            activeObservers.forEach(function (observer) { return observer.broadcastActive(); });
-            return activeObservers.length > 0;
-        };
-        /**
-         * Initializes DOM listeners.
-         *
-         * @private
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.connect_ = function () {
-            // Do nothing if running in a non-browser environment or if listeners
-            // have been already added.
-            if (!isBrowser || this.connected_) {
-                return;
-            }
-            // Subscription to the "Transitionend" event is used as a workaround for
-            // delayed transitions. This way it's possible to capture at least the
-            // final state of an element.
-            document.addEventListener('transitionend', this.onTransitionEnd_);
-            window.addEventListener('resize', this.refresh);
-            if (mutationObserverSupported) {
-                this.mutationsObserver_ = new MutationObserver(this.refresh);
-                this.mutationsObserver_.observe(document, {
-                    attributes: true,
-                    childList: true,
-                    characterData: true,
-                    subtree: true
-                });
-            }
-            else {
-                document.addEventListener('DOMSubtreeModified', this.refresh);
-                this.mutationEventsAdded_ = true;
-            }
-            this.connected_ = true;
-        };
-        /**
-         * Removes DOM listeners.
-         *
-         * @private
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.disconnect_ = function () {
-            // Do nothing if running in a non-browser environment or if listeners
-            // have been already removed.
-            if (!isBrowser || !this.connected_) {
-                return;
-            }
-            document.removeEventListener('transitionend', this.onTransitionEnd_);
-            window.removeEventListener('resize', this.refresh);
-            if (this.mutationsObserver_) {
-                this.mutationsObserver_.disconnect();
-            }
-            if (this.mutationEventsAdded_) {
-                document.removeEventListener('DOMSubtreeModified', this.refresh);
-            }
-            this.mutationsObserver_ = null;
-            this.mutationEventsAdded_ = false;
-            this.connected_ = false;
-        };
-        /**
-         * "Transitionend" event handler.
-         *
-         * @private
-         * @param {TransitionEvent} event
-         * @returns {void}
-         */
-        ResizeObserverController.prototype.onTransitionEnd_ = function (_a) {
-            var _b = _a.propertyName, propertyName = _b === void 0 ? '' : _b;
-            // Detect whether transition may affect dimensions of an element.
-            var isReflowProperty = transitionKeys.some(function (key) {
-                return !!~propertyName.indexOf(key);
-            });
-            if (isReflowProperty) {
-                this.refresh();
-            }
-        };
-        /**
-         * Returns instance of the ResizeObserverController.
-         *
-         * @returns {ResizeObserverController}
-         */
-        ResizeObserverController.getInstance = function () {
-            if (!this.instance_) {
-                this.instance_ = new ResizeObserverController();
-            }
-            return this.instance_;
-        };
-        /**
-         * Holds reference to the controller's instance.
-         *
-         * @private {ResizeObserverController}
-         */
-        ResizeObserverController.instance_ = null;
-        return ResizeObserverController;
-    }());
-
-    /**
      * Defines non-writable/enumerable properties of the provided target object.
      *
      * @param {Object} target - Object for which to define properties.
@@ -436,6 +130,21 @@
         return target;
     });
 
+    // Returns global object of a current environment.
+    var global$1 = (function () {
+        if (typeof global !== 'undefined' && global.Math === Math) {
+            return global;
+        }
+        if (typeof self !== 'undefined' && self.Math === Math) {
+            return self;
+        }
+        if (typeof window !== 'undefined' && window.Math === Math) {
+            return window;
+        }
+        // eslint-disable-next-line no-new-func
+        return Function('return this')();
+    })();
+
     /**
      * Returns the global object associated with provided element.
      *
@@ -451,6 +160,11 @@
         // provided element.
         return ownerGlobal || global$1;
     });
+
+    /**
+     * Detects whether window and document objects are available in current environment.
+     */
+    var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
 
     // Placeholder of an empty content rectangle.
     var emptyRect = createRectInit(0, 0, 0, 0);
@@ -665,8 +379,10 @@
          * Creates an instance of ResizeObservation.
          *
          * @param {Element} target - Element to be observed.
+         * @param {Node} rootNode - The root node of the element at the time
+         * of subscription.
          */
-        function ResizeObservation(target) {
+        function ResizeObservation(target, rootNode) {
             /**
              * Broadcasted width of content rectangle.
              *
@@ -686,6 +402,7 @@
              */
             this.contentRect_ = createRectInit(0, 0, 0, 0);
             this.target = target;
+            this.rootNode = rootNode;
         }
         /**
          * Updates content rectangle and tells whether it's width or height properties
@@ -734,18 +451,40 @@
         return ResizeObserverEntry;
     }());
 
+    /**
+     * A shim for the `Node.getRootNode()` API.
+     *
+     * See https://developer.mozilla.org/en-US/docs/Web/API/Node/getRootNode for
+     * more info.
+     *
+     * @param {Node} node
+     * @returns {Node}
+     */
+    function getRootNode(node) {
+        if (typeof node.getRootNode === 'function') {
+            return node.getRootNode();
+        }
+        var n;
+        // eslint-disable-next-line no-empty
+        for (n = node; n.parentNode; n = n.parentNode) { }
+        return n;
+    }
+
+    // Check if IntersectionObserver is available.
+    var intersectionObserverSupported = typeof IntersectionObserver !== 'undefined';
     var ResizeObserverSPI = /** @class */ (function () {
         /**
          * Creates a new instance of ResizeObserver.
          *
          * @param {ResizeObserverCallback} callback - Callback function that is invoked
          *      when one of the observed elements changes it's content dimensions.
-         * @param {ResizeObserverController} controller - Controller instance which
+         * @param {GlobalResizeObserverController} controller - Controller instance which
          *      is responsible for the updates of observer.
          * @param {ResizeObserver} callbackCtx - Reference to the public
          *      ResizeObserver instance which will be passed to callback function.
          */
         function ResizeObserverSPI(callback, controller, callbackCtx) {
+            var _this = this;
             /**
              * Collection of resize observations that have detected changes in dimensions
              * of elements.
@@ -759,12 +498,32 @@
              * @private {Map<Element, ResizeObservation>}
              */
             this.observations_ = new MapShim();
+            /**
+             * The mapping between a root node and a set of targets tracked within
+             * this root node.
+             *
+             * @private {Map<Node, Array<Element>>}
+             */
+            this.rootNodes_ = new MapShim();
+            /**
+             * An instance of the intersection observer when available. There are a
+             * lot more browser versions that support the `IntersectionObserver`, but
+             * not the `ResizeObserver`. When `IntersectionObserver` is available it
+             * can be used to pick up DOM additions and removals more timely without
+             * significant costs.
+             *
+             * @private {IntersectionObserver}
+             */
+            this.intersectionObserver_ = null;
             if (typeof callback !== 'function') {
                 throw new TypeError('The callback provided as parameter 1 is not a function.');
             }
             this.callback_ = callback;
             this.controller_ = controller;
             this.callbackCtx_ = callbackCtx;
+            if (intersectionObserverSupported) {
+                this.intersectionObserver_ = new IntersectionObserver(function () { return _this.checkRootChanges_(); });
+            }
         }
         /**
          * Starts observing provided element.
@@ -788,10 +547,20 @@
             if (observations.has(target)) {
                 return;
             }
-            observations.set(target, new ResizeObservation(target));
-            this.controller_.addObserver(this);
+            var rootNode = getControlledRootNode(target, target.ownerDocument);
+            observations.set(target, new ResizeObservation(target, rootNode));
+            var rootNodeTargets = this.rootNodes_.get(rootNode);
+            if (!rootNodeTargets) {
+                rootNodeTargets = [];
+                this.rootNodes_.set(rootNode, rootNodeTargets);
+                this.controller_.addObserver(rootNode, this);
+            }
+            rootNodeTargets.push(target);
+            if (this.intersectionObserver_) {
+                this.intersectionObserver_.observe(target);
+            }
             // Force the update of observations.
-            this.controller_.refresh();
+            this.controller_.refresh(rootNode);
         };
         /**
          * Stops observing provided element.
@@ -811,13 +580,27 @@
                 throw new TypeError('parameter 1 is not of type "Element".');
             }
             var observations = this.observations_;
+            var observation = observations.get(target);
             // Do nothing if element is not being observed.
-            if (!observations.has(target)) {
+            if (!observation) {
                 return;
             }
             observations.delete(target);
-            if (!observations.size) {
-                this.controller_.removeObserver(this);
+            if (this.intersectionObserver_) {
+                this.intersectionObserver_.unobserve(target);
+            }
+            // Disconnect the root if no longer used.
+            var rootNode = observation.rootNode;
+            var rootNodeTargets = this.rootNodes_.get(rootNode);
+            if (rootNodeTargets) {
+                var index = rootNodeTargets.indexOf(target);
+                if (~index) {
+                    rootNodeTargets.splice(index, 1);
+                }
+                if (rootNodeTargets.length === 0) {
+                    this.rootNodes_.delete(rootNode);
+                    this.controller_.removeObserver(rootNode, this);
+                }
             }
         };
         /**
@@ -826,9 +609,17 @@
          * @returns {void}
          */
         ResizeObserverSPI.prototype.disconnect = function () {
+            var _this = this;
             this.clearActive();
             this.observations_.clear();
-            this.controller_.removeObserver(this);
+            this.rootNodes_.forEach(function (_, rootNode) {
+                _this.controller_.removeObserver(rootNode, _this);
+            });
+            this.rootNodes_.clear();
+            if (this.intersectionObserver_) {
+                this.intersectionObserver_.disconnect();
+                this.intersectionObserver_ = null;
+            }
         };
         /**
          * Collects observation instances the associated element of which has changed
@@ -838,6 +629,7 @@
          */
         ResizeObserverSPI.prototype.gatherActive = function () {
             var _this = this;
+            this.checkRootChanges_();
             this.clearActive();
             this.observations_.forEach(function (observation) {
                 if (observation.isActive()) {
@@ -880,7 +672,457 @@
         ResizeObserverSPI.prototype.hasActive = function () {
             return this.activeObservations_.length > 0;
         };
+        /**
+         * Check if any of the targets have changed the root node. For instance,
+         * an element could be moved from the main DOM to a shadow root.
+         *
+         * @private
+         * @returns {void}
+         */
+        ResizeObserverSPI.prototype.checkRootChanges_ = function () {
+            var _this = this;
+            var changedRootTargets = null;
+            this.observations_.forEach(function (observation) {
+                var target = observation.target, oldRootNode = observation.rootNode;
+                var rootNode = getControlledRootNode(target, oldRootNode);
+                if (rootNode !== oldRootNode) {
+                    if (!changedRootTargets) {
+                        changedRootTargets = [];
+                    }
+                    changedRootTargets.push(target);
+                }
+            });
+            if (changedRootTargets) {
+                changedRootTargets.forEach(function (target) {
+                    _this.unobserve(target);
+                    _this.observe(target);
+                });
+            }
+        };
         return ResizeObserverSPI;
+    }());
+    /**
+     * Find the most appropriate root node that should be monitored for events
+     * related to this target.
+     *
+     * @param {Node} target
+     * @param {Node} def
+     * @returns {Node}
+     */
+    function getControlledRootNode(target, def) {
+        var rootNode = getRootNode(target);
+        // DOCUMENT_NODE = 9
+        // DOCUMENT_FRAGMENT_NODE = 11 (shadow root)
+        if (rootNode.nodeType === 9 ||
+            rootNode.nodeType === 11) {
+            return rootNode;
+        }
+        return def;
+    }
+
+    /**
+     * A shim for the requestAnimationFrame which falls back to the setTimeout if
+     * first one is not supported.
+     *
+     * @returns {number} Requests' identifier.
+     */
+    var requestAnimationFrame$1 = (function () {
+        if (typeof requestAnimationFrame === 'function') {
+            // It's required to use a bounded function because IE sometimes throws
+            // an "Invalid calling object" error if rAF is invoked without the global
+            // object on the left hand side.
+            return requestAnimationFrame.bind(global$1);
+        }
+        return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
+    })();
+
+    // Defines minimum timeout before adding a trailing call.
+    var trailingTimeout = 2;
+    /**
+     * Creates a wrapper function which ensures that provided callback will be
+     * invoked only once during the specified delay period.
+     *
+     * @param {Function} callback - Function to be invoked after the delay period.
+     * @param {number} delay - Delay after which to invoke callback.
+     * @returns {Function}
+     */
+    function throttle (callback, delay) {
+        var leadingCall = false, trailingCall = false, lastCallTime = 0;
+        /**
+         * Invokes the original callback function and schedules new invocation if
+         * the "proxy" was called during current request.
+         *
+         * @returns {void}
+         */
+        function resolvePending() {
+            if (leadingCall) {
+                leadingCall = false;
+                callback();
+            }
+            if (trailingCall) {
+                proxy();
+            }
+        }
+        /**
+         * Callback invoked after the specified delay. It will further postpone
+         * invocation of the original function delegating it to the
+         * requestAnimationFrame.
+         *
+         * @returns {void}
+         */
+        function timeoutCallback() {
+            requestAnimationFrame$1(resolvePending);
+        }
+        /**
+         * Schedules invocation of the original function.
+         *
+         * @returns {void}
+         */
+        function proxy() {
+            var timeStamp = Date.now();
+            if (leadingCall) {
+                // Reject immediately following calls.
+                if (timeStamp - lastCallTime < trailingTimeout) {
+                    return;
+                }
+                // Schedule new call to be in invoked when the pending one is resolved.
+                // This is important for "transitions" which never actually start
+                // immediately so there is a chance that we might miss one if change
+                // happens amids the pending invocation.
+                trailingCall = true;
+            }
+            else {
+                leadingCall = true;
+                trailingCall = false;
+                setTimeout(timeoutCallback, delay);
+            }
+            lastCallTime = timeStamp;
+        }
+        return proxy;
+    }
+
+    // Minimum delay before invoking the update of observers.
+    var REFRESH_DELAY = 20;
+    // A list of substrings of CSS properties used to find transition events that
+    // might affect dimensions of observed elements.
+    var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
+    // Check if MutationObserver is available.
+    var mutationObserverSupported = typeof MutationObserver !== 'undefined';
+    /**
+     * The controller that tracks the resize-related events for the specified
+     * root node. The `GlobalResizeObserverController` uses a per-root-node
+     * instance of this class to track mutations and other events within the
+     * specified root.
+     */
+    var ResizeObserverController = /** @class */ (function () {
+        /**
+         * Creates a new instance of ResizeObserverController.
+         *
+         * @private
+         * @param {Node} rootNode - The root node that this controller monitors.
+         * @param {GlobalResizeObserverController} globalController - The global
+         * controller for all roots.
+         */
+        function ResizeObserverController(rootNode, globalController) {
+            /**
+             * The root node that this controller monitors.
+             *
+             * @private {Node}
+             */
+            this.rootNode_ = null;
+            /**
+             * The global controller.
+             *
+             * @private {GlobalResizeObserverController}
+             */
+            this.globalController_ = null;
+            /**
+             * Indicates whether DOM listeners have been added.
+             *
+             * @private {boolean}
+             */
+            this.connected_ = false;
+            /**
+             * Tells that controller has subscribed for Mutation Events.
+             *
+             * @private {boolean}
+             */
+            this.mutationEventsAdded_ = false;
+            /**
+             * Keeps reference to the instance of MutationObserver.
+             *
+             * @private {MutationObserver}
+             */
+            this.mutationsObserver_ = null;
+            /**
+             * Monitors the shadow root host for size changes.
+             *
+             * @private {ResizeObserverSPI}
+             */
+            this.hostObserver_ = null;
+            /**
+             * A list of connected observers.
+             *
+             * @private {Array<ResizeObserverSPI>}
+             */
+            this.observers_ = [];
+            this.rootNode_ = rootNode;
+            this.globalController_ = globalController;
+            this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
+            this.refresh = throttle(this.refresh.bind(this), REFRESH_DELAY);
+        }
+        /**
+         * Adds observer to observers list.
+         *
+         * @param {ResizeObserverSPI} observer - Observer to be added.
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.addObserver = function (observer) {
+            if (!~this.observers_.indexOf(observer)) {
+                this.observers_.push(observer);
+            }
+            // Add listeners if they haven't been added yet.
+            if (!this.connected_) {
+                this.connect_();
+            }
+        };
+        /**
+         * Removes observer from observers list.
+         *
+         * @param {ResizeObserverSPI} observer - Observer to be removed.
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.removeObserver = function (observer) {
+            var observers = this.observers_;
+            var index = observers.indexOf(observer);
+            // Remove observer if it's present in registry.
+            if (~index) {
+                observers.splice(index, 1);
+            }
+            // Remove listeners if controller has no connected observers.
+            if (!observers.length && this.connected_) {
+                this.disconnect_();
+            }
+        };
+        /**
+         * Invokes the update of observers. It will continue running updates insofar
+         * it detects changes.
+         *
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.refresh = function () {
+            var changesDetected = this.updateObservers_();
+            // Continue running updates if changes have been detected as there might
+            // be future ones caused by CSS transitions.
+            if (changesDetected) {
+                this.refresh();
+            }
+        };
+        /**
+         * Updates every observer from observers list and notifies them of queued
+         * entries.
+         *
+         * @private
+         * @returns {boolean} Returns "true" if any observer has detected changes in
+         *      dimensions of it's elements.
+         */
+        ResizeObserverController.prototype.updateObservers_ = function () {
+            // Collect observers that have active observations.
+            var activeObservers = this.observers_.filter(function (observer) {
+                return observer.gatherActive(), observer.hasActive();
+            });
+            // Deliver notifications in a separate cycle in order to avoid any
+            // collisions between observers, e.g. when multiple instances of
+            // ResizeObserver are tracking the same element and the callback of one
+            // of them changes content dimensions of the observed target. Sometimes
+            // this may result in notifications being blocked for the rest of observers.
+            activeObservers.forEach(function (observer) { return observer.broadcastActive(); });
+            return activeObservers.length > 0;
+        };
+        /**
+         * Initializes DOM listeners.
+         *
+         * @private
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.connect_ = function () {
+            // Do nothing if running in a non-browser environment or if listeners
+            // have been already added.
+            if (!isBrowser || this.connected_) {
+                return;
+            }
+            var rootNode = this.rootNode_;
+            var doc = rootNode.ownerDocument || rootNode;
+            var win = doc.defaultView;
+            // Subscription to the "Transitionend" event is used as a workaround for
+            // delayed transitions. This way it's possible to capture at least the
+            // final state of an element.
+            rootNode.addEventListener('transitionend', this.onTransitionEnd_, true);
+            if (win) {
+                win.addEventListener('resize', this.refresh, true);
+            }
+            if (mutationObserverSupported) {
+                this.mutationsObserver_ = new MutationObserver(this.refresh);
+                try {
+                    this.mutationsObserver_.observe(rootNode, {
+                        attributes: true,
+                        childList: true,
+                        characterData: true,
+                        subtree: true
+                    });
+                }
+                catch (e) {
+                    // A Shadow DOM polyfill might fail when oberving a "synthetic"
+                    // ShadowRoot object. Ignore the error. The additional data
+                    // will arrive from the host observer below.
+                }
+                if (rootNode.host) {
+                    this.mutationsObserver_.observe(rootNode.host, {
+                        attributes: true,
+                        childList: true,
+                        characterData: true,
+                        subtree: true
+                    });
+                }
+            }
+            else {
+                rootNode.addEventListener('DOMSubtreeModified', this.refresh, true);
+                this.mutationEventsAdded_ = true;
+            }
+            // It's a shadow root. Monitor the host.
+            if (rootNode.host) {
+                this.hostObserver_ = new ResizeObserverSPI(this.refresh, this.globalController_, this);
+                this.hostObserver_.observe(rootNode.host);
+            }
+            this.connected_ = true;
+        };
+        /**
+         * Removes DOM listeners.
+         *
+         * @private
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.disconnect_ = function () {
+            // Do nothing if running in a non-browser environment or if listeners
+            // have been already removed.
+            if (!isBrowser || !this.connected_) {
+                return;
+            }
+            var rootNode = this.rootNode_;
+            var doc = rootNode.ownerDocument || rootNode;
+            var win = doc.defaultView;
+            rootNode.removeEventListener('transitionend', this.onTransitionEnd_, true);
+            if (win) {
+                win.removeEventListener('resize', this.refresh, true);
+            }
+            if (this.mutationsObserver_) {
+                this.mutationsObserver_.disconnect();
+            }
+            if (this.mutationEventsAdded_) {
+                rootNode.removeEventListener('DOMSubtreeModified', this.refresh, true);
+            }
+            if (this.hostObserver_) {
+                this.hostObserver_.disconnect();
+            }
+            this.hostObserver_ = null;
+            this.mutationsObserver_ = null;
+            this.mutationEventsAdded_ = false;
+            this.connected_ = false;
+        };
+        /**
+         * "Transitionend" event handler.
+         *
+         * @private
+         * @param {TransitionEvent} event
+         * @returns {void}
+         */
+        ResizeObserverController.prototype.onTransitionEnd_ = function (_a) {
+            var _b = _a.propertyName, propertyName = _b === void 0 ? '' : _b;
+            // Detect whether transition may affect dimensions of an element.
+            var isReflowProperty = transitionKeys.some(function (key) {
+                return !!~propertyName.indexOf(key);
+            });
+            if (isReflowProperty) {
+                this.refresh();
+            }
+        };
+        return ResizeObserverController;
+    }());
+
+    /**
+     * Singleton controller class which handles updates of ResizeObserver instances.
+     */
+    var GlobalResizeObserverController = /** @class */ (function () {
+        function GlobalResizeObserverController() {
+            /**
+             * A mapping from a DOM root node and a respective controller. A root node
+             * could be the main document, a same-origin iframe, or a shadow root.
+             * See https://developer.mozilla.org/en-US/docs/Web/API/Node/getRootNode
+             * for more info.
+             *
+             * @private {Map<Node, ResizeObserverController>}
+             */
+            this.rootNodeControllers_ = typeof WeakMap !== 'undefined' ? new WeakMap() : new Map();
+        }
+        /**
+         * Adds observer to observers list.
+         *
+         * @param {Node} rootNode - The root node for which the observer is added.
+         * @param {ResizeObserverSPI} observer - Observer to be added.
+         * @returns {void}
+         */
+        GlobalResizeObserverController.prototype.addObserver = function (rootNode, observer) {
+            var rootNodeController = this.rootNodeControllers_.get(rootNode);
+            if (!rootNodeController) {
+                rootNodeController = new ResizeObserverController(rootNode, this);
+                this.rootNodeControllers_.set(rootNode, rootNodeController);
+            }
+            rootNodeController.addObserver(observer);
+        };
+        /**
+         * Removes observer from observers list.
+         *
+         * @param {Node} rootNode - The root node from which the observer is removed.
+         * @param {ResizeObserverSPI} observer - Observer to be removed.
+         * @returns {void}
+         */
+        GlobalResizeObserverController.prototype.removeObserver = function (rootNode, observer) {
+            var rootNodeController = this.rootNodeControllers_.get(rootNode);
+            if (rootNodeController) {
+                rootNodeController.removeObserver(observer);
+            }
+        };
+        /**
+         * Invokes the update of observers. It will continue running updates insofar
+         * it detects changes.
+         *
+         * @param {Node} rootNode - The root node to refresh.
+         * @returns {void}
+         */
+        GlobalResizeObserverController.prototype.refresh = function (rootNode) {
+            var rootNodeController = this.rootNodeControllers_.get(rootNode);
+            if (rootNodeController) {
+                rootNodeController.refresh();
+            }
+        };
+        /**
+         * Returns instance of the GlobalResizeObserverController.
+         *
+         * @returns {GlobalResizeObserverController}
+         */
+        GlobalResizeObserverController.getInstance = function () {
+            if (!this.instance_) {
+                this.instance_ = new GlobalResizeObserverController();
+            }
+            return this.instance_;
+        };
+        /**
+         * Holds reference to the controller's instance.
+         *
+         * @private {GlobalResizeObserverController}
+         */
+        GlobalResizeObserverController.instance_ = null;
+        return GlobalResizeObserverController;
     }());
 
     // Registry of internal observers. If WeakMap is not available use current shim
@@ -905,7 +1147,7 @@
             if (!arguments.length) {
                 throw new TypeError('1 argument required, but only 0 present.');
             }
-            var controller = ResizeObserverController.getInstance();
+            var controller = GlobalResizeObserverController.getInstance();
             var observer = new ResizeObserverSPI(callback, controller, this);
             observers.set(this, observer);
         }

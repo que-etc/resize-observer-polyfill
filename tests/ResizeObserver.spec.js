@@ -43,47 +43,48 @@ const template = `
 
 const timeout = 300;
 
-function appendStyles() {
+function appendStyles(documentOrShadow) {
+    const head = documentOrShadow.head || documentOrShadow;
+
     styles = document.createElement('style');
 
     styles.id = 'styles';
-    document.head.appendChild(styles);
+    head.appendChild(styles);
 
     styles.innerHTML = css;
 }
 
-function removeStyles() {
-    document.head.removeChild(styles);
+function removeStyles(documentOrShadow) {
+    const head = documentOrShadow.head || documentOrShadow;
+
+    head.removeChild(styles);
 
     styles = null;
 }
 
-function appendElements() {
-    document.body.insertAdjacentHTML('beforeend', template);
+function appendElements(documentOrShadow, body) {
+    body.insertAdjacentHTML('beforeend', template);
 
     elements = {
-        root: document.getElementById('root'),
-        container: document.getElementById('container'),
-        target1: document.getElementById('target1'),
-        target2: document.getElementById('target2'),
-        target3: document.getElementById('target3')
+        documentOrShadow,
+        body,
+        root: documentOrShadow.getElementById('root'),
+        container: documentOrShadow.getElementById('container'),
+        target1: documentOrShadow.getElementById('target1'),
+        target2: documentOrShadow.getElementById('target2'),
+        target3: documentOrShadow.getElementById('target3')
     };
 }
 
-function removeElements() {
-    if (document.body.contains(elements.root)) {
-        document.body.removeChild(elements.root);
+function removeElements(documentOrShadow, body) {
+    if (body.contains(elements.root)) {
+        body.removeChild(elements.root);
     }
 
     elements = {};
 }
 
 describe('ResizeObserver', () => {
-    beforeEach(() => {
-        appendStyles();
-        appendElements();
-    });
-
     afterEach(() => {
         if (observer) {
             observer.disconnect();
@@ -94,9 +95,6 @@ describe('ResizeObserver', () => {
             observer2.disconnect();
             observer2 = null;
         }
-
-        removeStyles();
-        removeElements();
     });
 
     describe('constructor', () => {
@@ -124,961 +122,841 @@ describe('ResizeObserver', () => {
         /* eslint-enable no-new */
     });
 
-    describe('observe', () => {
-        it('throws an error if no arguments are provided', () => {
-            observer = new ResizeObserver(emptyFn);
+    describe('API shape', () => {
+        describe('observe', () => {
+            it('throws an error if no arguments are provided', () => {
+                observer = new ResizeObserver(emptyFn);
 
-            expect(() => {
-                observer.observe();
-            }).toThrowError(/1 argument required/i);
-        });
-
-        it('throws an error if target is not an Element', () => {
-            observer = new ResizeObserver(emptyFn);
-
-            expect(() => {
-                observer.observe(true);
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.observe(null);
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.observe({});
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.observe(document.createTextNode(''));
-            }).toThrowError(/Element/i);
-        });
-
-        it('triggers when observation begins', done => {
-            observer = new ResizeObserver(done);
-
-            observer.observe(elements.target1);
-        });
-
-        it('triggers with correct arguments', done => {
-            observer = new ResizeObserver(function (...args) {
-                const [entries, instance] = args;
-
-                expect(args.length).toEqual(2);
-
-                expect(Array.isArray(entries)).toBe(true);
-                expect(entries.length).toEqual(1);
-
-                expect(entries[0] instanceof ResizeObserverEntry).toBe(true);
-
-                expect(entries[0].target).toBe(elements.target1);
-                expect(typeof entries[0].contentRect).toBe('object');
-
-                expect(instance).toBe(observer);
-
-                // eslint-disable-next-line no-invalid-this
-                expect(this).toBe(observer);
-
-                done();
+                expect(() => {
+                    observer.observe();
+                }).toThrowError(/1 argument required/i);
             });
 
-            observer.observe(elements.target1);
+            it('throws an error if target is not an Element', () => {
+                observer = new ResizeObserver(emptyFn);
+
+                expect(() => {
+                    observer.observe(true);
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.observe(null);
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.observe({});
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.observe(document.createTextNode(''));
+                }).toThrowError(/Element/i);
+            });
         });
 
-        it('preserves the initial order of elements', done => {
-            const spy = createAsyncSpy();
+        describe('unobserve', () => {
+            it('throws an error if no arguments have been provided', () => {
+                observer = new ResizeObserver(emptyFn);
 
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target2);
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(2);
-
-                expect(entries[0].target).toBe(elements.target2);
-                expect(entries[1].target).toBe(elements.target1);
-            }).then(async () => {
-                elements.target1.style.height = '400px';
-                elements.target2.style.height = '100px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(2);
-
-                expect(entries[0].target).toBe(elements.target2);
-                expect(entries[1].target).toBe(elements.target1);
-            }).then(done).catch(done.fail);
-        });
-
-        // Checks that gathering of active observations and broadcasting of
-        // notifications happens in separate cycles.
-        it('doesn\'t block notifications when multiple observers are used', done => {
-            const spy = createAsyncSpy();
-            const spy2 = createAsyncSpy();
-
-            const defaultWidth = getComputedStyle(elements.target1).width;
-
-            let shouldRestoreDefault = false;
-
-            observer = new ResizeObserver((...args) => {
-                spy(...args);
-
-                if (shouldRestoreDefault) {
-                    elements.target1.style.width = defaultWidth;
-                }
+                expect(() => {
+                    observer.unobserve();
+                }).toThrowError(/1 argument required/i);
             });
 
-            observer2 = new ResizeObserver((...args) => {
-                spy2(...args);
+            it('throws an error if target is not an Element', () => {
+                observer = new ResizeObserver(emptyFn);
 
-                if (shouldRestoreDefault) {
-                    elements.target1.style.width = defaultWidth;
-                }
+                expect(() => {
+                    observer.unobserve(true);
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.unobserve(null);
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.unobserve({});
+                }).toThrowError(/Element/i);
+
+                expect(() => {
+                    observer.unobserve(document.createTextNode(''));
+                }).toThrowError(/Element/i);
+            });
+        });
+    });
+
+    function specForAnyRoot() {
+        describe('observe', () => {
+            it('triggers when observation begins', done => {
+                observer = new ResizeObserver(done);
+
+                observer.observe(elements.target1);
             });
 
-            observer.observe(elements.target1);
-            observer2.observe(elements.target1);
+            it('triggers with correct arguments', done => {
+                observer = new ResizeObserver(function (...args) {
+                    const [entries, instance] = args;
 
-            Promise.all([
-                spy.nextCall(),
-                spy2.nextCall()
-            ]).then(() => {
-                shouldRestoreDefault = true;
+                    expect(args.length).toEqual(2);
 
-                elements.target1.style.width = '220px';
+                    expect(Array.isArray(entries)).toBe(true);
+                    expect(entries.length).toEqual(1);
 
-                return Promise.all([
-                    spy.nextCall().then(spy.nextCall),
-                    spy2.nextCall().then(spy2.nextCall)
-                ]);
-            }).then(done).catch(done.fail);
-        });
+                    expect(entries[0] instanceof ResizeObserverEntry).toBe(true);
 
-        it('doesn\'t notify of already observed elements', done => {
-            const spy = createAsyncSpy();
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(typeof entries[0].contentRect).toBe('object');
 
-            observer = new ResizeObserver(spy);
+                    expect(instance).toBe(observer);
 
-            observer.observe(elements.target1);
+                    // eslint-disable-next-line no-invalid-this
+                    expect(this).toBe(observer);
 
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-            }).then(async () => {
+                    done();
+                });
+
+                observer.observe(elements.target1);
+            });
+
+            it('preserves the initial order of elements', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target2);
                 observer.observe(elements.target1);
 
-                await wait(timeout);
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(2);
 
-                expect(spy).toHaveBeenCalledTimes(1);
+                    expect(entries[0].target).toBe(elements.target2);
+                    expect(entries[1].target).toBe(elements.target1);
+                }).then(async () => {
+                    elements.target1.style.height = '400px';
+                    elements.target2.style.height = '100px';
 
-                elements.target1.style.width = '220px';
+                    const entries = await spy.nextCall();
 
-                const entries = await spy.nextCall();
+                    expect(entries.length).toBe(2);
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-            }).then(done).catch(done.fail);
-        });
+                    expect(entries[0].target).toBe(elements.target2);
+                    expect(entries[1].target).toBe(elements.target1);
+                }).then(done).catch(done.fail);
+            });
 
-        it('handles elements that are not yet in the DOM', done => {
-            elements.root.removeChild(elements.container);
-            elements.container.removeChild(elements.target1);
+            // Checks that gathering of active observations and broadcasting of
+            // notifications happens in separate cycles.
+            it('doesn\'t block notifications when multiple observers are used', done => {
+                const spy = createAsyncSpy();
+                const spy2 = createAsyncSpy();
 
-            const spy = createAsyncSpy();
+                const defaultWidth = getComputedStyle(elements.target1).width;
 
-            observer = new ResizeObserver(spy);
+                let shouldRestoreDefault = false;
 
-            observer.observe(elements.target1);
+                observer = new ResizeObserver((...args) => {
+                    spy(...args);
 
-            wait(timeout).then(() => {
-                expect(spy).not.toHaveBeenCalled();
-            }).then(async () => {
-                elements.container.appendChild(elements.target1);
+                    if (shouldRestoreDefault) {
+                        elements.target1.style.width = defaultWidth;
+                    }
+                });
 
-                await wait(timeout);
+                observer2 = new ResizeObserver((...args) => {
+                    spy2(...args);
 
-                expect(spy).not.toHaveBeenCalled();
-            }).then(async () => {
-                elements.root.appendChild(elements.container);
+                    if (shouldRestoreDefault) {
+                        elements.target1.style.width = defaultWidth;
+                    }
+                });
 
-                const entries = await spy.nextCall();
+                observer.observe(elements.target1);
+                observer2.observe(elements.target1);
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
+                Promise.all([
+                    spy.nextCall(),
+                    spy2.nextCall()
+                ]).then(() => {
+                    shouldRestoreDefault = true;
 
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-            }).then(done).catch(done.fail);
-        });
+                    elements.target1.style.width = '220px';
 
-        it('triggers when an element is removed from DOM', done => {
-            const spy = createAsyncSpy();
+                    return Promise.all([
+                        spy.nextCall().then(spy.nextCall),
+                        spy2.nextCall().then(spy2.nextCall)
+                    ]);
+                }).then(done).catch(done.fail);
+            });
 
-            observer = new ResizeObserver(spy);
+            it('doesn\'t notify of already observed elements', done => {
+                const spy = createAsyncSpy();
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
+                observer = new ResizeObserver(spy);
 
-            spy.nextCall().then(entries => {
-                expect(spy).toHaveBeenCalledTimes(1);
+                observer.observe(elements.target1);
 
-                expect(entries.length).toBe(2);
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+                }).then(async () => {
+                    observer.observe(elements.target1);
 
-                expect(entries[0].target).toBe(elements.target1);
-                expect(entries[1].target).toBe(elements.target2);
-            }).then(async () => {
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+
+                    elements.target1.style.width = '220px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles elements that are not yet in the DOM', done => {
+                elements.root.removeChild(elements.container);
                 elements.container.removeChild(elements.target1);
 
-                const entries = await spy.nextCall();
+                const spy = createAsyncSpy();
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
+                observer = new ResizeObserver(spy);
 
-                expect(entries[0].contentRect.width).toBe(0);
-                expect(entries[0].contentRect.height).toBe(0);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(0);
-                expect(entries[0].contentRect.bottom).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.root.removeChild(elements.container);
+                observer.observe(elements.target1);
 
-                const entries = await spy.nextCall();
+                wait(timeout).then(() => {
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(async () => {
+                    elements.container.appendChild(elements.target1);
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target2);
+                    await wait(timeout);
 
-                expect(entries[0].contentRect.width).toBe(0);
-                expect(entries[0].contentRect.height).toBe(0);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(0);
-                expect(entries[0].contentRect.bottom).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(async () => {
+                    elements.root.appendChild(elements.container);
 
-        it('handles resizing of the documentElement', done => {
-            const spy = createAsyncSpy();
-            const docElement = document.documentElement;
-            const styles = window.getComputedStyle(docElement);
+                    const entries = await spy.nextCall();
 
-            observer = new ResizeObserver(spy);
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
 
-            observer.observe(document.documentElement);
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                }).then(done).catch(done.fail);
+            });
 
-            spy.nextCall().then(entries => {
-                const width = parseFloat(styles.width);
-                const height = parseFloat(styles.height);
+            it('triggers when an element is removed from DOM', done => {
+                const spy = createAsyncSpy();
 
-                expect(entries.length).toBe(1);
+                observer = new ResizeObserver(spy);
 
-                expect(entries[0].target).toBe(docElement);
+                observer.observe(elements.target1);
+                observer.observe(elements.target2);
 
-                expect(entries[0].contentRect.width).toBe(width);
-                expect(entries[0].contentRect.height).toBe(height);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(width);
-                expect(entries[0].contentRect.bottom).toBe(height);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                document.body.removeChild(elements.root);
-
-                const width = parseFloat(styles.width);
-                const height = parseFloat(styles.height);
+                spy.nextCall().then(entries => {
+                    expect(spy).toHaveBeenCalledTimes(1);
 
-                const entries = await spy.nextCall();
+                    expect(entries.length).toBe(2);
 
-                expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[1].target).toBe(elements.target2);
+                }).then(async () => {
+                    elements.container.removeChild(elements.target1);
 
-                expect(entries[0].target).toBe(docElement);
+                    const entries = await spy.nextCall();
 
-                expect(entries[0].contentRect.width).toBe(width);
-                expect(entries[0].contentRect.height).toBe(height);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(width);
-                expect(entries[0].contentRect.bottom).toBe(height);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles hidden elements', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
 
-            elements.root.style.display = 'none';
-            elements.target1.style.display = 'none';
+                    expect(entries[0].contentRect.width).toBe(0);
+                    expect(entries[0].contentRect.height).toBe(0);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.root.removeChild(elements.container);
 
-            observer.observe(elements.target1);
+                    const entries = await spy.nextCall();
 
-            wait(timeout).then(() => {
-                expect(spy).not.toHaveBeenCalled();
-            }).then(async () => {
-                elements.target1.style.display = 'block';
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target2);
 
-                await wait(timeout);
+                    expect(entries[0].contentRect.width).toBe(0);
+                    expect(entries[0].contentRect.height).toBe(0);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
 
-                expect(spy).not.toHaveBeenCalled();
-            }).then(async () => {
-                elements.root.style.display = 'block';
-                elements.target1.style.position = 'fixed';
+            it('handles resizing of the documentElement', done => {
+                // DOCUMENT_NODE = 9
+                if (elements.documentOrShadow.nodeType !== 9) {
+                    // Skip the test. DocumentElement is only relevant for
+                    // document roots.
+                    done();
 
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.root.style.display = 'none';
-                elements.target1.style.padding = '10px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(0);
-                expect(entries[0].contentRect.height).toBe(0);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(0);
-                expect(entries[0].contentRect.bottom).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles empty elements', done => {
-            const spy = createAsyncSpy();
-
-            elements.target1.style.width = '0px';
-            elements.target1.style.height = '0px';
-            elements.target1.style.padding = '10px';
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target2);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.target1.style.width = '200px';
-                elements.target1.style.height = '200px';
-
-                elements.target2.style.width = '0px';
-                elements.target2.style.height = '0px';
-                elements.target2.padding = '10px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(2);
-
-                expect(entries[0].target).toBe(elements.target1);
-                expect(entries[1].target).toBe(elements.target2);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-
-                expect(entries[1].contentRect.width).toEqual(0);
-                expect(entries[1].contentRect.height).toBe(0);
-                expect(entries[1].contentRect.top).toBe(0);
-                expect(entries[1].contentRect.right).toBe(0);
-                expect(entries[1].contentRect.bottom).toBe(0);
-                expect(entries[1].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles paddings', done => {
-            const spy = createAsyncSpy();
-
-            elements.target1.style.padding = '2px 4px 6px 8px';
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(2);
-                expect(entries[0].contentRect.right).toBe(208);
-                expect(entries[0].contentRect.bottom).toBe(202);
-                expect(entries[0].contentRect.left).toBe(8);
-            }).then(async () => {
-                elements.target1.style.padding = '3px 6px';
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(async () => {
-                elements.target1.style.boxSizing = 'border-box';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(188);
-                expect(entries[0].contentRect.height).toBe(194);
-                expect(entries[0].contentRect.top).toBe(3);
-                expect(entries[0].contentRect.right).toBe(194);
-                expect(entries[0].contentRect.bottom).toBe(197);
-                expect(entries[0].contentRect.left).toBe(6);
-            }).then(async () => {
-                elements.target1.style.padding = '0px 6px';
-
-                const entries = await spy.nextCall();
-
-                expect(spy).toHaveBeenCalledTimes(3);
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(188);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(194);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(6);
-            }).then(async () => {
-                elements.target1.style.padding = '0px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles borders', done => {
-            const spy = createAsyncSpy();
-
-            elements.target1.style.border = '10px solid black';
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.target1.style.border = '5px solid black';
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(async () => {
-                elements.target1.style.boxSizing = 'border-box';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(190);
-                expect(entries[0].contentRect.height).toBe(190);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(190);
-                expect(entries[0].contentRect.bottom).toBe(190);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.target1.style.borderTop = '';
-                elements.target1.style.borderBottom = '';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(190);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(190);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.target1.style.borderLeft = '';
-                elements.target1.style.borderRight = '';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('doesn\'t notify when position changes', done => {
-            const spy = createAsyncSpy();
-
-            elements.target1.style.position = 'relative';
-            elements.target1.style.top = '7px';
-            elements.target1.style.left = '5px;';
-            elements.target1.style.padding = '2px 3px';
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(2);
-                expect(entries[0].contentRect.right).toBe(203);
-                expect(entries[0].contentRect.bottom).toBe(202);
-                expect(entries[0].contentRect.left).toBe(3);
-            }).then(async () => {
-                elements.target1.style.left = '10px';
-                elements.target1.style.top = '20px';
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done).catch(done.fail);
-        });
-
-        it('ignores scroll bars size', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            elements.root.style.width = '100px';
-            elements.root.style.height = '250px';
-            elements.root.style.overflow = 'auto';
-
-            elements.container.style.minWidth = '0px';
-
-            observer.observe(elements.root);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.root);
-
-                expect(entries[0].contentRect.width).toBe(elements.root.clientWidth);
-                expect(entries[0].contentRect.height).toBe(elements.root.clientHeight);
-
-                // It is not possible to run further tests if browser has overlaid scroll bars.
-                if (
-                    elements.root.clientWidth === elements.root.offsetWidth &&
-                    elements.root.clientHeight === elements.root.offsetHeight
-                ) {
-                    return Promise.resolve();
+                    return;
                 }
 
-                return (async () => {
-                    const width = elements.root.clientWidth;
+                const spy = createAsyncSpy();
+                const document = elements.documentOrShadow;
+                const docElement = document.documentElement;
+                const styles = window.getComputedStyle(docElement);
 
-                    elements.target1.style.width = width + 'px';
-                    elements.target2.style.width = width + 'px';
+                observer = new ResizeObserver(spy);
+
+                observer.observe(document.documentElement);
+
+                spy.nextCall().then(entries => {
+                    const width = parseFloat(styles.width);
+                    const height = parseFloat(styles.height);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(docElement);
+
+                    expect(entries[0].contentRect.width).toBe(width);
+                    expect(entries[0].contentRect.height).toBe(height);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(width);
+                    expect(entries[0].contentRect.bottom).toBe(height);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    document.body.removeChild(elements.root);
+
+                    const width = parseFloat(styles.width);
+                    const height = parseFloat(styles.height);
 
                     const entries = await spy.nextCall();
 
                     expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.root);
 
-                    expect(entries[0].contentRect.height).toBe(250);
-                })().then(async () => {
-                    elements.target1.style.height = '125px';
-                    elements.target2.style.height = '125px';
+                    expect(entries[0].target).toBe(docElement);
+
+                    expect(entries[0].contentRect.width).toBe(width);
+                    expect(entries[0].contentRect.height).toBe(height);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(width);
+                    expect(entries[0].contentRect.bottom).toBe(height);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles shadow host resizing', done => {
+                const {host} = elements.documentOrShadow;
+
+                if (!host) {
+                    // Skip the test. Host is only relevant for shadow roots.
+                    done();
+
+                    return;
+                }
+
+                host.style.width = '301px';
+                elements.root.style.width = '100%';
+                elements.target1.style.width = '100%';
+                elements.root.appendChild(elements.target1);
+
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[0].contentRect.width).toBe(301);
+                }).then(async () => {
+                    // Wait for the refresh cascade to complete.
+                    await wait(timeout);
+                }).then(async () => {
+                    host.style.width = '401px';
 
                     const entries = await spy.nextCall();
 
                     expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[0].contentRect.width).toBe(401);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles hidden elements', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                elements.root.style.display = 'none';
+                elements.target1.style.display = 'none';
+
+                observer.observe(elements.target1);
+
+                wait(timeout).then(() => {
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(async () => {
+                    elements.target1.style.display = 'block';
+
+                    await wait(timeout);
+
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(async () => {
+                    elements.root.style.display = 'block';
+                    elements.target1.style.position = 'fixed';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.root.style.display = 'none';
+                    elements.target1.style.padding = '10px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(0);
+                    expect(entries[0].contentRect.height).toBe(0);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles empty elements', done => {
+                const spy = createAsyncSpy();
+
+                elements.target1.style.width = '0px';
+                elements.target1.style.height = '0px';
+                elements.target1.style.padding = '10px';
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+                observer.observe(elements.target2);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target2);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.target1.style.width = '200px';
+                    elements.target1.style.height = '200px';
+
+                    elements.target2.style.width = '0px';
+                    elements.target2.style.height = '0px';
+                    elements.target2.padding = '10px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(2);
+
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[1].target).toBe(elements.target2);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+
+                    expect(entries[1].contentRect.width).toEqual(0);
+                    expect(entries[1].contentRect.height).toBe(0);
+                    expect(entries[1].contentRect.top).toBe(0);
+                    expect(entries[1].contentRect.right).toBe(0);
+                    expect(entries[1].contentRect.bottom).toBe(0);
+                    expect(entries[1].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles paddings', done => {
+                const spy = createAsyncSpy();
+
+                elements.target1.style.padding = '2px 4px 6px 8px';
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(2);
+                    expect(entries[0].contentRect.right).toBe(208);
+                    expect(entries[0].contentRect.bottom).toBe(202);
+                    expect(entries[0].contentRect.left).toBe(8);
+                }).then(async () => {
+                    elements.target1.style.padding = '3px 6px';
+
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+                }).then(async () => {
+                    elements.target1.style.boxSizing = 'border-box';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(188);
+                    expect(entries[0].contentRect.height).toBe(194);
+                    expect(entries[0].contentRect.top).toBe(3);
+                    expect(entries[0].contentRect.right).toBe(194);
+                    expect(entries[0].contentRect.bottom).toBe(197);
+                    expect(entries[0].contentRect.left).toBe(6);
+                }).then(async () => {
+                    elements.target1.style.padding = '0px 6px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(spy).toHaveBeenCalledTimes(3);
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(188);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(194);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(6);
+                }).then(async () => {
+                    elements.target1.style.padding = '0px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles borders', done => {
+                const spy = createAsyncSpy();
+
+                elements.target1.style.border = '10px solid black';
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.target1.style.border = '5px solid black';
+
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+                }).then(async () => {
+                    elements.target1.style.boxSizing = 'border-box';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(190);
+                    expect(entries[0].contentRect.height).toBe(190);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(190);
+                    expect(entries[0].contentRect.bottom).toBe(190);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.target1.style.borderTop = '';
+                    elements.target1.style.borderBottom = '';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(190);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(190);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.target1.style.borderLeft = '';
+                    elements.target1.style.borderRight = '';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('doesn\'t notify when position changes', done => {
+                const spy = createAsyncSpy();
+
+                elements.target1.style.position = 'relative';
+                elements.target1.style.top = '7px';
+                elements.target1.style.left = '5px;';
+                elements.target1.style.padding = '2px 3px';
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(2);
+                    expect(entries[0].contentRect.right).toBe(203);
+                    expect(entries[0].contentRect.bottom).toBe(202);
+                    expect(entries[0].contentRect.left).toBe(3);
+                }).then(async () => {
+                    elements.target1.style.left = '10px';
+                    elements.target1.style.top = '20px';
+
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+                }).then(done).catch(done.fail);
+            });
+
+            it('ignores scroll bars size', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                elements.root.style.width = '100px';
+                elements.root.style.height = '250px';
+                elements.root.style.overflow = 'auto';
+
+                elements.container.style.minWidth = '0px';
+
+                observer.observe(elements.root);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.root);
 
-                    expect(entries[0].contentRect.width).toBe(100);
-                });
-            }).then(done).catch(done.fail);
-        });
+                    expect(entries[0].contentRect.width).toBe(elements.root.clientWidth);
+                    expect(entries[0].contentRect.height).toBe(elements.root.clientHeight);
 
-        it('doesn\'t trigger for a non-replaced inline elements', done => {
-            const spy = createAsyncSpy();
+                    // It is not possible to run further tests if browser has overlaid scroll bars.
+                    if (
+                        elements.root.clientWidth === elements.root.offsetWidth &&
+                        elements.root.clientHeight === elements.root.offsetHeight
+                    ) {
+                        return Promise.resolve();
+                    }
 
-            observer = new ResizeObserver(spy);
+                    return (async () => {
+                        const width = elements.root.clientWidth;
 
-            elements.target1.style.display = 'inline';
-            elements.target1.style.padding = '10px';
+                        elements.target1.style.width = width + 'px';
+                        elements.target2.style.width = width + 'px';
 
-            observer.observe(elements.target1);
+                        const entries = await spy.nextCall();
 
-            wait(timeout).then(() => {
-                expect(spy).not.toHaveBeenCalled();
-            }).then(async () => {
-                elements.target1.style.position = 'absolute';
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.root);
 
-                const entries = await spy.nextCall();
+                        expect(entries[0].contentRect.height).toBe(250);
+                    })().then(async () => {
+                        elements.target1.style.height = '125px';
+                        elements.target2.style.height = '125px';
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
+                        const entries = await spy.nextCall();
 
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(10);
-                expect(entries[0].contentRect.left).toBe(10);
-            }).then(async () => {
-                elements.target1.style.position = 'static';
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.root);
 
-                const entries = await spy.nextCall();
+                        expect(entries[0].contentRect.width).toBe(100);
+                    });
+                }).then(done).catch(done.fail);
+            });
 
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
+            it('doesn\'t trigger for a non-replaced inline elements', done => {
+                const spy = createAsyncSpy();
 
-                expect(entries[0].contentRect.width).toBe(0);
-                expect(entries[0].contentRect.height).toBe(0);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(0);
-                expect(entries[0].contentRect.bottom).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                elements.target1.style.width = '150px';
+                observer = new ResizeObserver(spy);
 
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(2);
-            }).then(async () => {
-                elements.target1.style.display = 'block';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(150);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(10);
-                expect(entries[0].contentRect.left).toBe(10);
-            }).then(async () => {
                 elements.target1.style.display = 'inline';
+                elements.target1.style.padding = '10px';
+
+                observer.observe(elements.target1);
+
+                wait(timeout).then(() => {
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(async () => {
+                    elements.target1.style.position = 'absolute';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(10);
+                    expect(entries[0].contentRect.left).toBe(10);
+                }).then(async () => {
+                    elements.target1.style.position = 'static';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(0);
+                    expect(entries[0].contentRect.height).toBe(0);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    elements.target1.style.width = '150px';
+
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(2);
+                }).then(async () => {
+                    elements.target1.style.display = 'block';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(150);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(10);
+                    expect(entries[0].contentRect.left).toBe(10);
+                }).then(async () => {
+                    elements.target1.style.display = 'inline';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBe(0);
+                    expect(entries[0].contentRect.height).toBe(0);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(0);
+                    expect(entries[0].contentRect.bottom).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles replaced inline elements', done => {
+                elements.root.insertAdjacentHTML('beforeend', `
+                    <input
+                        id="replaced-inline"
+                        style="width: 200px; height: 30px; padding: 5px 6px; border: 2px solid black;"/>
+                `
+                );
+
+                const spy = createAsyncSpy();
+                const replaced = elements.documentOrShadow.getElementById('replaced-inline');
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(replaced);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(replaced);
+
+                    expect(entries[0].contentRect.width).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(30);
+                    expect(entries[0].contentRect.top).toBe(5);
+                    expect(entries[0].contentRect.right).toBe(206);
+                    expect(entries[0].contentRect.bottom).toBe(35);
+                    expect(entries[0].contentRect.left).toBe(6);
+                }).then(async () => {
+                    replaced.style.width = '190px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(replaced);
+
+                    expect(entries[0].contentRect.width).toBe(190);
+                    expect(entries[0].contentRect.height).toBe(30);
+                    expect(entries[0].contentRect.top).toBe(5);
+                    expect(entries[0].contentRect.right).toBe(196);
+                    expect(entries[0].contentRect.bottom).toBe(35);
+                    expect(entries[0].contentRect.left).toBe(6);
+                }).then(async () => {
+                    replaced.style.boxSizing = 'border-box';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(replaced);
+
+                    expect(entries[0].contentRect.width).toBe(174);
+                    expect(entries[0].contentRect.height).toBe(16);
+                    expect(entries[0].contentRect.top).toBe(5);
+                    expect(entries[0].contentRect.right).toBe(180);
+                    expect(entries[0].contentRect.bottom).toBe(21);
+                    expect(entries[0].contentRect.left).toBe(6);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles fractional dimensions', done => {
+                elements.target1.style.width = '200.5px';
+                elements.target1.style.height = '200.5px';
+                elements.target1.style.padding = '6.3px 3.3px';
+                elements.target1.style.border = '11px solid black';
 
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBe(0);
-                expect(entries[0].contentRect.height).toBe(0);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(0);
-                expect(entries[0].contentRect.bottom).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles replaced inline elements', done => {
-            elements.root.insertAdjacentHTML('beforeend', `
-                <input
-                    id="replaced-inline"
-                    style="width: 200px; height: 30px; padding: 5px 6px; border: 2px solid black;"/>
-            `
-            );
-
-            const spy = createAsyncSpy();
-            const replaced = document.getElementById('replaced-inline');
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(replaced);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(replaced);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(30);
-                expect(entries[0].contentRect.top).toBe(5);
-                expect(entries[0].contentRect.right).toBe(206);
-                expect(entries[0].contentRect.bottom).toBe(35);
-                expect(entries[0].contentRect.left).toBe(6);
-            }).then(async () => {
-                replaced.style.width = '190px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(replaced);
-
-                expect(entries[0].contentRect.width).toBe(190);
-                expect(entries[0].contentRect.height).toBe(30);
-                expect(entries[0].contentRect.top).toBe(5);
-                expect(entries[0].contentRect.right).toBe(196);
-                expect(entries[0].contentRect.bottom).toBe(35);
-                expect(entries[0].contentRect.left).toBe(6);
-            }).then(async () => {
-                replaced.style.boxSizing = 'border-box';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(replaced);
-
-                expect(entries[0].contentRect.width).toBe(174);
-                expect(entries[0].contentRect.height).toBe(16);
-                expect(entries[0].contentRect.top).toBe(5);
-                expect(entries[0].contentRect.right).toBe(180);
-                expect(entries[0].contentRect.bottom).toBe(21);
-                expect(entries[0].contentRect.left).toBe(6);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles fractional dimensions', done => {
-            elements.target1.style.width = '200.5px';
-            elements.target1.style.height = '200.5px';
-            elements.target1.style.padding = '6.3px 3.3px';
-            elements.target1.style.border = '11px solid black';
-
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBeCloseTo(200.5, 1);
-                expect(entries[0].contentRect.height).toBeCloseTo(200.5, 1);
-                expect(entries[0].contentRect.top).toBeCloseTo(6.3, 1);
-                expect(entries[0].contentRect.right).toBeCloseTo(203.8, 1);
-                expect(entries[0].contentRect.bottom).toBeCloseTo(206.8, 1);
-                expect(entries[0].contentRect.left).toBeCloseTo(3.3, 1);
-            }).then(async () => {
-                elements.target1.style.padding = '7.8px 3.8px';
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(async () => {
-                elements.target1.style.boxSizing = 'border-box';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBeCloseTo(170.9, 1);
-                expect(entries[0].contentRect.height).toBeCloseTo(162.9, 1);
-                expect(entries[0].contentRect.top).toBeCloseTo(7.8, 1);
-                expect(entries[0].contentRect.right).toBeCloseTo(174.7, 1);
-                expect(entries[0].contentRect.bottom).toBeCloseTo(170.7, 1);
-                expect(entries[0].contentRect.left).toBeCloseTo(3.8, 1);
-            }).then(async () => {
-                elements.target1.style.padding = '7.9px 3.9px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBeCloseTo(170.7, 1);
-                expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
-                expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
-                expect(entries[0].contentRect.right).toBeCloseTo(174.6, 1);
-                expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
-                expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
-            }).then(async () => {
-                elements.target1.style.width = '200px';
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target1);
-
-                expect(entries[0].contentRect.width).toBeCloseTo(170.2, 1);
-                expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
-                expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
-                expect(entries[0].contentRect.right).toBeCloseTo(174.1, 1);
-                expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
-                expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles SVGGraphicsElement', done => {
-            elements.root.insertAdjacentHTML('beforeend', `
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink"
-                    width="100" height="100"
-                    id="svg-root" style="padding: 5px;">
-                    <rect
-                        id="svg-rect"
-                        x="10" y="10"
-                        width="200" height="150"
-                        style="stroke:#ff0000; fill: #0000ff"/>
-                </svg>
-            `);
-
-            const spy = createAsyncSpy();
-            const svgRoot = document.getElementById('svg-root');
-            const svgRect = document.getElementById('svg-rect');
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(svgRect);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(svgRect);
-
-                expect(entries[0].contentRect.width).toBe(200);
-                expect(entries[0].contentRect.height).toBe(150);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(200);
-                expect(entries[0].contentRect.bottom).toBe(150);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                svgRect.setAttribute('width', 250);
-                svgRect.setAttribute('height', 200);
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(svgRect);
-
-                expect(entries[0].contentRect.width).toBe(250);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(250);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(async () => {
-                observer.observe(svgRoot);
-
-                const entries = await spy.nextCall();
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(svgRoot);
-
-                expect(entries[0].contentRect.width).toBe(250);
-                expect(entries[0].contentRect.height).toBe(200);
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.right).toBe(250);
-                expect(entries[0].contentRect.bottom).toBe(200);
-                expect(entries[0].contentRect.left).toBe(0);
-            }).then(done).catch(done.fail);
-        });
-
-        it('doesn\'t observe svg elements that don\'t implement the SVGGraphicsElement interface', done => {
-            elements.root.insertAdjacentHTML('beforeend', `
-                <svg width="600" height="200" viewBox="0 0 600 200"
-                    xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink">
-                    <defs>
-                        <radialGradient id="gradient">
-                            <stop offset="0%" stop-color="#8cffa0" />
-                            <stop offset="100%" stop-color="#8ca0ff" />
-                        </radialGradient>
-                    </defs>
-
-                    <circle r="50" cx="180" cy="50" style="fill:url(#gradient)" id="circle" />
-                </svg>
-            `);
-
-            const spy = createAsyncSpy();
-            const svgGrad = document.getElementById('gradient');
-            const svgCircle = document.getElementById('circle');
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(svgGrad);
-
-            wait(timeout).then(() => {
-                expect(spy).not.toHaveBeenCalled();
-
-                observer.observe(svgCircle);
-
-                return spy.nextCall();
-            }).then(entries => {
-                expect(spy).toHaveBeenCalledTimes(1);
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(svgCircle);
-
-                expect(entries[0].contentRect.top).toBe(0);
-                expect(entries[0].contentRect.left).toBe(0);
-                expect(entries[0].contentRect.width).toBe(100);
-                expect(entries[0].contentRect.height).toBe(100);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles IE11 issue with the MutationObserver: https://jsfiddle.net/x2r3jpuz/2/', done => {
-            const spy = createAsyncSpy();
-
-            elements.root.insertAdjacentHTML('beforeend', `
-                <p>
-                    <strong></strong>
-                </p>
-            `);
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.root);
-
-            spy.nextCall().then(async () => {
-                const elem = elements.root.querySelector('strong');
-
-                // IE11 crashes at this step if MuatationObserver is used.
-                elem.textContent = 'a';
-                elem.textContent = 'b';
-
-                await wait(timeout);
-            }).then(done).catch(done.fail);
-        });
-
-        if (typeof document.body.style.transform !== 'undefined') {
-            it('doesn\'t notify of transformations', done => {
                 const spy = createAsyncSpy();
 
                 observer = new ResizeObserver(spy);
@@ -1089,40 +967,440 @@ describe('ResizeObserver', () => {
                     expect(entries.length).toBe(1);
                     expect(entries[0].target).toBe(elements.target1);
 
-                    expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
-                    expect(entries[0].contentRect.top).toBe(0);
-                    expect(entries[0].contentRect.left).toBe(0);
+                    expect(entries[0].contentRect.width).toBeCloseTo(200.5, 1);
+                    expect(entries[0].contentRect.height).toBeCloseTo(200.5, 1);
+                    expect(entries[0].contentRect.top).toBeCloseTo(6.3, 1);
+                    expect(entries[0].contentRect.right).toBeCloseTo(203.8, 1);
+                    expect(entries[0].contentRect.bottom).toBeCloseTo(206.8, 1);
+                    expect(entries[0].contentRect.left).toBeCloseTo(3.3, 1);
                 }).then(async () => {
-                    elements.container.style.transform = 'scale(0.5)';
-                    elements.target2.style.transform = 'scale(0.5)';
+                    elements.target1.style.padding = '7.8px 3.8px';
 
-                    observer.observe(elements.target2);
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+                }).then(async () => {
+                    elements.target1.style.boxSizing = 'border-box';
 
                     const entries = await spy.nextCall();
 
                     expect(entries.length).toBe(1);
-                    expect(entries[0].target).toBe(elements.target2);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBeCloseTo(170.9, 1);
+                    expect(entries[0].contentRect.height).toBeCloseTo(162.9, 1);
+                    expect(entries[0].contentRect.top).toBeCloseTo(7.8, 1);
+                    expect(entries[0].contentRect.right).toBeCloseTo(174.7, 1);
+                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.7, 1);
+                    expect(entries[0].contentRect.left).toBeCloseTo(3.8, 1);
+                }).then(async () => {
+                    elements.target1.style.padding = '7.9px 3.9px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBeCloseTo(170.7, 1);
+                    expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
+                    expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
+                    expect(entries[0].contentRect.right).toBeCloseTo(174.6, 1);
+                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
+                    expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
+                }).then(async () => {
+                    elements.target1.style.width = '200px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target1);
+
+                    expect(entries[0].contentRect.width).toBeCloseTo(170.2, 1);
+                    expect(entries[0].contentRect.height).toBeCloseTo(162.7, 1);
+                    expect(entries[0].contentRect.top).toBeCloseTo(7.9, 1);
+                    expect(entries[0].contentRect.right).toBeCloseTo(174.1, 1);
+                    expect(entries[0].contentRect.bottom).toBeCloseTo(170.6, 1);
+                    expect(entries[0].contentRect.left).toBeCloseTo(3.9, 1);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles SVGGraphicsElement', done => {
+                elements.root.insertAdjacentHTML('beforeend', `
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink"
+                        width="100" height="100"
+                        id="svg-root" style="padding: 5px;">
+                        <rect
+                            id="svg-rect"
+                            x="10" y="10"
+                            width="200" height="150"
+                            style="stroke:#ff0000; fill: #0000ff"/>
+                    </svg>
+                `);
+
+                const spy = createAsyncSpy();
+                const svgRoot = elements.documentOrShadow.getElementById('svg-root');
+                const svgRect = elements.documentOrShadow.getElementById('svg-rect');
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(svgRect);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(svgRect);
 
                     expect(entries[0].contentRect.width).toBe(200);
-                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.height).toBe(150);
                     expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(200);
+                    expect(entries[0].contentRect.bottom).toBe(150);
                     expect(entries[0].contentRect.left).toBe(0);
                 }).then(async () => {
-                    elements.container.style.transform = '';
-                    elements.target2.style.transform = '';
+                    svgRect.setAttribute('width', 250);
+                    svgRect.setAttribute('height', 200);
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(svgRect);
+
+                    expect(entries[0].contentRect.width).toBe(250);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(250);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(async () => {
+                    observer.observe(svgRoot);
+
+                    const entries = await spy.nextCall();
+
+                    expect(entries.length).toBe(1);
+
+                    expect(entries[0].target).toBe(svgRoot);
+
+                    expect(entries[0].contentRect.width).toBe(250);
+                    expect(entries[0].contentRect.height).toBe(200);
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.right).toBe(250);
+                    expect(entries[0].contentRect.bottom).toBe(200);
+                    expect(entries[0].contentRect.left).toBe(0);
+                }).then(done).catch(done.fail);
+            });
+
+            it('doesn\'t observe svg elements that don\'t implement the SVGGraphicsElement interface', done => {
+                elements.root.insertAdjacentHTML('beforeend', `
+                    <svg width="600" height="200" viewBox="0 0 600 200"
+                        xmlns="http://www.w3.org/2000/svg"
+                        xmlns:xlink="http://www.w3.org/1999/xlink">
+                        <defs>
+                            <radialGradient id="gradient">
+                                <stop offset="0%" stop-color="#8cffa0" />
+                                <stop offset="100%" stop-color="#8ca0ff" />
+                            </radialGradient>
+                        </defs>
+
+                        <circle r="50" cx="180" cy="50" style="fill:url(#gradient)" id="circle" />
+                    </svg>
+                `);
+
+                const spy = createAsyncSpy();
+                const svgGrad = elements.documentOrShadow.getElementById('gradient');
+                const svgCircle = elements.documentOrShadow.getElementById('circle');
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(svgGrad);
+
+                wait(timeout).then(() => {
+                    expect(spy).not.toHaveBeenCalled();
+
+                    observer.observe(svgCircle);
+
+                    return spy.nextCall();
+                }).then(entries => {
+                    expect(spy).toHaveBeenCalledTimes(1);
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(svgCircle);
+
+                    expect(entries[0].contentRect.top).toBe(0);
+                    expect(entries[0].contentRect.left).toBe(0);
+                    expect(entries[0].contentRect.width).toBe(100);
+                    expect(entries[0].contentRect.height).toBe(100);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles IE11 issue with the MutationObserver: https://jsfiddle.net/x2r3jpuz/2/', done => {
+                const spy = createAsyncSpy();
+
+                elements.root.insertAdjacentHTML('beforeend', `
+                    <p>
+                        <strong></strong>
+                    </p>
+                `);
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.root);
+
+                spy.nextCall().then(async () => {
+                    const elem = elements.root.querySelector('strong');
+
+                    // IE11 crashes at this step if MuatationObserver is used.
+                    elem.textContent = 'a';
+                    elem.textContent = 'b';
+
+                    await wait(timeout);
+                }).then(done).catch(done.fail);
+            });
+
+            if (typeof document.body.style.transform !== 'undefined') {
+                it('doesn\'t notify of transformations', done => {
+                    const spy = createAsyncSpy();
+
+                    observer = new ResizeObserver(spy);
+
+                    observer.observe(elements.target1);
+
+                    spy.nextCall().then(entries => {
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target1);
+
+                        expect(entries[0].contentRect.width).toBe(200);
+                        expect(entries[0].contentRect.height).toBe(200);
+                        expect(entries[0].contentRect.top).toBe(0);
+                        expect(entries[0].contentRect.left).toBe(0);
+                    }).then(async () => {
+                        elements.container.style.transform = 'scale(0.5)';
+                        elements.target2.style.transform = 'scale(0.5)';
+
+                        observer.observe(elements.target2);
+
+                        const entries = await spy.nextCall();
+
+                        expect(entries.length).toBe(1);
+                        expect(entries[0].target).toBe(elements.target2);
+
+                        expect(entries[0].contentRect.width).toBe(200);
+                        expect(entries[0].contentRect.height).toBe(200);
+                        expect(entries[0].contentRect.top).toBe(0);
+                        expect(entries[0].contentRect.left).toBe(0);
+                    }).then(async () => {
+                        elements.container.style.transform = '';
+                        elements.target2.style.transform = '';
+
+                        await wait(timeout);
+
+                        expect(spy).toHaveBeenCalledTimes(2);
+                    }).then(done).catch(done.fail);
+                });
+            }
+
+            if (typeof document.body.style.transition !== 'undefined') {
+                it('handles transitions', done => {
+                    elements.target1.style.transition = 'width 1s';
+
+                    const spy = createAsyncSpy();
+
+                    observer = new ResizeObserver(spy);
+
+                    observer.observe(elements.target1);
+
+                    spy.nextCall().then(async () => {
+                        const transitionEnd = new Promise(resolve => {
+                            const callback = () => {
+                                elements.target1.removeEventListener('transitionend', callback);
+                                resolve();
+                            };
+
+                            elements.target1.addEventListener('transitionend', callback);
+                        });
+
+                        await wait(20);
+
+                        elements.target1.style.width = '600px';
+
+                        await transitionEnd;
+                        await wait(timeout);
+
+                        // eslint-disable-next-line prefer-destructuring
+                        const entries = spy.calls.mostRecent().args[0];
+
+                        expect(entries[0].target).toBe(elements.target1);
+                        expect(Math.round(entries[0].contentRect.width)).toBe(600);
+                    }).then(done).catch(done.fail);
+                });
+            }
+        });
+
+        describe('unobserve', () => {
+            it('stops observing single element', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+                observer.observe(elements.target2);
+
+                spy.nextCall().then(entries => {
+                    expect(spy).toHaveBeenCalledTimes(1);
+
+                    expect(entries.length).toBe(2);
+
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[1].target).toBe(elements.target2);
+                }).then(async () => {
+                    observer.unobserve(elements.target1);
+
+                    elements.target1.style.width = '50px';
+                    elements.target2.style.width = '50px';
+
+                    const entries = await spy.nextCall();
+
+                    expect(spy).toHaveBeenCalledTimes(2);
+
+                    expect(entries.length).toBe(1);
+                    expect(entries[0].target).toBe(elements.target2);
+                    expect(entries[0].contentRect.width).toBe(50);
+                }).then(async () => {
+                    elements.target2.style.width = '100px';
+
+                    observer.unobserve(elements.target2);
 
                     await wait(timeout);
 
                     expect(spy).toHaveBeenCalledTimes(2);
                 }).then(done).catch(done.fail);
             });
-        }
 
-        if (typeof document.body.style.transition !== 'undefined') {
-            it('handles transitions', done => {
-                elements.target1.style.transition = 'width 1s';
+            it('doesn\'t prevent gathered observations from being notified', done => {
+                const spy = createAsyncSpy();
+                const spy2 = createAsyncSpy();
 
+                let shouldUnobserve = false;
+
+                observer = new ResizeObserver((...args) => {
+                    spy(...args);
+
+                    if (shouldUnobserve) {
+                        observer2.unobserve(elements.target1);
+                    }
+                });
+
+                observer2 = new ResizeObserver((...args) => {
+                    spy2(...args);
+
+                    if (shouldUnobserve) {
+                        observer.unobserve(elements.target1);
+                    }
+                });
+
+                observer.observe(elements.target1);
+                observer2.observe(elements.target1);
+
+                Promise.all([
+                    spy.nextCall(),
+                    spy2.nextCall()
+                ]).then(() => {
+                    shouldUnobserve = true;
+
+                    elements.target1.style.width = '220px';
+
+                    return Promise.all([spy.nextCall(), spy2.nextCall()]);
+                }).then(done).catch(done.fail);
+            });
+
+            it('handles elements that are not observed', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                observer.unobserve(elements.target1);
+
+                wait(timeout).then(() => {
+                    expect(spy).not.toHaveBeenCalled();
+                }).then(done).catch(done.fail);
+            });
+        });
+
+        describe('disconnect', () => {
+            it('stops observing all elements', done => {
+                const spy = createAsyncSpy();
+
+                observer = new ResizeObserver(spy);
+
+                observer.observe(elements.target1);
+                observer.observe(elements.target2);
+
+                spy.nextCall().then(entries => {
+                    expect(entries.length).toBe(2);
+
+                    expect(entries[0].target).toBe(elements.target1);
+                    expect(entries[1].target).toBe(elements.target2);
+                }).then(async () => {
+                    elements.target1.style.width = '600px';
+                    elements.target2.style.width = '600px';
+
+                    observer.disconnect();
+
+                    await wait(timeout);
+
+                    expect(spy).toHaveBeenCalledTimes(1);
+                }).then(done).catch(done.fail);
+            });
+
+            it('prevents gathered observations from being notified', done => {
+                const spy = createAsyncSpy();
+                const spy2 = createAsyncSpy();
+
+                let shouldDisconnect = false;
+
+                observer = new ResizeObserver((...args) => {
+                    spy(...args);
+
+                    if (shouldDisconnect) {
+                        observer2.disconnect();
+                    }
+                });
+
+                observer2 = new ResizeObserver((...args) => {
+                    spy2(...args);
+
+                    if (shouldDisconnect) {
+                        observer.disconnect();
+                    }
+                });
+
+                observer.observe(elements.target1);
+                observer2.observe(elements.target1);
+
+                Promise.all([
+                    spy.nextCall(),
+                    spy2.nextCall()
+                ]).then(async () => {
+                    shouldDisconnect = true;
+
+                    elements.target1.style.width = '220px';
+
+                    await Promise.race([spy.nextCall(), spy2.nextCall()]);
+                    await wait(10);
+
+                    if (spy.calls.count() === 2) {
+                        expect(spy2).toHaveBeenCalledTimes(1);
+                    }
+
+                    if (spy2.calls.count() === 2) {
+                        expect(spy).toHaveBeenCalledTimes(1);
+                    }
+                }).then(done).catch(done.fail);
+            });
+
+            it('doesn\'t destroy observer', done => {
                 const spy = createAsyncSpy();
 
                 observer = new ResizeObserver(spy);
@@ -1130,247 +1408,104 @@ describe('ResizeObserver', () => {
                 observer.observe(elements.target1);
 
                 spy.nextCall().then(async () => {
-                    const transitionEnd = new Promise(resolve => {
-                        const callback = () => {
-                            elements.target1.removeEventListener('transitionend', callback);
-                            resolve();
-                        };
-
-                        elements.target1.addEventListener('transitionend', callback);
-                    });
-
-                    await wait(20);
-
                     elements.target1.style.width = '600px';
 
-                    await transitionEnd;
+                    observer.disconnect();
+
                     await wait(timeout);
 
-                    // eslint-disable-next-line prefer-destructuring
-                    const entries = spy.calls.mostRecent().args[0];
+                    observer.observe(elements.target1);
+
+                    const entries = await spy.nextCall();
+
+                    expect(spy).toHaveBeenCalledTimes(2);
+
+                    expect(entries.length).toBe(1);
 
                     expect(entries[0].target).toBe(elements.target1);
-                    expect(Math.round(entries[0].contentRect.width)).toBe(600);
+                    expect(entries[0].contentRect.width).toBe(600);
                 }).then(done).catch(done.fail);
             });
-        }
+        });
+    }
+
+    describe('Main DOM', () => {
+        beforeEach(() => {
+            appendStyles(document);
+            appendElements(document, document.body);
+        });
+
+        afterEach(() => {
+            removeStyles(document);
+            removeElements(document, document.body);
+        });
+
+        specForAnyRoot();
     });
 
-    describe('unobserve', () => {
-        it('throws an error if no arguments have been provided', () => {
-            observer = new ResizeObserver(emptyFn);
+    describe('same-origin iframe', () => {
+        let iframe, doc;
 
-            expect(() => {
-                observer.unobserve();
-            }).toThrowError(/1 argument required/i);
+        beforeEach((done) => {
+            iframe = document.createElement('iframe');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('scrolling', 'yes');
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0px';
+            iframe.style.width = '100px';
+            iframe.style.height = '200px';
+            iframe.onerror = function () {
+                done(new Error('iframe initialization failed'));
+            };
+            iframe.onload = function () {
+                iframe.onload = null;
+                const win = iframe.contentWindow;
+
+                doc = win.document;
+                doc.open();
+                doc.write('<!DOCTYPE html><html><body>');
+                doc.close();
+
+                appendStyles(doc);
+                appendElements(doc, doc.body);
+
+                done();
+            };
+            iframe.src = 'about:blank';
+            document.body.appendChild(iframe);
         });
 
-        it('throws an error if target is not an Element', () => {
-            observer = new ResizeObserver(emptyFn);
-
-            expect(() => {
-                observer.unobserve(true);
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.unobserve(null);
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.unobserve({});
-            }).toThrowError(/Element/i);
-
-            expect(() => {
-                observer.unobserve(document.createTextNode(''));
-            }).toThrowError(/Element/i);
+        afterEach(() => {
+            removeStyles(doc);
+            removeElements(doc, doc.body);
+            document.body.removeChild(iframe);
         });
 
-        it('stops observing single element', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
-            spy.nextCall().then(entries => {
-                expect(spy).toHaveBeenCalledTimes(1);
-
-                expect(entries.length).toBe(2);
-
-                expect(entries[0].target).toBe(elements.target1);
-                expect(entries[1].target).toBe(elements.target2);
-            }).then(async () => {
-                observer.unobserve(elements.target1);
-
-                elements.target1.style.width = '50px';
-                elements.target2.style.width = '50px';
-
-                const entries = await spy.nextCall();
-
-                expect(spy).toHaveBeenCalledTimes(2);
-
-                expect(entries.length).toBe(1);
-                expect(entries[0].target).toBe(elements.target2);
-                expect(entries[0].contentRect.width).toBe(50);
-            }).then(async () => {
-                elements.target2.style.width = '100px';
-
-                observer.unobserve(elements.target2);
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(2);
-            }).then(done).catch(done.fail);
-        });
-
-        it('doesn\'t prevent gathered observations from being notified', done => {
-            const spy = createAsyncSpy();
-            const spy2 = createAsyncSpy();
-
-            let shouldUnobserve = false;
-
-            observer = new ResizeObserver((...args) => {
-                spy(...args);
-
-                if (shouldUnobserve) {
-                    observer2.unobserve(elements.target1);
-                }
-            });
-
-            observer2 = new ResizeObserver((...args) => {
-                spy2(...args);
-
-                if (shouldUnobserve) {
-                    observer.unobserve(elements.target1);
-                }
-            });
-
-            observer.observe(elements.target1);
-            observer2.observe(elements.target1);
-
-            Promise.all([
-                spy.nextCall(),
-                spy2.nextCall()
-            ]).then(() => {
-                shouldUnobserve = true;
-
-                elements.target1.style.width = '220px';
-
-                return Promise.all([spy.nextCall(), spy2.nextCall()]);
-            }).then(done).catch(done.fail);
-        });
-
-        it('handles elements that are not observed', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            observer.unobserve(elements.target1);
-
-            wait(timeout).then(() => {
-                expect(spy).not.toHaveBeenCalled();
-            }).then(done).catch(done.fail);
-        });
+        specForAnyRoot();
     });
 
-    describe('disconnect', () => {
-        it('stops observing all elements', done => {
-            const spy = createAsyncSpy();
+    if (typeof document.body.attachShadow !== 'undefined') {
+        describe('Shadow DOM', () => {
+            let shadowRootHost, body;
 
-            observer = new ResizeObserver(spy);
+            beforeEach(() => {
+                shadowRootHost = document.createElement('div');
+                document.body.appendChild(shadowRootHost);
 
-            observer.observe(elements.target1);
-            observer.observe(elements.target2);
-
-            spy.nextCall().then(entries => {
-                expect(entries.length).toBe(2);
-
-                expect(entries[0].target).toBe(elements.target1);
-                expect(entries[1].target).toBe(elements.target2);
-            }).then(async () => {
-                elements.target1.style.width = '600px';
-                elements.target2.style.width = '600px';
-
-                observer.disconnect();
-
-                await wait(timeout);
-
-                expect(spy).toHaveBeenCalledTimes(1);
-            }).then(done).catch(done.fail);
-        });
-
-        it('prevents gathered observations from being notified', done => {
-            const spy = createAsyncSpy();
-            const spy2 = createAsyncSpy();
-
-            let shouldDisconnect = false;
-
-            observer = new ResizeObserver((...args) => {
-                spy(...args);
-
-                if (shouldDisconnect) {
-                    observer2.disconnect();
-                }
+                shadowRootHost.attachShadow({mode: 'open'});
+                body = document.createElement('div');
+                shadowRootHost.shadowRoot.appendChild(body);
+                appendStyles(shadowRootHost.shadowRoot);
+                appendElements(shadowRootHost.shadowRoot, body);
             });
 
-            observer2 = new ResizeObserver((...args) => {
-                spy2(...args);
-
-                if (shouldDisconnect) {
-                    observer.disconnect();
-                }
+            afterEach(() => {
+                removeStyles(shadowRootHost.shadowRoot);
+                removeElements(shadowRootHost.shadowRoot, body);
+                document.body.removeChild(shadowRootHost);
             });
 
-            observer.observe(elements.target1);
-            observer2.observe(elements.target1);
-
-            Promise.all([
-                spy.nextCall(),
-                spy2.nextCall()
-            ]).then(async () => {
-                shouldDisconnect = true;
-
-                elements.target1.style.width = '220px';
-
-                await Promise.race([spy.nextCall(), spy2.nextCall()]);
-                await wait(10);
-
-                if (spy.calls.count() === 2) {
-                    expect(spy2).toHaveBeenCalledTimes(1);
-                }
-
-                if (spy2.calls.count() === 2) {
-                    expect(spy).toHaveBeenCalledTimes(1);
-                }
-            }).then(done).catch(done.fail);
+            specForAnyRoot();
         });
-
-        it('doesn\'t destroy observer', done => {
-            const spy = createAsyncSpy();
-
-            observer = new ResizeObserver(spy);
-
-            observer.observe(elements.target1);
-
-            spy.nextCall().then(async () => {
-                elements.target1.style.width = '600px';
-
-                observer.disconnect();
-
-                await wait(timeout);
-
-                observer.observe(elements.target1);
-
-                const entries = await spy.nextCall();
-
-                expect(spy).toHaveBeenCalledTimes(2);
-
-                expect(entries.length).toBe(1);
-
-                expect(entries[0].target).toBe(elements.target1);
-                expect(entries[0].contentRect.width).toBe(600);
-            }).then(done).catch(done.fail);
-        });
-    });
+    }
 });
