@@ -69,6 +69,18 @@ function getSVGContentRect(target) {
  * @returns {DOMRectInit}
  */
 function getHTMLElementContentRect(target) {
+    if (target.getClientRects) {
+        const rects = target.getClientRects();
+
+        if (rects.length === 0) {
+            // Any elements that are not directly rendered, an empty list is returned.
+            return emptyRect;
+        }
+        const [rect] = rects;
+        const {left, top, width, height} = rect;
+
+        return createRectInit(left, top, width, height);
+    }
     // Client width & height properties can't be
     // used exclusively as they provide rounded values.
     const {clientWidth, clientHeight} = target;
