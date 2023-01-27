@@ -7,6 +7,7 @@ interface DOMRectReadOnly {
     readonly right: number;
     readonly bottom: number;
     readonly left: number;
+    toJSON(): any;
 }
 
 declare global {
